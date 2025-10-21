@@ -1,0 +1,131 @@
+{
+  "site": {
+    "title": "BikeToolz.info - Calculadora de Subidas y Planificador de Rutas",
+    "logo": "BikeToolz.info",
+    "description": "Calculadora profesional de subidas de ciclismo y planificador de rutas"
+  },
+  "navigation": {
+    "home": "Home",
+    "climbCalculator": "Climb Calculator",
+    "cpAnalyzer": "CP/W' Analyzer",
+    "donate": "Donar",
+    "darkMode": "🌙 Modo Oscuro",
+    "lightMode": "☀️ Modo Claro",
+    "unitsMetric": "⚙️ Unidades: Métricas",
+    "unitsImperial": "⚙️ Unidades: Imperiales"
+  },
+  "welcome": {
+    "title": "Professional Cycling Tools",
+    "subtitle": "Choose a tool to get started with your cycling calculations and analysis"
+  },
+  "tools": {
+    "climbCalculator": {
+      "title": "Climb Calculator",
+      "description": "Calculate power requirements, climbing speed, and optimal gearing for any cycling climb. Features physics-based calculations with gear ratio analysis."
+    },
+    "cpAnalyzer": {
+      "title": "CP/W' Analyzer",
+      "description": "Analyze your cycling power data to determine Critical Power (CP) and W' values. Upload workout files and automatically find your best 3-minute efforts."
+    }
+  },
+  "ads": {
+    "leaderboard": "Publicidad (728x90)",
+    "mediumRect": "Publicidad (300x250)",
+    "square": "Publicidad (300x300 Inferior)",
+    "skyscraper": "Publicidad (160x600)",
+    "smallRect": "Publicidad (300x150)",
+    "afterResults": "Publicidad (Después de Resultados)",
+    "afterFaq": "Publicidad (Después de FAQ)"
+  },
+  "calculator": {
+    "title": "Calculadora de Subidas de Ciclismo",
+    "calculationMode": {
+      "title": "Modo de Cálculo",
+      "cadenceFirst": "Cadencia-primero:",
+      "cadenceFirstDesc": "Verificar si mi cadencia/relación preferida funciona",
+      "powerFirst": "Potencia-primero:",
+      "powerFirstDesc": "Encontrar cadencia óptima para mi potencia"
+    },
+    "riderParams": {
+      "title": "Parámetros del Ciclista",
+      "power": "Potencia (watts):",
+      "cadence": "Cadencia (RPM):",
+      "riderWeight": "Peso del Ciclista:"
+    },
+    "equipmentParams": {
+      "title": "Parámetros del Equipamiento",
+      "equipmentWeight": "Peso del Equipamiento\n(bici + equipos):",
+      "wheelSize": "Tamaño de Rueda:",
+      "wheelCircumference": "Circunferencia\nde la Rueda:",
+      "chainring": "Dientes del Plato\n(cambio delantero):",
+      "cog": "Dientes del Piñón\n(cambio trasero):",
+      "gearRatio": "Relación de Cambios:"
+    },
+    "climbParams": {
+      "title": "Parámetros de Subida (Selecciona exactamente 2 de 3)",
+      "tooltip": "Si no tienes los parámetros de subida, puedes elegir una de las herramientas de rutas de ciclismo listadas abajo para obtener esa información.",
+      "distance": "Distancia",
+      "elevation": "Ganancia de Elevación",
+      "grade": "Pendiente Promedio (%):"
+    },
+    "wheelSizes": {
+      "road700c": "700c Ruta",
+      "mtb26": "26\" MTB",
+      "mtb275": "27.5\" MTB",
+      "mtb29": "29\" MTB",
+      "custom": "Personalizado"
+    }
+  },
+  "results": {
+    "warning": "⚠️ Resultados desactualizados debido a entrada inválida.",
+    "calculatedParam": "Parámetro Calculado:",
+    "velocity": "Velocidad de Subida:",
+    "cadence": "Cadencia:",
+    "requiredCadence": "Cadencia Requerida:",
+    "selectedCadence": "Cadencia Seleccionada:",
+    "climbTime": "Tiempo Total de Subida:",
+    "systemWeight": "Peso del Sistema:",
+    "powerAnalysis": "Análisis de Potencia",
+    "powerUsage": "Uso de Potencia",
+    "availablePower": "Potencia Disponible:",
+    "requiredPower": "Potencia Requerida:",
+    "powerBalance": "Balance de Potencia:",
+    "gravity": "├ Gravedad:",
+    "rolling": "├ Rodadura:",
+    "wind": "└ Viento:",
+    "surplus": "exceso",
+    "deficit": "déficit",
+    "explanation": "ℹ️ <strong>Análisis de Potencia:</strong> La potencia disponible es tu potencia ({power}W) menos las pérdidas del sistema de transmisión (5%). La potencia requerida es lo que se necesita para superar gravedad, resistencia de rodadura y resistencia del viento a tu velocidad actual. Un exceso significa que puedes mantener este ritmo; un déficit significa que necesitarás reducir la velocidad."
+  },
+  "errors": {
+    "powerRange": "La potencia debe estar entre 50-1000 watts",
+    "cadenceRange": "La cadencia debe estar entre 40-120 RPM",
+    "riderWeightRange": {
+      "metric": "El peso del ciclista debe estar entre 30-150 kg",
+      "imperial": "El peso del ciclista debe estar entre 66-330 lbs"
+    },
+    "equipmentWeightRange": {
+      "metric": "El peso del equipamiento debe estar entre 5-30 kg",
+      "imperial": "El peso del equipamiento debe estar entre 11-66 lbs"
+    },
+    "chainringRange": "El plato debe tener entre 20-60 dientes",
+    "cogRange": "El piñón debe tener entre 8-50 dientes",
+    "circumferenceRange": {
+      "metric": "La circunferencia debe estar entre 1.5-3.0 metros",
+      "imperial": "La circunferencia debe estar entre 4.9-9.8 pies"
+    }
+  },
+  "footer": {
+    "copyright": "© 2025 BikeToolz.info - Calculadora profesional de subidas de ciclismo y planificador de rutas"
+  },
+  "units": {
+    "kg": "kg",
+    "lbs": "lbs",
+    "km": "km",
+    "mi": "mi",
+    "m": "m",
+    "ft": "ft",
+    "meters": "metros",
+    "feet": "pies"
+  }
+}

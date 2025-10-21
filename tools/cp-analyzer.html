@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CP/W' Analyzer - BikeToolz.info</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --bg-color: #ffffff;
+            --text-color: #1f2937;
+            --card-bg: #f8fafc;
+            --border-color: #e5e7eb;
+        }
+        
+        [data-theme="dark"] {
+            --primary-color: #3b82f6;
+            --bg-color: #111827;
+            --text-color: #f9fafb;
+            --card-bg: #1f2937;
+            --border-color: #374151;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .title {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            color: var(--text-color);
+            opacity: 0.8;
+        }
+        
+        .upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 3rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--card-bg);
+            margin-bottom: 2rem;
+        }
+        
+        .upload-area:hover {
+            border-color: var(--primary-color);
+            background: var(--bg-color);
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .results {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+        }
+        
+        .metric-card {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .metric-label {
+            font-size: 0.875rem;
+            opacity: 0.7;
+            margin-bottom: 0.5rem;
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .chart-container {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            margin-top: 2rem;
+            height: 400px;
+        }
+        
+        .btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+        
+        .btn:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title" data-i18n="cpAnalyzer.title">CP/W' Analyzer</h1>
+            <p class="subtitle" data-i18n="cpAnalyzer.subtitle">Analyze Your 3-Minute All-Out Test</p>
+        </div>
+        
+        <div id="uploadSection">
+            <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                <input type="file" id="fileInput" class="hidden" accept=".fit,.tcx,.csv,.gpx">
+                <svg width="64" height="64" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin: 0 auto 1rem; display: block; color: var(--primary-color);">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                </svg>
+                <p style="font-size: 1.25rem; margin-bottom: 0.5rem;" data-i18n="cpAnalyzer.upload.title">Drop your workout file here</p>
+                <p style="margin-bottom: 1rem; opacity: 0.7;" data-i18n="cpAnalyzer.upload.subtitle">Or click to browse</p>
+                <p style="font-size: 0.875rem; opacity: 0.6;" data-i18n="cpAnalyzer.upload.formats">Supports .FIT, .TCX, .CSV, and .GPX files</p>
+            </div>
+        </div>
+        
+        <div id="resultsSection" class="hidden">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h2 data-i18n="cpAnalyzer.results.title">Analysis Results</h2>
+                <button class="btn" onclick="resetAnalysis();" data-i18n="cpAnalyzer.results.newFile">Analyze New File</button>
+            </div>
+            
+            <div class="results">
+                <div class="metric-card">
+                    <div class="metric-label" data-i18n="cpAnalyzer.results.metrics.cp.title">Critical Power (CP)</div>
+                    <div class="metric-value" id="cpValue">-</div>
+                    <p style="font-size: 0.875rem; margin-top: 0.5rem; opacity: 0.7;" data-i18n="cpAnalyzer.results.metrics.cp.description">Average of final 30 seconds</p>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-label" data-i18n="cpAnalyzer.results.metrics.wPrime.title">W' (W-prime)</div>
+                    <div class="metric-value" id="wPrimeValue">-</div>
+                    <p style="font-size: 0.875rem; margin-top: 0.5rem; opacity: 0.7;" data-i18n="cpAnalyzer.results.metrics.wPrime.description">Work capacity above CP</p>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <canvas id="powerChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <script src="../js/i18n.js"></script>
+    <script>
+        let powerChart = null;
+        
+        document.getElementById('fileInput').addEventListener('change', handleFile);
+        
+        function handleFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            // For demo purposes, generate sample data
+            setTimeout(() => {
+                const data = generateSampleData();
+                const analysis = analyzeData(data);
+                showResults(analysis);
+            }, 1000);
+        }
+        
+        function generateSampleData() {
+            const data = [];
+            for (let i = 0; i <= 180; i++) {
+                let power = i <= 30 ? 400 - i * 4 : 280 - (i - 30) * 0.6;
+                power += (Math.random() - 0.5) * 10;
+                data.push({
+                    time: i,
+                    power: Math.max(180, Math.round(power))
+                });
+            }
+            return data;
+        }
+        
+        function analyzeData(data) {
+            const finalSegment = data.slice(-30);
+            const cp = finalSegment.reduce((sum, p) => sum + p.power, 0) / finalSegment.length;
+            
+            let wPrime = 0;
+            data.forEach(point => {
+                if (point.power > cp) wPrime += (point.power - cp);
+            });
+            wPrime = wPrime / 1000;
+            
+            return {
+                cp: Math.round(cp),
+                wPrime: Math.round(wPrime * 100) / 100,
+                data: data
+            };
+        }
+        
+        function showResults(analysis) {
+            document.getElementById('uploadSection').classList.add('hidden');
+            document.getElementById('resultsSection').classList.remove('hidden');
+            
+            document.getElementById('cpValue').textContent = analysis.cp + 'W';
+            document.getElementById('wPrimeValue').textContent = analysis.wPrime + ' kJ';
+            
+            createChart(analysis);
+        }
+        
+        function createChart(analysis) {
+            if (powerChart) powerChart.destroy();
+            
+            const ctx = document.getElementById('powerChart').getContext('2d');
+            const isDark = document.body.hasAttribute('data-theme');
+            
+            powerChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: analysis.data.map((_, i) => i % 30 === 0 ? Math.floor(i/60) + ':' + (i%60).toString().padStart(2, '0') : ''),
+                    datasets: [{
+                        label: 'Power',
+                        data: analysis.data.map(d => d.power),
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.1,
+                        pointRadius: 0
+                    }, {
+                        label: 'CP',
+                        data: Array(analysis.data.length).fill(analysis.cp),
+                        borderColor: '#ef4444',
+                        borderDash: [5, 5],
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: isDark ? '#f9fafb' : '#1f2937' }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: isDark ? '#9ca3af' : '#6b7280' },
+                            grid: { color: isDark ? '#374151' : '#e5e7eb' }
+                        },
+                        y: {
+                            ticks: { color: isDark ? '#9ca3af' : '#6b7280' },
+                            grid: { color: isDark ? '#374151' : '#e5e7eb' },
+                            title: {
+                                display: true,
+                                text: 'Power (W)',
+                                color: isDark ? '#9ca3af' : '#6b7280'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function resetAnalysis() {
+            document.getElementById('resultsSection').classList.add('hidden');
+            document.getElementById('uploadSection').classList.remove('hidden');
+            document.getElementById('fileInput').value = '';
+        }
+        
+        // Notify parent
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage({ type: 'toolReady' }, '*');
+        }
+        
+        // Listen for theme changes
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'themeChange') {
+                if (event.data.theme === 'dark') {
+                    document.body.setAttribute('data-theme', 'dark');
+                } else {
+                    document.body.removeAttribute('data-theme');
+                }
+                if (powerChart) {
+                    const analysis = { 
+                        cp: parseInt(document.getElementById('cpValue').textContent),
+                        wPrime: parseFloat(document.getElementById('wPrimeValue').textContent),
+                        data: powerChart.data.datasets[0].data.map((power, i) => ({ time: i, power }))
+                    };
+                    createChart(analysis);
+                }
+            }
+        });
+        
+        // Wait for i18n
+        document.addEventListener('DOMContentLoaded', function() {
+            function waitForI18n() {
+                if (window.i18n && window.i18n.translations && Object.keys(window.i18n.translations).length > 0) {
+                    if (window.i18n.updatePage) window.i18n.updatePage();
+                } else {
+                    setTimeout(waitForI18n, 100);
+                }
+            }
+            waitForI18n();
+        });
+    </script>
+</body>
+</html>

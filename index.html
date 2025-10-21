@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en" id="htmlRoot">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="site.title">BikeToolz.info - Cycling Tools Hub</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --accent-color: #3b82f6;
+            --text-color: #1f2937;
+            --bg-color: #ffffff;
+            --card-bg: #f8fafc;
+            --border-color: #e5e7eb;
+            --ad-bg: #f3f4f6;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+        }
+
+        [data-theme="dark"] {
+            --primary-color: #3b82f6;
+            --secondary-color: #2563eb;
+            --accent-color: #60a5fa;
+            --text-color: #f9fafb;
+            --bg-color: #111827;
+            --card-bg: #1f2937;
+            --border-color: #374151;
+            --ad-bg: #374151;
+            --success-color: #34d399;
+            --warning-color: #fbbf24;
+            --danger-color: #f87171;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            transition: all 0.3s ease;
+        }
+
+        .header-banner {
+            background:
+                linear-gradient(135deg, rgba(37, 99, 235, 0.3) 0%, rgba(30, 64, 175, 0.5) 100%),
+                url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400"><defs><linearGradient id="sky" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:%2387CEEB;stop-opacity:1" /><stop offset="70%" style="stop-color:%23B0E0E6;stop-opacity:1" /><stop offset="100%" style="stop-color:%23E0F6FF;stop-opacity:1" /></linearGradient></defs><rect width="1200" height="400" fill="url(%23sky)"/><path d="M0,200 L150,120 L300,140 L450,90 L600,110 L750,70 L900,90 L1050,50 L1200,70 L1200,400 L0,400 Z" fill="%23065f46" opacity="0.95"/><path d="M0,240 L120,160 L240,180 L360,130 L480,150 L600,110 L720,130 L840,90 L960,110 L1080,80 L1200,100 L1200,400 L0,400 Z" fill="%23166534" opacity="0.9"/></svg>');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            position: relative;
+            min-height: 140px;
+            overflow: visible;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            position: relative;
+        }
+
+        .logo {
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .language-selector {
+            background: rgba(34, 197, 94, 0.2);
+            border: 2px solid #22c55e;
+            border-radius: 8px;
+            color: white;
+            padding: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .theme-toggle, .unit-toggle {
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
+            color: white;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .theme-toggle:hover, .unit-toggle:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .tools-navigation {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .tools-nav-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .tool-nav-btn {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tool-nav-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+        }
+
+        .tool-nav-btn.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .tool-icon {
+            font-size: 1.2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        .ad-leaderboard {
+            background: var(--ad-bg);
+            border: 2px dashed var(--border-color);
+            height: 90px;
+            margin: 1rem 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            border-radius: 8px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 2rem;
+            margin: 2rem 0;
+            min-height: 600px;
+        }
+
+        .tool-frame-container {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .tool-frame {
+            width: 100%;
+            height: 100%;
+            min-height: 800px;
+            border: none;
+            background: var(--bg-color);
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--card-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            transition: opacity 0.3s ease;
+        }
+
+        .loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            height: fit-content;
+            position: sticky;
+            top: 100px;
+        }
+
+        .ad-medium-rect, .ad-square, .ad-small-rect {
+            background: var(--ad-bg);
+            border: 2px dashed var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            border-radius: 8px;
+        }
+
+        .ad-medium-rect {
+            height: 250px;
+        }
+
+        .ad-square {
+            height: 300px;
+        }
+
+        .ad-small-rect {
+            height: 150px;
+        }
+
+        .welcome-section {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        .welcome-title {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            font-weight: bold;
+        }
+
+        .welcome-subtitle {
+            font-size: 1.25rem;
+            color: var(--text-color);
+            margin-bottom: 2rem;
+            opacity: 0.8;
+        }
+
+        .tool-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .tool-card {
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .tool-card:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(37, 99, 235, 0.15);
+        }
+
+        .tool-card-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .tool-card-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .tool-card-description {
+            color: var(--text-color);
+            line-height: 1.6;
+            opacity: 0.8;
+        }
+
+        .footer {
+            background: var(--card-bg);
+            border-top: 1px solid var(--border-color);
+            padding: 2rem 0;
+            margin-top: 3rem;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                order: -1;
+                position: static;
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .logo {
+                font-size: 2rem;
+            }
+
+            .tools-nav-content {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .tool-nav-btn {
+                width: 100%;
+                max-width: 300px;
+                justify-content: center;
+            }
+
+            .welcome-title {
+                font-size: 2rem;
+            }
+
+            .tool-cards {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .tool-card {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header-banner">
+        <div class="header-content">
+            <h1 class="logo" data-i18n="site.logo">BikeToolz.info</h1>
+
+            <div class="header-controls">
+                <select class="language-selector" id="languageSelector" onchange="changeLanguage(this.value)">
+                    <option value="en">🇬🇧 English</option>
+                    <option value="de">🇩🇪 Deutsch</option>
+                    <option value="pt">🇧🇷 Português</option>
+                    <option value="es">🇪🇸 Español</option>
+                </select>
+
+                <button class="theme-toggle" onclick="toggleTheme()" id="themeToggle">
+                    <span data-i18n="navigation.darkMode">🌙 Dark Mode</span>
+                </button>
+
+                <button class="unit-toggle" onclick="toggleUnitSystem()" id="unitToggle">
+                    <span data-i18n="navigation.unitsMetric">⚙️ Units: Metric</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <nav class="tools-navigation">
+        <div class="tools-nav-content">
+            <button class="tool-nav-btn" onclick="showTool('welcome')" id="navWelcome">
+                <span class="tool-icon">🏠</span>
+                <span data-i18n="navigation.home">Home</span>
+            </button>
+            <button class="tool-nav-btn" onclick="showTool('climb-calculator')" id="navClimb">
+                <span class="tool-icon">⛰️</span>
+                <span data-i18n="navigation.climbCalculator">Climb Calculator</span>
+            </button>
+            <button class="tool-nav-btn" onclick="showTool('cp-analyzer')" id="navCP">
+                <span class="tool-icon">📊</span>
+                <span data-i18n="navigation.cpAnalyzer">CP/W' Analyzer</span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Leaderboard Ad -->
+        <div class="ad-leaderboard" data-i18n="ads.leaderboard">Advertisement (728x90)</div>
+
+        <div class="main-content">
+            <main class="tool-frame-container">
+                <div class="loading-overlay" id="loadingOverlay">
+                    <div class="loading-spinner"></div>
+                </div>
+
+                <!-- Welcome content (shown by default) -->
+                <div id="welcomeContent" class="welcome-section">
+                    <h2 class="welcome-title" data-i18n="welcome.title">Professional Cycling Tools</h2>
+                    <p class="welcome-subtitle" data-i18n="welcome.subtitle">Choose a tool to get started with your cycling calculations and analysis</p>
+
+                    <div class="tool-cards">
+                        <div class="tool-card" onclick="showTool('climb-calculator')">
+                            <div class="tool-card-icon">⛰️</div>
+                            <h3 class="tool-card-title" data-i18n="tools.climbCalculator.title">Climb Calculator</h3>
+                            <p class="tool-card-description" data-i18n="tools.climbCalculator.description">Calculate power requirements, climbing speed, and optimal gearing for any cycling climb. Features physics-based calculations with gear ratio analysis.</p>
+                        </div>
+
+                        <div class="tool-card" onclick="showTool('cp-analyzer')">
+                            <div class="tool-card-icon">📊</div>
+                            <h3 class="tool-card-title" data-i18n="tools.cpAnalyzer.title">CP/W' Analyzer</h3>
+                            <p class="tool-card-description" data-i18n="tools.cpAnalyzer.description">Analyze your cycling power data to determine Critical Power (CP) and W' values. Upload workout files and automatically find your best 3-minute efforts.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tool iframe (hidden by default) -->
+                <iframe id="toolFrame" class="tool-frame" style="display: none;"></iframe>
+            </main>
+
+            <aside class="sidebar">
+                <!-- Medium Rectangle Ad -->
+                <div class="ad-medium-rect" data-i18n="ads.mediumRect">Advertisement (300x250)</div>
+
+                <!-- Square Ad -->
+                <div class="ad-square" data-i18n="ads.square">Advertisement (300x300)</div>
+
+                <!-- Small Rectangle Ad -->
+                <div class="ad-small-rect" data-i18n="ads.smallRect">Advertisement (300x150)</div>
+            </aside>
+        </div>
+
+        <!-- Banner Ad -->
+        <div class="ad-leaderboard" data-i18n="ads.leaderboard">Advertisement (728x90)</div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p data-i18n="footer.copyright">&copy; 2025 BikeToolz.info - Professional cycling tools for climb planning and power analysis</p>
+        </div>
+    </footer>
+
+    <script src="js/i18n.js"></script>
+    <script>
+        let currentTool = 'welcome';
+        let isMetric = true;
+
+        // Tool management
+        function showTool(toolName) {
+            const welcomeContent = document.getElementById('welcomeContent');
+            const toolFrame = document.getElementById('toolFrame');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+
+            // Update navigation
+            document.querySelectorAll('.tool-nav-btn').forEach(btn => btn.classList.remove('active'));
+
+            if (toolName === 'welcome') {
+                welcomeContent.style.display = 'block';
+                toolFrame.style.display = 'none';
+                document.getElementById('navWelcome').classList.add('active');
+                currentTool = 'welcome';
+            } else {
+                // Show loading
+                loadingOverlay.classList.remove('hidden');
+                welcomeContent.style.display = 'none';
+                toolFrame.style.display = 'block';
+
+                // Load tool
+                const toolPath = `tools/${toolName}.html`;
+                toolFrame.src = toolPath;
+
+                // Update navigation
+                if (toolName === 'climb-calculator') {
+                    document.getElementById('navClimb').classList.add('active');
+                } else if (toolName === 'cp-analyzer') {
+                    document.getElementById('navCP').classList.add('active');
+                }
+
+                currentTool = toolName;
+
+                // Hide loading after iframe loads
+                toolFrame.onload = function() {
+                    setTimeout(() => {
+                        loadingOverlay.classList.add('hidden');
+                    }, 500);
+                };
+            }
+        }
+
+        // Theme management
+        function toggleTheme() {
+            const body = document.body;
+            const themeToggle = document.getElementById('themeToggle');
+
+            if (body.hasAttribute('data-theme')) {
+                body.removeAttribute('data-theme');
+                if (window.i18n) {
+                    themeToggle.querySelector('span').textContent = window.i18n.t('navigation.darkMode');
+                } else {
+                    themeToggle.querySelector('span').innerHTML = '🌙 Dark Mode';
+                }
+            } else {
+                body.setAttribute('data-theme', 'dark');
+                if (window.i18n) {
+                    themeToggle.querySelector('span').textContent = window.i18n.t('navigation.lightMode');
+                } else {
+                    themeToggle.querySelector('span').innerHTML = '☀️ Light Mode';
+                }
+            }
+
+            // Pass theme to iframe if tool is loaded
+            if (currentTool !== 'welcome') {
+                postMessageToTool({ type: 'themeChange', theme: body.hasAttribute('data-theme') ? 'dark' : 'light' });
+            }
+        }
+
+        // Unit system management
+        function toggleUnitSystem() {
+            isMetric = !isMetric;
+            const unitToggle = document.getElementById('unitToggle');
+
+            if (window.i18n) {
+                unitToggle.querySelector('span').textContent = isMetric ?
+                    window.i18n.t('navigation.unitsMetric') :
+                    window.i18n.t('navigation.unitsImperial');
+            } else {
+                unitToggle.querySelector('span').innerHTML = isMetric ?
+                    '⚙️ Units: Metric' : '⚙️ Units: Imperial';
+            }
+
+            // Pass unit system to iframe if tool is loaded
+            if (currentTool !== 'welcome') {
+                postMessageToTool({ type: 'unitSystemChange', isMetric: isMetric });
+            }
+        }
+
+        // Language management
+        function changeLanguage(languageCode) {
+            if (window.i18n) {
+                window.i18n.changeLanguage(languageCode);
+                document.getElementById('htmlRoot').lang = languageCode;
+
+                // Pass language to iframe if tool is loaded
+                if (currentTool !== 'welcome') {
+                    postMessageToTool({ type: 'languageChange', language: languageCode });
+                }
+            }
+        }
+
+        // Communication with tools
+        function postMessageToTool(message) {
+            const toolFrame = document.getElementById('toolFrame');
+            if (toolFrame && toolFrame.contentWindow) {
+                try {
+                    toolFrame.contentWindow.postMessage(message, '*');
+                } catch (error) {
+                    console.log('Could not send message to tool:', error);
+                }
+            }
+        }
+
+        // Listen for messages from tools
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type) {
+                switch (event.data.type) {
+                    case 'toolReady':
+                        // Send current settings to newly loaded tool
+                        postMessageToTool({
+                            type: 'initialize',
+                            theme: document.body.hasAttribute('data-theme') ? 'dark' : 'light',
+                            isMetric: isMetric,
+                            language: window.i18n ? window.i18n.getCurrentLanguage() : 'en'
+                        });
+                        break;
+                    case 'requestUnitSystem':
+                        postMessageToTool({ type: 'unitSystemChange', isMetric: isMetric });
+                        break;
+                }
+            }
+        });
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set initial navigation state
+            document.getElementById('navWelcome').classList.add('active');
+
+            // Wait for i18n to load
+            function waitForI18n() {
+                if (window.i18n && window.i18n.translations && Object.keys(window.i18n.translations).length > 0) {
+                    const currentLang = window.i18n.getCurrentLanguage();
+                    document.getElementById('htmlRoot').lang = currentLang;
+                    document.getElementById('languageSelector').value = currentLang;
+                    if (window.i18n.updatePage) window.i18n.updatePage();
+                } else {
+                    setTimeout(waitForI18n, 100);
+                }
+            }
+            waitForI18n();
+        });
+    </script>
+</body>
+</html>
