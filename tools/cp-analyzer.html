@@ -135,6 +135,11 @@
             color: white;
         }
 
+        .status-error {
+            background: var(--error-color);
+            color: white;
+        }
+
         .hidden {
             display: none;
         }
@@ -479,15 +484,46 @@
                 state.uploadedFiles.push({ id: fileId, name: file.name, status: 'analyzing' });
                 displayFile(fileId, file.name);
 
-                // Simulate file processing and effort detection
-                setTimeout(() => {
-                    const powerData = generateSamplePowerData(file.name, index);
-                    const efforts = detectEfforts(powerData, fileId, file.name);
-                    state.detectedEfforts.push(...efforts);
+                // Read and parse actual file
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const fileContent = e.target.result;
+                        const fileName = file.name.toLowerCase();
+                        let powerData = null;
 
-                    updateFileStatus(fileId, 'done');
-                    displayEfforts();
-                }, 1000 + index * 500);
+                        // Detect file type and parse accordingly
+                        if (fileName.endsWith('.tcx')) {
+                            powerData = parseTCXFile(fileContent);
+                        } else if (fileName.endsWith('.gpx')) {
+                            powerData = parseGPXFile(fileContent);
+                        } else if (fileName.endsWith('.csv')) {
+                            powerData = parseCSVFile(fileContent);
+                        } else if (fileName.endsWith('.fit')) {
+                            // FIT files require binary parsing - show error for now
+                            throw new Error('FIT file parsing not yet supported. Please export to TCX, GPX, or CSV format.');
+                        } else {
+                            throw new Error('Unsupported file format. Please use TCX, GPX, or CSV files.');
+                        }
+
+                        if (!powerData || powerData.length === 0) {
+                            throw new Error('No power data found in file');
+                        }
+
+                        // Detect efforts in the parsed power data
+                        const efforts = detectEfforts(powerData, fileId, file.name);
+                        state.detectedEfforts.push(...efforts);
+
+                        updateFileStatus(fileId, 'done');
+                        displayEfforts();
+
+                    } catch (error) {
+                        console.error('Error parsing file:', error);
+                        updateFileStatus(fileId, 'error');
+                        showError(`Error parsing ${file.name}: ${error.message}`);
+                    }
+                };
+                reader.readAsText(file);
             });
         }
 
@@ -512,35 +548,186 @@
             const fileItem = document.getElementById(`file-${fileId}`);
             const statusSpan = fileItem.querySelector('.file-status');
             statusSpan.className = `file-status status-${status}`;
-            statusSpan.textContent = status === 'done' ? 'Done ✓' : 'Analyzing...';
+
+            if (status === 'done') {
+                statusSpan.textContent = 'Done ✓';
+            } else if (status === 'error') {
+                statusSpan.textContent = 'Error ✗';
+            } else {
+                statusSpan.textContent = 'Analyzing...';
+            }
         }
 
-        // Generate sample power data (in real implementation, this would parse actual files)
-        function generateSamplePowerData(fileName, index) {
-            const data = [];
-            const numEfforts = 1 + Math.floor(Math.random() * 2); // 1-2 efforts per file
+        function showError(message) {
+            // Reuse existing error display mechanism
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'alert alert-error';
+            errorDiv.style.marginTop = '1rem';
+            errorDiv.innerHTML = `<strong>⚠️ Error:</strong> ${message}`;
 
-            for (let effort = 0; effort < numEfforts; effort++) {
-                const duration = 180 + Math.floor(Math.random() * 600); // 3-13 minutes
-                const basePower = 280 + Math.floor(Math.random() * 80);
+            const fileList = document.getElementById('fileList');
+            fileList.appendChild(errorDiv);
 
-                // Add recovery before second effort
-                if (effort > 0) {
-                    for (let i = 0; i < 300; i++) { // 5 min recovery
-                        data.push({ time: data.length, power: 100 + Math.random() * 50 });
-                    }
-                }
+            // Auto-remove after 10 seconds
+            setTimeout(() => errorDiv.remove(), 10000);
+        }
 
-                // Add effort
-                for (let i = 0; i < duration; i++) {
-                    const decay = i / duration * 0.15; // 15% decay
-                    const noise = (Math.random() - 0.5) * 20;
-                    const power = basePower * (1 - decay) + noise;
-                    data.push({ time: data.length, power: Math.max(150, power) });
-                }
+        // Parse TCX file format
+        function parseTCXFile(fileContent) {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(fileContent, 'text/xml');
+
+            // Check for parsing errors
+            const parseError = xmlDoc.querySelector('parsererror');
+            if (parseError) {
+                throw new Error('Invalid TCX file format');
             }
 
-            return data;
+            // Get all trackpoints
+            const trackpoints = xmlDoc.querySelectorAll('Trackpoint');
+            if (trackpoints.length === 0) {
+                throw new Error('No trackpoints found in TCX file');
+            }
+
+            const powerData = [];
+            let startTime = null;
+
+            trackpoints.forEach((trackpoint, index) => {
+                // Get timestamp
+                const timeElement = trackpoint.querySelector('Time');
+                if (!timeElement) return;
+
+                const timestamp = new Date(timeElement.textContent);
+                if (!startTime) startTime = timestamp;
+
+                const elapsedSeconds = Math.floor((timestamp - startTime) / 1000);
+
+                // Get power from extensions
+                const wattsElement = trackpoint.querySelector('Watts, ns3\\:Watts');
+                if (wattsElement) {
+                    const power = parseInt(wattsElement.textContent);
+                    powerData.push({ time: elapsedSeconds, power: power });
+                }
+            });
+
+            if (powerData.length === 0) {
+                throw new Error('No power data found in TCX file. Make sure your file includes power meter data.');
+            }
+
+            console.log(`Parsed TCX: ${powerData.length} power readings over ${powerData[powerData.length - 1].time} seconds`);
+            return powerData;
+        }
+
+        // Parse GPX file format
+        function parseGPXFile(fileContent) {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(fileContent, 'text/xml');
+
+            // Check for parsing errors
+            const parseError = xmlDoc.querySelector('parsererror');
+            if (parseError) {
+                throw new Error('Invalid GPX file format');
+            }
+
+            // Get all track points
+            const trackpoints = xmlDoc.querySelectorAll('trkpt');
+            if (trackpoints.length === 0) {
+                throw new Error('No track points found in GPX file');
+            }
+
+            const powerData = [];
+            let startTime = null;
+
+            trackpoints.forEach(trackpoint => {
+                // Get timestamp
+                const timeElement = trackpoint.querySelector('time');
+                if (!timeElement) return;
+
+                const timestamp = new Date(timeElement.textContent);
+                if (!startTime) startTime = timestamp;
+
+                const elapsedSeconds = Math.floor((timestamp - startTime) / 1000);
+
+                // Try to get power from various extension formats
+                // Some platforms use <power>, some use <ns3:power>, etc.
+                const extensions = trackpoint.querySelector('extensions');
+                if (extensions) {
+                    const powerElement = extensions.querySelector('power, ns3\\:power, gpxtpx\\:power');
+                    if (powerElement) {
+                        const power = parseInt(powerElement.textContent);
+                        powerData.push({ time: elapsedSeconds, power: power });
+                    }
+                }
+            });
+
+            if (powerData.length === 0) {
+                throw new Error('No power data found in GPX file. GPX files typically don\'t include power data. Please use TCX format or export with power extensions.');
+            }
+
+            console.log(`Parsed GPX: ${powerData.length} power readings over ${powerData[powerData.length - 1].time} seconds`);
+            return powerData;
+        }
+
+        // Parse CSV file format
+        function parseCSVFile(fileContent) {
+            const lines = fileContent.trim().split('\n');
+            if (lines.length < 2) {
+                throw new Error('CSV file is too short');
+            }
+
+            // Parse header to find time and power columns
+            const header = lines[0].split(',').map(h => h.trim().toLowerCase());
+
+            // Try to find time column
+            let timeCol = header.findIndex(h =>
+                h.includes('time') || h.includes('elapsed') || h.includes('seconds')
+            );
+
+            // Try to find power column
+            let powerCol = header.findIndex(h =>
+                h.includes('power') || h.includes('watts') || h.includes('watt')
+            );
+
+            if (timeCol === -1 || powerCol === -1) {
+                throw new Error(`Could not auto-detect columns. Header: ${header.join(', ')}. Please ensure CSV has 'time' and 'power' columns.`);
+            }
+
+            const powerData = [];
+            let startTime = null;
+
+            // Parse data rows
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',').map(v => v.trim());
+
+                if (values.length <= Math.max(timeCol, powerCol)) continue;
+
+                let timeValue = values[timeCol];
+                let powerValue = parseFloat(values[powerCol]);
+
+                if (isNaN(powerValue)) continue;
+
+                // Handle time - could be seconds, or timestamp
+                let elapsedSeconds;
+                if (timeValue.includes(':') || timeValue.includes('T')) {
+                    // It's a timestamp
+                    const timestamp = new Date(timeValue);
+                    if (!startTime) startTime = timestamp;
+                    elapsedSeconds = Math.floor((timestamp - startTime) / 1000);
+                } else {
+                    // It's seconds
+                    elapsedSeconds = parseFloat(timeValue);
+                    if (isNaN(elapsedSeconds)) continue;
+                }
+
+                powerData.push({ time: elapsedSeconds, power: powerValue });
+            }
+
+            if (powerData.length === 0) {
+                throw new Error('No valid power data found in CSV file');
+            }
+
+            console.log(`Parsed CSV: ${powerData.length} power readings over ${powerData[powerData.length - 1].time} seconds`);
+            return powerData;
         }
 
         // Detect max efforts in power data
