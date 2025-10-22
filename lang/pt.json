@@ -6,9 +6,8 @@
   },
   "navigation": {
     "home": "Home",
-    "climbCalculator": "Climb Calculator",
+    "climbPlanner": "Planejador de Subidas",
     "cpAnalyzer": "CP/W' Analyzer",
-    "gpxAnalyzer": "Análise de Rota GPX",
     "donate": "Doar",
     "darkMode": "🌙 Modo Escuro",
     "lightMode": "☀️ Modo Claro",
@@ -20,17 +19,13 @@
     "subtitle": "Choose a tool to get started with your cycling calculations and analysis"
   },
   "tools": {
-    "climbCalculator": {
-      "title": "Climb Calculator",
-      "description": "Calculate power requirements, climbing speed, and optimal gearing for any cycling climb. Features physics-based calculations with gear ratio analysis."
+    "climbPlanner": {
+      "title": "Planejador de Subidas",
+      "description": "Planeje sua subida com entrada manual ou upload de GPX. Calcule potência sustentável a partir de CP/W' ou curva de potência, otimize marchas e obtenha análise detalhada de tempo e potência."
     },
     "cpAnalyzer": {
       "title": "CP/W' Analyzer",
       "description": "Analyze your cycling power data to determine Critical Power (CP) and W' values. Upload workout files and automatically find your best 3-minute efforts."
-    },
-    "gpxAnalyzer": {
-      "title": "Análise de Rota GPX",
-      "description": "Carregue rotas GPX para detectar subidas automaticamente e otimizar suas marchas. Com detecção de subidas padrão Garmin e recomendações personalizadas de marchas."
     }
   },
   "ads": {

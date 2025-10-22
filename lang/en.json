@@ -6,9 +6,8 @@
   },
   "navigation": {
     "home": "Home",
-    "climbCalculator": "Climb Calculator",
+    "climbPlanner": "Climb Planner",
     "cpAnalyzer": "CP/W' Analyzer",
-    "gpxAnalyzer": "GPX Route Analysis",
     "donate": "Donate",
     "darkMode": "🌙 Dark Mode",
     "lightMode": "☀️ Light Mode",
@@ -20,17 +19,13 @@
     "subtitle": "Choose a tool to get started with your cycling calculations and analysis"
   },
   "tools": {
-    "climbCalculator": {
-      "title": "Climb Calculator",
-      "description": "Calculate power requirements, climbing speed, and optimal gearing for any cycling climb. Features physics-based calculations with gear ratio analysis."
+    "climbPlanner": {
+      "title": "Climb Planner",
+      "description": "Plan your climb with manual entry or GPX upload. Calculate sustainable power from CP/W' or power curve, optimize gearing, and get detailed time and power analysis."
     },
     "cpAnalyzer": {
       "title": "CP/W' Analyzer",
       "description": "Analyze your cycling power data to determine Critical Power (CP) and W' values. Upload workout files and automatically find your best 3-minute efforts."
-    },
-    "gpxAnalyzer": {
-      "title": "GPX Route Analysis",
-      "description": "Upload GPX routes to automatically detect climbs and optimize your gearing. Features Garmin-standard climb detection and personalized gear recommendations."
     }
   },
   "ads": {

@@ -412,17 +412,13 @@
                 <span class="tool-icon">🏠</span>
                 <span data-i18n="navigation.home">Home</span>
             </button>
-            <button class="tool-nav-btn" onclick="showTool('climb-calculator')" id="navClimb">
-                <span class="tool-icon">⛰️</span>
-                <span data-i18n="navigation.climbCalculator">Climb Calculator</span>
+            <button class="tool-nav-btn" onclick="showTool('climb-planner')" id="navClimbPlanner">
+                <span class="tool-icon">🗻</span>
+                <span data-i18n="navigation.climbPlanner">Climb Planner</span>
             </button>
             <button class="tool-nav-btn" onclick="showTool('cp-analyzer')" id="navCP">
                 <span class="tool-icon">📊</span>
                 <span data-i18n="navigation.cpAnalyzer">CP/W' Analyzer</span>
-            </button>
-            <button class="tool-nav-btn" onclick="showTool('climb-calculator-enhanced')" id="navGPX">
-                <span class="tool-icon">🗺️</span>
-                <span data-i18n="navigation.gpxAnalyzer">GPX Route Analysis</span>
             </button>
         </div>
     </nav>
@@ -443,22 +439,16 @@
                     <p class="welcome-subtitle" data-i18n="welcome.subtitle">Choose a tool to get started with your cycling calculations and analysis</p>
 
                     <div class="tool-cards">
-                        <div class="tool-card" onclick="showTool('climb-calculator')">
-                            <div class="tool-card-icon">⛰️</div>
-                            <h3 class="tool-card-title" data-i18n="tools.climbCalculator.title">Climb Calculator</h3>
-                            <p class="tool-card-description" data-i18n="tools.climbCalculator.description">Calculate power requirements, climbing speed, and optimal gearing for any cycling climb. Features physics-based calculations with gear ratio analysis.</p>
+                        <div class="tool-card" onclick="showTool('climb-planner')">
+                            <div class="tool-card-icon">🗻</div>
+                            <h3 class="tool-card-title" data-i18n="tools.climbPlanner.title">Climb Planner</h3>
+                            <p class="tool-card-description" data-i18n="tools.climbPlanner.description">Plan your climb with manual entry or GPX upload. Calculate sustainable power from CP/W' or power curve, optimize gearing, and get detailed time and power analysis.</p>
                         </div>
 
                         <div class="tool-card" onclick="showTool('cp-analyzer')">
                             <div class="tool-card-icon">📊</div>
                             <h3 class="tool-card-title" data-i18n="tools.cpAnalyzer.title">CP/W' Analyzer</h3>
                             <p class="tool-card-description" data-i18n="tools.cpAnalyzer.description">Analyze your cycling power data to determine Critical Power (CP) and W' values. Upload workout files and automatically find your best 3-minute efforts.</p>
-                        </div>
-
-                        <div class="tool-card" onclick="showTool('climb-calculator-enhanced')">
-                            <div class="tool-card-icon">🗺️</div>
-                            <h3 class="tool-card-title" data-i18n="tools.gpxAnalyzer.title">GPX Route Analysis</h3>
-                            <p class="tool-card-description" data-i18n="tools.gpxAnalyzer.description">Upload GPX routes to automatically detect climbs and optimize your gearing. Features Garmin-standard climb detection and personalized gear recommendations.</p>
                         </div>
                     </div>
                 </div>
@@ -519,12 +509,10 @@
                 toolFrame.src = toolPath;
 
                 // Update navigation
-                if (toolName === 'climb-calculator') {
-                    document.getElementById('navClimb').classList.add('active');
+                if (toolName === 'climb-planner') {
+                    document.getElementById('navClimbPlanner').classList.add('active');
                 } else if (toolName === 'cp-analyzer') {
                     document.getElementById('navCP').classList.add('active');
-                } else if (toolName === 'climb-calculator-enhanced') {
-                    document.getElementById('navGPX').classList.add('active');
                 }
 
                 currentTool = toolName;
