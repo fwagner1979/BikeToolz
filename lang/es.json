@@ -8,6 +8,7 @@
     "home": "Home",
     "climbCalculator": "Climb Calculator",
     "cpAnalyzer": "CP/W' Analyzer",
+    "gpxAnalyzer": "Análisis de Ruta GPX",
     "donate": "Donar",
     "darkMode": "🌙 Modo Oscuro",
     "lightMode": "☀️ Modo Claro",
@@ -26,6 +27,10 @@
     "cpAnalyzer": {
       "title": "CP/W' Analyzer",
       "description": "Analyze your cycling power data to determine Critical Power (CP) and W' values. Upload workout files and automatically find your best 3-minute efforts."
+    },
+    "gpxAnalyzer": {
+      "title": "Análisis de Ruta GPX",
+      "description": "Cargue rutas GPX para detectar subidas automáticamente y optimizar sus cambios. Con detección de subidas estándar Garmin y recomendaciones personalizadas de marchas."
     }
   },
   "ads": {

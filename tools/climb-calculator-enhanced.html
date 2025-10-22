@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en" id="htmlRoot">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="calculator.title">Cycling Climb Calculator - GPX Route Analysis</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --accent-color: #3b82f6;
+            --text-color: #1f2937;
+            --bg-color: #ffffff;
+            --card-bg: #f8fafc;
+            --border-color: #e5e7eb;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+        }
+
+        [data-theme="dark"] {
+            --primary-color: #3b82f6;
+            --secondary-color: #2563eb;
+            --accent-color: #60a5fa;
+            --text-color: #f9fafb;
+            --bg-color: #111827;
+            --card-bg: #1f2937;
+            --border-color: #374151;
+            --success-color: #34d399;
+            --warning-color: #fbbf24;
+            --danger-color: #f87171;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            transition: all 0.3s ease;
+            padding: 1rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .title {
+            color: var(--primary-color);
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--text-color);
+            opacity: 0.8;
+        }
+
+        /* GPX Upload Section */
+        .upload-section {
+            background: var(--card-bg);
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-section:hover {
+            border-color: var(--primary-color);
+            background: var(--bg-color);
+        }
+
+        .upload-section.has-file {
+            border-style: solid;
+            border-color: var(--success-color);
+        }
+
+        /* Gearing Configuration */
+        .gearing-config {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .gearing-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .gearing-section {
+            background: var(--bg-color);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .gearing-section h4 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .gear-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .gear-option:hover {
+            background: var(--card-bg);
+        }
+
+        .gear-option input[type="radio"] {
+            accent-color: var(--primary-color);
+        }
+
+        .custom-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-size: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .custom-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        /* Climb List */
+        .climbs-section {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .climb-card {
+            background: var(--bg-color);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .climb-card.selected {
+            border-color: var(--primary-color);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+        }
+
+        .climb-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .climb-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .climb-metrics {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .metric {
+            text-align: center;
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            display: block;
+        }
+
+        .metric-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .climb-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .checkbox {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--primary-color);
+        }
+
+        .analyze-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+
+        .analyze-btn:hover {
+            background: var(--secondary-color);
+        }
+
+        .analyze-btn:disabled {
+            background: var(--border-color);
+            cursor: not-allowed;
+        }
+
+        /* Results Section */
+        .results {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 2rem;
+            border: 1px solid var(--border-color);
+            margin-top: 2rem;
+        }
+
+        .result-card {
+            background: var(--bg-color);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .gearing-result {
+            background: var(--primary-color);
+            color: white;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-top: 1rem;
+        }
+
+        .gearing-result.warning {
+            background: var(--warning-color);
+        }
+
+        .gearing-result.error {
+            background: var(--danger-color);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover {
+            background: var(--secondary-color);
+        }
+
+        .cadence-input {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .cadence-input label {
+            font-weight: 600;
+        }
+
+        .cadence-input input {
+            width: 100px;
+            padding: 0.75rem;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-size: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .gearing-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .climb-metrics {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">🚴 Climb Calculator - GPX Route Analysis</h1>
+            <p class="subtitle">Upload your route GPX file to analyze climbs and optimize gearing</p>
+        </div>
+
+        <!-- GPX Upload -->
+        <div class="upload-section" id="uploadSection" onclick="document.getElementById('gpxInput').click()">
+            <input type="file" id="gpxInput" accept=".gpx" class="hidden" onchange="handleGPXUpload(event)">
+            <div id="uploadPrompt">
+                <svg width="64" height="64" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin: 0 auto; color: var(--primary-color);">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                </svg>
+                <p style="font-size: 1.25rem; margin-top: 1rem; font-weight: 500;">Upload GPX Route File</p>
+                <p style="margin-top: 0.5rem; opacity: 0.7;">Click to browse or drag & drop</p>
+            </div>
+            <div id="uploadSuccess" class="hidden">
+                <p style="font-size: 1.25rem; color: var(--success-color); font-weight: 600;">✓ Route Loaded</p>
+                <p id="routeName" style="margin-top: 0.5rem;"></p>
+                <p style="margin-top: 0.5rem; font-size: 0.9rem; opacity: 0.7;">Click to upload a different file</p>
+            </div>
+        </div>
+
+        <!-- Gearing Configuration -->
+        <div class="gearing-config">
+            <h3 style="color: var(--primary-color); margin-bottom: 1.5rem; font-size: 1.3rem;">⚙️ Gearing Configuration</h3>
+            
+            <div class="gearing-grid">
+                <!-- Chainrings -->
+                <div class="gearing-section">
+                    <h4>Chainrings</h4>
+                    <div class="gear-option">
+                        <input type="radio" name="chainring" value="50/34" id="cr1" checked onchange="updateGearing()">
+                        <label for="cr1">50/34 (Compact - most common)</label>
+                    </div>
+                    <div class="gear-option">
+                        <input type="radio" name="chainring" value="52/36" id="cr2" onchange="updateGearing()">
+                        <label for="cr2">52/36 (Semi-compact)</label>
+                    </div>
+                    <div class="gear-option">
+                        <input type="radio" name="chainring" value="53/39" id="cr3" onchange="updateGearing()">
+                        <label for="cr3">53/39 (Standard)</label>
+                    </div>
+                    <div class="gear-option">
+                        <input type="radio" name="chainring" value="46/30" id="cr4" onchange="updateGearing()">
+                        <label for="cr4">46/30 (Gravel)</label>
+                    </div>
+                    <div class="gear-option">
+                        <input type="radio" name="chainring" value="48/32" id="cr5" onchange="updateGearing()">
+                        <label for="cr5">48/32 (Gravel wide)</label>
+                    </div>
+                    <div class="gear-option">
+                        <input type="radio" name="chainring" value="42" id="cr6" onchange="updateGearing()">
+                        <label for="cr6">42t (1x Road)</label>
+                    </div>
+                    <div class="gear-option">
+                        <input type="radio" name="chainring" value="custom" id="crCustom" onchange="updateGearing()">
+                        <label for="crCustom">Custom</label>
+                    </div>
+                    <input type="text" id="chainringCustom" class="custom-input" placeholder="e.g., 46,34 or just 42" oninput="updateGearing()" style="display: none;">
+                </div>
+
+                <!-- Cassette -->
+                <div class="gearing-section">
+                    <h4>Cassette</h4>
+                    <div class="gear-option">
+                        <input type="radio" name="cassette" value="11-28" id="cs1" checked onchange="updateGearing()">
+                        <label for="cs1">11-28 (Standard road)</label>
+                    </div>
+                    <div class="gear-option">
+                        <input type="radio" name="cassette" value="11-30" id="cs2" onchange="updateGearing()">
+                        <label for="cs2">11-30 (Road wide)</label>
+                    </div>
+                    <div class="gear-option">
+                        <input type="radio" name="cassette" value="11-32" id="cs3" onchange="updateGearing()">
+                        <label for="cs3">11-32 (Road climbing)</label>
+                    </div>
+                    <div class="gear-option">
+                        <input type="radio" name="cassette" value="11-34" id="cs4" onchange="updateGearing()">
+                        <label for="cs4">11-34 (Wide range)</label>
+                    </div>
+                    <div class="gear-option">
+                        <input type="radio" name="cassette" value="11-36" id="cs5" onchange="updateGearing()">
+                        <label for="cs5">11-36 (Climbing)</label>
+                    </div>
+                    <div class="gear-option">
+                        <input type="radio" name="cassette" value="10-50" id="cs6" onchange="updateGearing()">
+                        <label for="cs6">10-50 (1x wide)</label>
+                    </div>
+                    <div class="gear-option">
+                        <input type="radio" name="cassette" value="custom" id="csCustom" onchange="updateGearing()">
+                        <label for="csCustom">Custom</label>
+                    </div>
+                    <input type="text" id="cassetteCustom" class="custom-input" placeholder="e.g., 11-36 or 11,12,14,16,18,21,24,28,32,36" oninput="updateGearing()" style="display: none;">
+                </div>
+            </div>
+
+            <div class="cadence-input">
+                <label for="preferredCadence">Preferred Cadence:</label>
+                <input type="number" id="preferredCadence" value="80" min="50" max="120">
+                <span>RPM</span>
+            </div>
+        </div>
+
+        <!-- Detected Climbs -->
+        <div id="climbsSection" class="climbs-section hidden">
+            <h3 style="color: var(--primary-color); margin-bottom: 1.5rem; font-size: 1.3rem;">⛰️ Detected Climbs</h3>
+            <p style="margin-bottom: 1.5rem; opacity: 0.8;">Select climbs to analyze (minimum 3% grade, 500m length)</p>
+            <div id="climbsList"></div>
+            <button class="btn" onclick="analyzeSelectedClimbs()" style="margin-top: 1rem;">Analyze Selected Climbs</button>
+        </div>
+
+        <!-- Results -->
+        <div id="resultsSection" class="results hidden">
+            <h3 style="color: var(--primary-color); margin-bottom: 1.5rem; font-size: 1.3rem;">📊 Climb Analysis Results</h3>
+            <div id="resultsContent"></div>
+        </div>
+    </div>
+
+    <script src="../js/i18n.js"></script>
+    <script>
+        let gpxData = null;
+        let detectedClimbs = [];
+        let gearingConfig = {
+            chainrings: [50, 34],
+            cassette: [11, 12, 13, 14, 15, 17, 19, 21, 24, 28],
+            preferredCadence: 80
+        };
+
+        // Listen for custom input toggles
+        document.getElementById('crCustom').addEventListener('change', function() {
+            document.getElementById('chainringCustom').style.display = this.checked ? 'block' : 'none';
+        });
+        document.getElementById('csCustom').addEventListener('change', function() {
+            document.getElementById('cassetteCustom').style.display = this.checked ? 'block' : 'none';
+        });
+
+        function handleGPXUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(e.target.result, "text/xml");
+                    
+                    parseGPX(xmlDoc);
+                    
+                    document.getElementById('uploadPrompt').classList.add('hidden');
+                    document.getElementById('uploadSuccess').classList.remove('hidden');
+                    document.getElementById('routeName').textContent = file.name;
+                    document.getElementById('uploadSection').classList.add('has-file');
+                    
+                    detectClimbs();
+                } catch (error) {
+                    alert('Error parsing GPX file: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function parseGPX(xmlDoc) {
+            const trackpoints = xmlDoc.querySelectorAll('trkpt');
+            const points = [];
+            
+            trackpoints.forEach((trkpt, index) => {
+                const lat = parseFloat(trkpt.getAttribute('lat'));
+                const lon = parseFloat(trkpt.getAttribute('lon'));
+                const eleElement = trkpt.querySelector('ele');
+                const elevation = eleElement ? parseFloat(eleElement.textContent) : 0;
+                
+                points.push({ lat, lon, elevation, index });
+            });
+            
+            // Calculate distances
+            for (let i = 1; i < points.length; i++) {
+                const dist = haversineDistance(
+                    points[i-1].lat, points[i-1].lon,
+                    points[i].lat, points[i].lon
+                );
+                points[i].distance = (points[i-1].distance || 0) + dist;
+            }
+            points[0].distance = 0;
+            
+            gpxData = points;
+        }
+
+        function haversineDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371000; // Earth radius in meters
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                     Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                     Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        function detectClimbs() {
+            if (!gpxData || gpxData.length === 0) return;
+            
+            const climbs = [];
+            let climbStart = null;
+            let climbStartEle = null;
+            
+            for (let i = 0; i < gpxData.length - 1; i++) {
+                const point = gpxData[i];
+                const nextPoint = gpxData[i + 1];
+                
+                // Check if we're climbing
+                if (nextPoint.elevation > point.elevation) {
+                    if (!climbStart) {
+                        climbStart = i;
+                        climbStartEle = point.elevation;
+                    }
+                } else {
+                    // End of climb or flat
+                    if (climbStart !== null) {
+                        const climb = analyzeClimbSegment(climbStart, i);
+                        
+                        // Garmin standard: min 3% grade, min 500m length
+                        if (climb.avgGrade >= 3 && climb.length >= 500) {
+                            climbs.push(climb);
+                        }
+                        
+                        climbStart = null;
+                    }
+                }
+            }
+            
+            detectedClimbs = climbs;
+            displayClimbs();
+        }
+
+        function analyzeClimbSegment(startIdx, endIdx) {
+            const startPoint = gpxData[startIdx];
+            const endPoint = gpxData[endIdx];
+            
+            const length = endPoint.distance - startPoint.distance;
+            const elevationGain = endPoint.elevation - startPoint.elevation;
+            const avgGrade = (elevationGain / length) * 100;
+            
+            // Find max grade in 100m segments
+            let maxGrade = 0;
+            for (let i = startIdx; i < endIdx - 10; i += 10) {
+                const segStart = gpxData[i];
+                const segEnd = gpxData[Math.min(i + 10, endIdx)];
+                const segLength = segEnd.distance - segStart.distance;
+                const segEle = segEnd.elevation - segStart.elevation;
+                const segGrade = (segEle / segLength) * 100;
+                maxGrade = Math.max(maxGrade, segGrade);
+            }
+            
+            return {
+                startIdx,
+                endIdx,
+                startKm: (startPoint.distance / 1000).toFixed(1),
+                endKm: (endPoint.distance / 1000).toFixed(1),
+                length: Math.round(length),
+                elevationGain: Math.round(elevationGain),
+                avgGrade: avgGrade.toFixed(1),
+                maxGrade: maxGrade.toFixed(1),
+                startEle: Math.round(startPoint.elevation),
+                endEle: Math.round(endPoint.elevation)
+            };
+        }
+
+        function displayClimbs() {
+            const climbsList = document.getElementById('climbsList');
+            climbsList.innerHTML = '';
+            
+            if (detectedClimbs.length === 0) {
+                climbsList.innerHTML = '<p style="text-align: center; opacity: 0.7;">No climbs detected meeting criteria (min 3% grade, 500m length)</p>';
+                document.getElementById('climbsSection').classList.remove('hidden');
+                return;
+            }
+            
+            detectedClimbs.forEach((climb, index) => {
+                const card = document.createElement('div');
+                card.className = 'climb-card';
+                card.id = `climb-${index}`;
+                
+                card.innerHTML = `
+                    <div class="climb-header">
+                        <div class="climb-title">Climb ${index + 1}</div>
+                        <div style="opacity: 0.7; font-size: 0.9rem;">km ${climb.startKm} - ${climb.endKm}</div>
+                    </div>
+                    <div class="climb-metrics">
+                        <div class="metric">
+                            <span class="metric-label">Length</span>
+                            <span class="metric-value">${(climb.length / 1000).toFixed(1)} km</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Elevation</span>
+                            <span class="metric-value">${climb.elevationGain} m</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Avg Grade</span>
+                            <span class="metric-value">${climb.avgGrade}%</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Max Grade</span>
+                            <span class="metric-value">${climb.maxGrade}%</span>
+                        </div>
+                    </div>
+                    <div class="climb-actions">
+                        <input type="checkbox" class="checkbox" id="select-${index}" onchange="toggleClimbSelection(${index})">
+                        <label for="select-${index}">Select for analysis</label>
+                    </div>
+                `;
+                
+                climbsList.appendChild(card);
+            });
+            
+            document.getElementById('climbsSection').classList.remove('hidden');
+        }
+
+        function toggleClimbSelection(index) {
+            const card = document.getElementById(`climb-${index}`);
+            const checkbox = document.getElementById(`select-${index}`);
+            
+            if (checkbox.checked) {
+                card.classList.add('selected');
+            } else {
+                card.classList.remove('selected');
+            }
+        }
+
+        function updateGearing() {
+            // Update chainrings
+            const chainringRadio = document.querySelector('input[name="chainring"]:checked');
+            if (chainringRadio.value === 'custom') {
+                const customValue = document.getElementById('chainringCustom').value;
+                if (customValue) {
+                    gearingConfig.chainrings = customValue.split(',').map(v => parseInt(v.trim())).filter(v => !isNaN(v));
+                }
+            } else {
+                gearingConfig.chainrings = chainringRadio.value.split('/').map(v => parseInt(v.trim())).filter(v => !isNaN(v));
+            }
+            
+            // Update cassette
+            const cassetteRadio = document.querySelector('input[name="cassette"]:checked');
+            if (cassetteRadio.value === 'custom') {
+                const customValue = document.getElementById('cassetteCustom').value;
+                if (customValue) {
+                    if (customValue.includes(',')) {
+                        // Exact cog specification
+                        gearingConfig.cassette = customValue.split(',').map(v => parseInt(v.trim())).filter(v => !isNaN(v));
+                    } else if (customValue.includes('-')) {
+                        // Range specification
+                        const [min, max] = customValue.split('-').map(v => parseInt(v.trim()));
+                        gearingConfig.cassette = generateCassette(min, max);
+                    }
+                }
+            } else {
+                const [min, max] = cassetteRadio.value.split('-').map(v => parseInt(v.trim()));
+                gearingConfig.cassette = generateCassette(min, max);
+            }
+            
+            // Update cadence
+            gearingConfig.preferredCadence = parseInt(document.getElementById('preferredCadence').value) || 80;
+        }
+
+        function generateCassette(min, max) {
+            // Generate typical cassette cog sizes
+            const spread = max - min;
+            if (spread <= 17) {
+                // Standard road cassette
+                return [11, 12, 13, 14, 15, 16, 17, 19, 21, Math.min(24, max), max];
+            } else if (spread <= 22) {
+                // Wide range road
+                return [11, 12, 13, 15, 17, 19, 21, 23, 26, Math.min(30, max), max];
+            } else {
+                // 1x or gravel wide range
+                return [min, min+1, min+2, min+3, min+5, min+7, min+10, min+14, min+18, min+24, max];
+            }
+        }
+
+        function analyzeSelectedClimbs() {
+            updateGearing();
+            
+            const selectedClimbs = detectedClimbs.filter((_, index) => 
+                document.getElementById(`select-${index}`).checked
+            );
+            
+            if (selectedClimbs.length === 0) {
+                alert('Please select at least one climb to analyze');
+                return;
+            }
+            
+            const results = selectedClimbs.map((climb, index) => 
+                analyzeClimbWithGearing(climb, index)
+            );
+            
+            displayResults(results);
+        }
+
+        function analyzeClimbWithGearing(climb, index) {
+            const wheelCircumference = 2.1; // meters (700c standard)
+            const power = 250; // Default, could be made configurable
+            const riderWeight = 70; // Default
+            const bikeWeight = 10;
+            const totalWeight = riderWeight + bikeWeight;
+            
+            // Calculate required speed at this grade
+            const grade = parseFloat(climb.avgGrade);
+            const gradeRadians = Math.atan(grade / 100);
+            const efficiency = 0.95;
+            const availablePower = power * efficiency;
+            
+            let speed = 3.0; // m/s starting guess
+            for (let i = 0; i < 50; i++) {
+                const gravPower = totalWeight * 9.81 * Math.sin(gradeRadians) * speed;
+                const rollPower = totalWeight * 9.81 * Math.cos(gradeRadians) * 0.005 * speed;
+                const aeroPower = 0.5 * 1.2 * 0.3 * Math.pow(speed, 3);
+                const totalRequired = gravPower + rollPower + aeroPower;
+                
+                if (Math.abs(availablePower - totalRequired) < 0.1) break;
+                speed += (availablePower > totalRequired) ? 0.1 : -0.1;
+                speed = Math.max(1, Math.min(speed, 20));
+            }
+            
+            // Calculate wheel RPM needed for this speed
+            const wheelRpm = (speed * 60) / wheelCircumference;
+            
+            // Find best gearing
+            let bestGear = null;
+            let minCadenceDiff = Infinity;
+            
+            gearingConfig.chainrings.forEach(chainring => {
+                gearingConfig.cassette.forEach(cog => {
+                    const gearRatio = chainring / cog;
+                    const cadence = wheelRpm / gearRatio;
+                    const cadenceDiff = Math.abs(cadence - gearingConfig.preferredCadence);
+                    
+                    if (cadenceDiff < minCadenceDiff) {
+                        minCadenceDiff = cadenceDiff;
+                        bestGear = {
+                            chainring,
+                            cog,
+                            ratio: gearRatio.toFixed(2),
+                            cadence: Math.round(cadence),
+                            cadenceDiff: Math.round(cadenceDiff)
+                        };
+                    }
+                });
+            });
+            
+            // Calculate climb time
+            const distance = climb.length;
+            const timeSeconds = distance / speed;
+            const hours = Math.floor(timeSeconds / 3600);
+            const minutes = Math.floor((timeSeconds % 3600) / 60);
+            const seconds = Math.floor(timeSeconds % 60);
+            
+            return {
+                climb,
+                speed: (speed * 3.6).toFixed(1), // km/h
+                time: `${hours > 0 ? hours + 'h ' : ''}${minutes}m ${seconds}s`,
+                bestGear,
+                preferredCadence: gearingConfig.preferredCadence
+            };
+        }
+
+        function displayResults(results) {
+            const resultsContent = document.getElementById('resultsContent');
+            resultsContent.innerHTML = '';
+            
+            results.forEach((result, index) => {
+                const card = document.createElement('div');
+                card.className = 'result-card';
+                
+                const cadenceDiff = result.bestGear.cadenceDiff;
+                let gearingClass = 'gearing-result';
+                let gearingMessage = '';
+                
+                if (cadenceDiff <= 5) {
+                    gearingMessage = `✓ Perfect! ${result.bestGear.chainring}×${result.bestGear.cog} gives ${result.bestGear.cadence} RPM`;
+                } else if (cadenceDiff <= 10) {
+                    gearingClass += ' warning';
+                    gearingMessage = `⚠️ Close. ${result.bestGear.chainring}×${result.bestGear.cog} gives ${result.bestGear.cadence} RPM (${cadenceDiff} RPM from target)`;
+                } else {
+                    gearingClass += ' error';
+                    gearingMessage = `❌ No ideal gear. Closest: ${result.bestGear.chainring}×${result.bestGear.cog} = ${result.bestGear.cadence} RPM (${cadenceDiff} RPM from ${result.preferredCadence} RPM target)`;
+                }
+                
+                card.innerHTML = `
+                    <h4 style="color: var(--primary-color); margin-bottom: 1rem;">Climb ${index + 1}: km ${result.climb.startKm}-${result.climb.endKm}</h4>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <div style="opacity: 0.7; font-size: 0.9rem;">Length</div>
+                            <div style="font-weight: 600;">${(result.climb.length / 1000).toFixed(1)} km</div>
+                        </div>
+                        <div>
+                            <div style="opacity: 0.7; font-size: 0.9rem;">Avg Grade</div>
+                            <div style="font-weight: 600;">${result.climb.avgGrade}%</div>
+                        </div>
+                        <div>
+                            <div style="opacity: 0.7; font-size: 0.9rem;">Elevation</div>
+                            <div style="font-weight: 600;">${result.climb.elevationGain}m</div>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <div style="opacity: 0.7; font-size: 0.9rem;">Estimated Speed</div>
+                            <div style="font-weight: 600;">${result.speed} km/h</div>
+                        </div>
+                        <div>
+                            <div style="opacity: 0.7; font-size: 0.9rem;">Estimated Time</div>
+                            <div style="font-weight: 600;">${result.time}</div>
+                        </div>
+                    </div>
+                    <div class="${gearingClass}">
+                        <div style="font-weight: 600; margin-bottom: 0.5rem;">Gearing Recommendation:</div>
+                        <div>${gearingMessage}</div>
+                        <div style="margin-top: 0.5rem; font-size: 0.9rem; opacity: 0.9;">
+                            Gear Ratio: ${result.bestGear.ratio} | Target Cadence: ${result.preferredCadence} RPM
+                        </div>
+                    </div>
+                `;
+                
+                resultsContent.appendChild(card);
+            });
+            
+            document.getElementById('resultsSection').classList.remove('hidden');
+            document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Initialize
+        updateGearing();
+
+        // Notify parent that tool is ready
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage({ type: 'toolReady' }, '*');
+        }
+
+        // Wait for i18n to load
+        document.addEventListener('DOMContentLoaded', function() {
+            function waitForI18n() {
+                if (window.i18n && window.i18n.translations && Object.keys(window.i18n.translations).length > 0) {
+                    const currentLang = window.i18n.getCurrentLanguage();
+                    document.getElementById('htmlRoot').lang = currentLang;
+                    if (window.i18n.updatePage) window.i18n.updatePage();
+                } else {
+                    setTimeout(waitForI18n, 100);
+                }
+            }
+            waitForI18n();
+        });
+    </script>
+</body>
+</html>
