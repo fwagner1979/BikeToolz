@@ -4,30 +4,43 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CP/W' Analyzer - BikeToolz.info</title>
+    <!-- Inter Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         :root {
-            --primary-color: #2563eb;
-            --secondary-color: #1e40af;
+            /* Performance Cycling Palette */
+            --primary-color: #0066CC;
+            --primary-hover: #0052A3;
+            --primary-light: #3385D6;
+            --accent-color: #00BFFF;
+            --accent-secondary: #FF6B35;
+            --text-color: #1a1a1a;
+            --text-secondary: #666666;
+            --bg-color: #ffffff;
+            --card-bg: #ffffff;
+            --border-color: #e0e0e0;
             --success-color: #10b981;
             --warning-color: #f59e0b;
             --danger-color: #ef4444;
-            --bg-color: #ffffff;
-            --text-color: #1f2937;
-            --card-bg: #f8fafc;
-            --border-color: #e5e7eb;
         }
 
         [data-theme="dark"] {
-            --primary-color: #3b82f6;
-            --secondary-color: #2563eb;
+            --primary-color: #3385D6;
+            --primary-hover: #4D94DB;
+            --primary-light: #5FA3E0;
+            --accent-color: #00D9FF;
+            --accent-secondary: #FF8A5B;
+            --text-color: #f9fafb;
+            --text-secondary: #9ca3af;
+            --bg-color: #0f1419;
+            --card-bg: #1a1f2e;
+            --border-color: #2d3748;
             --success-color: #34d399;
             --warning-color: #fbbf24;
             --danger-color: #f87171;
-            --bg-color: #111827;
-            --text-color: #f9fafb;
-            --card-bg: #1f2937;
-            --border-color: #374151;
         }
 
         * {
@@ -37,11 +50,19 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: var(--bg-color);
             color: var(--text-color);
             padding: 2rem;
             transition: all 0.3s ease;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-weight: 700;
+            letter-spacing: -0.02em;
         }
 
         /* General input/select styling */
