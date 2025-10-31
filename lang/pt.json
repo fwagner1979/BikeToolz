@@ -15,8 +15,8 @@
     "unitsImperial": "⚙️ Unidades: Imperial"
   },
   "welcome": {
-    "title": "Professional Cycling Tools",
-    "subtitle": "Choose a tool to get started with your cycling calculations and analysis"
+    "title": "Ferramentas Profissionais de Ciclismo",
+    "subtitle": "Escolha uma ferramenta para começar com seus cálculos e análises de ciclismo"
   },
   "tools": {
     "climbPlanner": {
@@ -24,18 +24,94 @@
       "description": "Planeje sua subida com entrada manual ou upload de GPX. Calcule potência sustentável a partir de CP/W' ou curva de potência, otimize marchas e obtenha análise detalhada de tempo e potência."
     },
     "cpAnalyzer": {
-      "title": "CP/W' Analyzer",
-      "description": "Analyze your cycling power data to determine Critical Power (CP) and W' values. Upload workout files and automatically find your best 3-minute efforts."
+      "title": "Analisador CP/W'",
+      "description": "Analise seus dados de potência de ciclismo para determinar Critical Power (CP) e valores W'. Faça upload de arquivos de treino e encontre automaticamente seus melhores esforços de 3 minutos."
     }
   },
   "ads": {
     "leaderboard": "Publicidade (728x90)",
     "mediumRect": "Publicidade (300x250)",
-    "square": "Publicidade (300x300 Inferior)",
-    "skyscraper": "Publicidade (160x600)",
+    "square": "Publicidade (300x300)",
     "smallRect": "Publicidade (300x150)",
     "afterResults": "Publicidade (Após Resultados)",
     "afterFaq": "Publicidade (Após FAQ)"
+  },
+  "cpAnalyzer": {
+    "title": "Analisador CP/W'",
+    "subtitle": "Analise seu Teste All-Out de 3 Minutos",
+    "description": "Faça upload do seu arquivo de treino e encontraremos e analisaremos automaticamente seu melhor esforço de 3 minutos",
+    "upload": {
+      "title": "Solte seu arquivo de treino aqui",
+      "subtitle": "Ou clique para navegar",
+      "formats": "Suporta arquivos .FIT, .TCX, .CSV e .GPX (.CSV e .GPX totalmente suportados)",
+      "analyzing": "Analisando seu treino...",
+      "findingSegment": "Encontrando melhor segmento de 3 minutos e calculando CP/W'"
+    },
+    "results": {
+      "title": "Resultados da Análise",
+      "file": "Arquivo:",
+      "newFile": "Analisar Novo Arquivo",
+      "interval": {
+        "title": "Intervalo de 3 Minutos Selecionado",
+        "startTime": "Hora de Início:",
+        "endTime": "Hora de Fim:",
+        "avgPower": "Potência Média:"
+      },
+      "validation": {
+        "valid": "Esforço All-Out Válido Detectado",
+        "warning": "Aviso de Validação de Esforço",
+        "decay": "Queda de potência: {percent}% (de {start}W para {end}W)"
+      },
+      "metrics": {
+        "cp": {
+          "title": "Critical Power (CP)",
+          "description": "Média dos últimos 30 segundos"
+        },
+        "wPrime": {
+          "title": "W' (W-prime)",
+          "description": "Capacidade de trabalho acima de CP"
+        }
+      },
+      "charts": {
+        "powerCurve": "Análise de Curva de Potência",
+        "wPrimeDepletion": "Padrão de Esgotamento W'",
+        "wPrimeDescription": "A área sombreada representa o esgotamento de W' durante o esforço"
+      }
+    },
+    "columnDetection": {
+      "title": "Detecção de Colunas",
+      "subtitle": "Por favor confirme as colunas detectadas do seu arquivo CSV",
+      "timeColumn": "Coluna de Tempo",
+      "powerColumn": "Coluna de Potência",
+      "confidence": "Confiança:",
+      "format": "Formato:",
+      "validRange": "Faixa válida:",
+      "sampleData": "Visualização de Dados de Amostra",
+      "analyzeData": "Analisar Dados",
+      "cancel": "Cancelar"
+    },
+    "gpxAnalysis": {
+      "title": "Análise de Arquivo GPX",
+      "subtitle": "Arquivo GPX processado com sucesso. Pronto para analisar dados de potência.",
+      "summary": "Resumo da Análise do Arquivo",
+      "dataPoints": "Pontos de Dados",
+      "powerReadings": "Leituras de potência encontradas",
+      "duration": "Duração",
+      "totalTime": "Tempo total do treino",
+      "format": "Formato",
+      "extensions": "Extensões de potência detectadas",
+      "ready": "Pronto para Análise",
+      "description": "O app encontrará automaticamente seu melhor segmento de potência de 3 minutos e calculará valores CP/W'.",
+      "warning": "⚠️ Aviso: Arquivo contém menos de 180 pontos de dados (3 minutos). A análise pode não ser precisa.",
+      "analyzePower": "Analisar Dados de Potência"
+    },
+    "errors": {
+      "upload": "Erro de Upload",
+      "emptyFile": "Arquivo parece estar vazio",
+      "invalidFormat": "Formato de arquivo inválido",
+      "noData": "Nenhum dado de potência válido encontrado no arquivo",
+      "processing": "Erro ao processar arquivo: {message}"
+    }
   },
   "calculator": {
     "title": "Calculadora de Subidas de Ciclismo",

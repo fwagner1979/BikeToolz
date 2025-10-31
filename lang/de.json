@@ -15,8 +15,8 @@
     "unitsImperial": "⚙️ Einheiten: Imperial"
   },
   "welcome": {
-    "title": "Professional Cycling Tools",
-    "subtitle": "Choose a tool to get started with your cycling calculations and analysis"
+    "title": "Professionelle Radsport-Tools",
+    "subtitle": "Wählen Sie ein Tool, um mit Ihren Radsport-Berechnungen und Analysen zu beginnen"
   },
   "tools": {
     "climbPlanner": {
@@ -25,17 +25,93 @@
     },
     "cpAnalyzer": {
       "title": "CP/W' Analyzer",
-      "description": "Analyze your cycling power data to determine Critical Power (CP) and W' values. Upload workout files and automatically find your best 3-minute efforts."
+      "description": "Analysieren Sie Ihre Radsport-Leistungsdaten zur Bestimmung von Critical Power (CP) und W'-Werten. Laden Sie Trainingsdateien hoch und finden Sie automatisch Ihre besten 3-Minuten-Anstrengungen."
     }
   },
   "ads": {
     "leaderboard": "Werbung (728x90)",
     "mediumRect": "Werbung (300x250)",
-    "square": "Werbung (300x300 Unten)",
-    "skyscraper": "Werbung (160x600)",
+    "square": "Werbung (300x300)",
     "smallRect": "Werbung (300x150)",
     "afterResults": "Werbung (Nach Ergebnissen)",
     "afterFaq": "Werbung (Nach FAQ)"
+  },
+  "cpAnalyzer": {
+    "title": "CP/W' Analyzer",
+    "subtitle": "Analysieren Sie Ihren 3-Minuten-All-Out-Test",
+    "description": "Laden Sie Ihre Trainingsdatei hoch und wir finden und analysieren automatisch Ihre beste 3-Minuten-Anstrengung",
+    "upload": {
+      "title": "Trainingsdatei hier ablegen",
+      "subtitle": "Oder klicken zum Durchsuchen",
+      "formats": "Unterstützt .FIT, .TCX, .CSV und .GPX Dateien (.CSV und .GPX vollständig unterstützt)",
+      "analyzing": "Analysiere Ihr Training...",
+      "findingSegment": "Finde bestes 3-Minuten-Segment und berechne CP/W'"
+    },
+    "results": {
+      "title": "Analyseergebnisse",
+      "file": "Datei:",
+      "newFile": "Neue Datei analysieren",
+      "interval": {
+        "title": "Ausgewähltes 3-Minuten-Intervall",
+        "startTime": "Startzeit:",
+        "endTime": "Endzeit:",
+        "avgPower": "Durchschnittsleistung:"
+      },
+      "validation": {
+        "valid": "Gültige All-Out-Anstrengung erkannt",
+        "warning": "Warnung zur Anstrengungsvalidierung",
+        "decay": "Leistungsabfall: {percent}% (von {start}W bis {end}W)"
+      },
+      "metrics": {
+        "cp": {
+          "title": "Critical Power (CP)",
+          "description": "Durchschnitt der letzten 30 Sekunden"
+        },
+        "wPrime": {
+          "title": "W' (W-prime)",
+          "description": "Arbeitskapazität über CP"
+        }
+      },
+      "charts": {
+        "powerCurve": "Leistungskurven-Analyse",
+        "wPrimeDepletion": "W'-Erschöpfungsmuster",
+        "wPrimeDescription": "Der schattierte Bereich zeigt die W'-Erschöpfung während der Anstrengung"
+      }
+    },
+    "columnDetection": {
+      "title": "Spaltenerkennung",
+      "subtitle": "Bitte bestätigen Sie die erkannten Spalten aus Ihrer CSV-Datei",
+      "timeColumn": "Zeitspalte",
+      "powerColumn": "Leistungsspalte",
+      "confidence": "Konfidenz:",
+      "format": "Format:",
+      "validRange": "Gültiger Bereich:",
+      "sampleData": "Beispieldaten-Vorschau",
+      "analyzeData": "Daten analysieren",
+      "cancel": "Abbrechen"
+    },
+    "gpxAnalysis": {
+      "title": "GPX-Datei-Analyse",
+      "subtitle": "GPX-Datei erfolgreich verarbeitet. Bereit zur Leistungsdatenanalyse.",
+      "summary": "Dateianalyse-Zusammenfassung",
+      "dataPoints": "Datenpunkte",
+      "powerReadings": "Leistungsmessungen gefunden",
+      "duration": "Dauer",
+      "totalTime": "Gesamte Trainingszeit",
+      "format": "Format",
+      "extensions": "Leistungserweiterungen erkannt",
+      "ready": "Bereit zur Analyse",
+      "description": "Die App findet automatisch Ihr bestes 3-Minuten-Leistungssegment und berechnet CP/W'-Werte.",
+      "warning": "⚠️ Warnung: Datei enthält weniger als 180 Datenpunkte (3 Minuten). Die Analyse ist möglicherweise nicht genau.",
+      "analyzePower": "Leistungsdaten analysieren"
+    },
+    "errors": {
+      "upload": "Upload-Fehler",
+      "emptyFile": "Datei scheint leer zu sein",
+      "invalidFormat": "Ungültiges Dateiformat",
+      "noData": "Keine gültigen Leistungsdaten in der Datei gefunden",
+      "processing": "Fehler beim Verarbeiten der Datei: {message}"
+    }
   },
   "calculator": {
     "title": "Radsport Anstiegs-Rechner",
