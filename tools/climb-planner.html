@@ -722,6 +722,22 @@
                 <label>Wheel Circumference (meters)</label>
                 <input type="number" id="wheelCircumference" step="0.01" min="1.5" max="3.0" value="2.096" placeholder="2.096 for 700c">
             </div>
+
+            <div class="input-group">
+                <label>Drivetrain Maintenance</label>
+                <select id="maintenanceLevel">
+                    <option value="race">🏆 Race-Ready (Hot wax, fresh chain)</option>
+                    <option value="good">✅ Well-Maintained (Clean, quality lube)</option>
+                    <option value="average" selected>🔧 Average (Normal use)</option>
+                    <option value="poor">⚠️ Poor (Dirty/worn chain)</option>
+                </select>
+                <small style="color: var(--text-color); opacity: 0.8; margin-top: 0.5rem; display: block; line-height: 1.4;">
+                    Race-Ready: Hot wax immersion or Silca Secret Chain (98% efficiency)<br>
+                    Well-Maintained: Clean chain with drip wax or quality wet lube (96.5%)<br>
+                    Average: Standard maintenance, fresh oil-based lube (95%)<br>
+                    Poor: Dirty chain, worn components, inadequate lubrication (93%)
+                </small>
+            </div>
         </div>
 
         <button class="calculate-button" onclick="calculateClimb()">
@@ -766,6 +782,10 @@
                 <div class="power-row">
                     <span>Available Power:</span>
                     <span id="powerAvailable" style="font-weight: 600;">-- W</span>
+                </div>
+                <div class="power-row" style="font-size: 0.9rem; opacity: 0.85;">
+                    <span style="padding-left: 1rem; font-style: italic;">Drivetrain:</span>
+                    <span id="drivetrainInfo" style="font-style: italic;">--</span>
                 </div>
                 <div class="power-row">
                     <span>Required Power:</span>
@@ -1293,9 +1313,22 @@
             const chainrings = parseChainrings(chainringsStr);
             const cassette = parseCassette(cassetteStr);
 
+            // Calculate drivetrain efficiency
+            const maintenanceLevel = document.getElementById('maintenanceLevel').value;
+            const is1x = chainrings.length === 1;
+
+            const maintenanceEfficiency = {
+                'race': 0.98,
+                'good': 0.965,
+                'average': 0.95,
+                'poor': 0.93
+            }[maintenanceLevel];
+
+            const drivetrainEfficiency = is1x ? maintenanceEfficiency - 0.011 : maintenanceEfficiency;
+
             // Physics calculations
             const gradeRadians = Math.atan(grade / 100);
-            const availablePower = sustainablePower * 0.95; // 5% drivetrain loss
+            const availablePower = sustainablePower * drivetrainEfficiency;
 
             // Find optimal speed iteratively
             let speed = findOptimalSpeed(availablePower, totalWeight, gradeRadians);
@@ -1322,6 +1355,14 @@
             document.getElementById('resultCadence').textContent = Math.round(optimalGear.cadence) + ' RPM';
 
             document.getElementById('powerAvailable').textContent = Math.round(availablePower) + ' W';
+
+            // Display drivetrain efficiency info
+            const drivetrainType = is1x ? '1x' : '2x';
+            const efficiencyPercent = (drivetrainEfficiency * 100).toFixed(1);
+            const powerLoss = Math.round(sustainablePower - availablePower);
+            document.getElementById('drivetrainInfo').textContent =
+                `${sustainablePower}W × ${efficiencyPercent}% (${drivetrainType}, -${powerLoss}W loss)`;
+
             document.getElementById('powerRequired').textContent = Math.round(requiredPower) + ' W';
             document.getElementById('powerGravity').textContent = Math.round(gravitationalPower) + ' W';
             document.getElementById('powerRolling').textContent = Math.round(rollingPower) + ' W';

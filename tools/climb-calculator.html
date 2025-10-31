@@ -653,6 +653,17 @@
                         <div class="error-message" data-i18n="errors.cogRange">Cog must be between 8-50 teeth</div>
                     </div>
 
+                    <div class="input-group">
+                        <label for="maintenanceLevel" data-i18n="calculator.equipmentParams.maintenance">Drivetrain Maintenance:</label>
+                        <select id="maintenanceLevel" onchange="debouncedCalculate()">
+                            <option value="race">🏆 Race-Ready (Hot wax, fresh chain)</option>
+                            <option value="good">✅ Well-Maintained (Clean, quality lube)</option>
+                            <option value="average" selected>🔧 Average (Normal use)</option>
+                            <option value="poor">⚠️ Poor (Dirty/worn chain)</option>
+                        </select>
+                        <div class="error-message"></div>
+                    </div>
+
                     <div class="gear-ratio-display">
                         <label data-i18n="calculator.equipmentParams.gearRatio">Gear Ratio:</label>
                         <span id="gearRatioDisplay">1.79</span>
@@ -755,7 +766,7 @@
                     </div>
 
                     <div class="power-explanation" data-i18n="results.explanation" data-i18n-html="true">
-                        ℹ️ <strong>Power Analysis:</strong> Available power is your output (<span id="explanationPower">250W</span>) minus drivetrain losses (5%). Required power is what's needed to overcome gravity, rolling resistance, and wind resistance at your current speed. A surplus means you can maintain this pace; a deficit means you'll need to slow down.
+                        ℹ️ <strong>Power Analysis:</strong> Available power is your output (<span id="explanationPower">250W</span>) minus drivetrain losses (<span id="explanationEfficiency">5%</span>). Required power is what's needed to overcome gravity, rolling resistance, and wind resistance at your current speed. A surplus means you can maintain this pace; a deficit means you'll need to slow down.
                     </div>
                 </div>
             </div>
@@ -1167,8 +1178,17 @@
 
                 const gearRatio = chainring / cog;
                 document.getElementById('gearRatioDisplay').textContent = gearRatio.toFixed(2);
-                const efficiency = 0.95;
-                const availablePower = power * efficiency;
+
+                // Calculate drivetrain efficiency based on maintenance level
+                const maintenanceLevel = document.getElementById('maintenanceLevel').value;
+                const drivetrainEfficiency = {
+                    'race': 0.98,
+                    'good': 0.965,
+                    'average': 0.95,
+                    'poor': 0.93
+                }[maintenanceLevel];
+
+                const availablePower = power * drivetrainEfficiency;
 
                 let climbingVelocityMs, climbingVelocityKmh, cadence, timeSeconds;
                 let gravitationalPower, rollingResistance, aerodynamicPower, totalResistancePower;
@@ -1295,6 +1315,13 @@
                 const explanationPower = document.getElementById('explanationPower');
                 if (explanationPower) {
                     explanationPower.textContent = `${power}W`;
+                }
+
+                const explanationEfficiency = document.getElementById('explanationEfficiency');
+                if (explanationEfficiency) {
+                    const efficiencyPercent = (drivetrainEfficiency * 100).toFixed(1);
+                    const lossPercent = (100 - efficiencyPercent).toFixed(1);
+                    explanationEfficiency.textContent = `${lossPercent}%`;
                 }
 
                 const results = document.getElementById('results');
