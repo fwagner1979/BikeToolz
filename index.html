@@ -429,7 +429,7 @@
 
         <div class="main-content">
             <main class="tool-frame-container">
-                <div class="loading-overlay" id="loadingOverlay">
+                <div class="loading-overlay hidden" id="loadingOverlay">
                     <div class="loading-spinner"></div>
                 </div>
 
@@ -494,6 +494,7 @@
             document.querySelectorAll('.tool-nav-btn').forEach(btn => btn.classList.remove('active'));
 
             if (toolName === 'welcome') {
+                loadingOverlay.classList.add('hidden');
                 welcomeContent.style.display = 'block';
                 toolFrame.style.display = 'none';
                 document.getElementById('navWelcome').classList.add('active');
