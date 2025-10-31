@@ -70,15 +70,58 @@
             background-color: var(--bg-color);
             color: var(--text-color);
             border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.75rem;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        input::placeholder {
+            color: #999999;
+            opacity: 1;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow:
+                0 0 0 3px rgba(0, 191, 255, 0.1),
+                0 2px 8px rgba(0, 102, 204, 0.15);
+        }
+
+        label {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-color);
+        }
+
+        small {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            line-height: 1.4;
         }
 
         /* Force dark mode colors for all form elements */
         [data-theme="dark"] input,
         [data-theme="dark"] select,
         [data-theme="dark"] textarea {
-            background-color: #1f2937;
+            background-color: #1a1f2e;
             color: #f9fafb;
             border-color: #374151;
+        }
+
+        [data-theme="dark"] input::placeholder {
+            color: #6b7280;
+        }
+
+        [data-theme="dark"] input:focus,
+        [data-theme="dark"] select:focus,
+        [data-theme="dark"] textarea:focus {
+            background-color: #1a1f2e;
+            border-color: var(--accent-color);
+            box-shadow:
+                0 0 0 3px rgba(0, 217, 255, 0.15),
+                0 2px 8px rgba(0, 217, 255, 0.2);
         }
 
         /* Handle autofill in dark mode */
@@ -86,7 +129,10 @@
         [data-theme="dark"] input:-webkit-autofill:hover,
         [data-theme="dark"] input:-webkit-autofill:focus {
             -webkit-text-fill-color: #f9fafb;
-            -webkit-box-shadow: 0 0 0 1000px #1f2937 inset;
+            -webkit-box-shadow: 0 0 0 1000px #1a1f2e inset;
+            box-shadow:
+                0 0 0 1000px #1a1f2e inset,
+                0 0 0 3px rgba(0, 217, 255, 0.15);
             transition: background-color 5000s ease-in-out 0s;
         }
 

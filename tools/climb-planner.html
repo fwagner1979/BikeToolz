@@ -164,25 +164,63 @@
             font-weight: 600;
             margin-bottom: 0.5rem;
             color: var(--text-color);
+            font-size: 0.9rem;
+        }
+
+        .input-group small {
+            display: block;
+            margin-top: 0.375rem;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            line-height: 1.4;
         }
 
         .input-group input, .input-group select, .input-group textarea {
             width: 100%;
             padding: 0.75rem;
             border: 2px solid var(--border-color);
-            border-radius: 6px;
+            border-radius: 8px;
             background-color: var(--bg-color);
             color: var(--text-color);
             font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .input-group input::placeholder {
+            color: #999999;
+            opacity: 1;
+        }
+
+        .input-group input:focus, .input-group select:focus, .input-group textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow:
+                0 0 0 3px rgba(0, 191, 255, 0.1),
+                0 2px 8px rgba(0, 102, 204, 0.15);
+            background-color: var(--bg-color);
         }
 
         /* Force dark mode colors for inputs */
         [data-theme="dark"] .input-group input,
         [data-theme="dark"] .input-group select,
         [data-theme="dark"] .input-group textarea {
-            background-color: #1f2937;
+            background-color: #1a1f2e;
             color: #f9fafb;
             border-color: #374151;
+        }
+
+        [data-theme="dark"] .input-group input::placeholder {
+            color: #6b7280;
+        }
+
+        [data-theme="dark"] .input-group input:focus,
+        [data-theme="dark"] .input-group select:focus,
+        [data-theme="dark"] .input-group textarea:focus {
+            background-color: #1a1f2e;
+            border-color: var(--accent-color);
+            box-shadow:
+                0 0 0 3px rgba(0, 217, 255, 0.15),
+                0 2px 8px rgba(0, 217, 255, 0.2);
         }
 
         /* Handle autofill in dark mode */
@@ -190,13 +228,11 @@
         [data-theme="dark"] .input-group input:-webkit-autofill:hover,
         [data-theme="dark"] .input-group input:-webkit-autofill:focus {
             -webkit-text-fill-color: #f9fafb;
-            -webkit-box-shadow: 0 0 0 1000px #1f2937 inset;
+            -webkit-box-shadow: 0 0 0 1000px #1a1f2e inset;
+            box-shadow:
+                0 0 0 1000px #1a1f2e inset,
+                0 0 0 3px rgba(0, 217, 255, 0.15);
             transition: background-color 5000s ease-in-out 0s;
-        }
-
-        .input-group input:focus, .input-group select:focus, .input-group textarea:focus {
-            outline: none;
-            border-color: var(--primary-color);
         }
 
         .input-group input.error {

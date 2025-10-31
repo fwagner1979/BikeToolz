@@ -213,6 +213,7 @@
             font-weight: 600;
             color: var(--text-color);
             margin: 0;
+            font-size: 0.9rem;
         }
 
         .input-group .multi-line-label {
@@ -245,21 +246,53 @@
         input[type="number"], select {
             padding: 0.75rem;
             border: 2px solid var(--border-color);
-            border-radius: 6px;
+            border-radius: 8px;
             background-color: var(--bg-color);
             color: var(--text-color);
             font-size: 1rem;
-            transition: border-color 0.3s ease;
+            transition: all 0.2s ease;
             max-width: 150px;
             min-width: 100px;
+        }
+
+        input[type="number"]::placeholder {
+            color: #999999;
+            opacity: 1;
+        }
+
+        input[type="number"]:focus, select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow:
+                0 0 0 3px rgba(0, 191, 255, 0.1),
+                0 2px 8px rgba(0, 102, 204, 0.15);
+        }
+
+        small {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            line-height: 1.4;
         }
 
         /* Force dark mode colors for inputs */
         [data-theme="dark"] input[type="number"],
         [data-theme="dark"] select {
-            background-color: #1f2937;
+            background-color: #1a1f2e;
             color: #f9fafb;
             border-color: #374151;
+        }
+
+        [data-theme="dark"] input[type="number"]::placeholder {
+            color: #6b7280;
+        }
+
+        [data-theme="dark"] input[type="number"]:focus,
+        [data-theme="dark"] select:focus {
+            background-color: #1a1f2e;
+            border-color: var(--accent-color);
+            box-shadow:
+                0 0 0 3px rgba(0, 217, 255, 0.15),
+                0 2px 8px rgba(0, 217, 255, 0.2);
         }
 
         /* Handle autofill in dark mode */
@@ -267,13 +300,11 @@
         [data-theme="dark"] input[type="number"]:-webkit-autofill:hover,
         [data-theme="dark"] input[type="number"]:-webkit-autofill:focus {
             -webkit-text-fill-color: #f9fafb;
-            -webkit-box-shadow: 0 0 0 1000px #1f2937 inset;
+            -webkit-box-shadow: 0 0 0 1000px #1a1f2e inset;
+            box-shadow:
+                0 0 0 1000px #1a1f2e inset,
+                0 0 0 3px rgba(0, 217, 255, 0.15);
             transition: background-color 5000s ease-in-out 0s;
-        }
-
-        input[type="number"]:focus, select:focus {
-            outline: none;
-            border-color: var(--primary-color);
         }
 
         .climb-parameters {
