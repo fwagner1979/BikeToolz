@@ -227,12 +227,29 @@
             padding: 0.75rem;
             border: 2px solid var(--border-color);
             border-radius: 6px;
-            background: var(--bg-color);
+            background-color: var(--bg-color);
             color: var(--text-color);
             font-size: 1rem;
             transition: border-color 0.3s ease;
             max-width: 150px;
             min-width: 100px;
+        }
+
+        /* Force dark mode colors for inputs */
+        [data-theme="dark"] input[type="number"],
+        [data-theme="dark"] select {
+            background-color: #1f2937;
+            color: #f9fafb;
+            border-color: #374151;
+        }
+
+        /* Handle autofill in dark mode */
+        [data-theme="dark"] input[type="number"]:-webkit-autofill,
+        [data-theme="dark"] input[type="number"]:-webkit-autofill:hover,
+        [data-theme="dark"] input[type="number"]:-webkit-autofill:focus {
+            -webkit-text-fill-color: #f9fafb;
+            -webkit-box-shadow: 0 0 0 1000px #1f2937 inset;
+            transition: background-color 5000s ease-in-out 0s;
         }
 
         input[type="number"]:focus, select:focus {
@@ -866,6 +883,18 @@
 
         // Update unit displays
         function updateUnitDisplays() {
+            // Always update unit labels directly
+            const distanceUnit = document.getElementById('distanceUnit');
+            const elevationUnit = document.getElementById('elevationUnit');
+
+            if (distanceUnit) {
+                distanceUnit.textContent = isMetric ? 'km' : 'miles';
+            }
+            if (elevationUnit) {
+                elevationUnit.textContent = isMetric ? 'm' : 'feet';
+            }
+
+            // Also call i18n updates if available
             if (window.i18n) {
                 window.i18n.updateUnitDisplays();
                 window.i18n.updateWheelSizeOptions();

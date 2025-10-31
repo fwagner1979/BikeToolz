@@ -147,17 +147,35 @@
             color: var(--text-color);
         }
 
-        .input-group input, .input-group select {
+        .input-group input, .input-group select, .input-group textarea {
             width: 100%;
             padding: 0.75rem;
             border: 2px solid var(--border-color);
             border-radius: 6px;
-            background: var(--bg-color);
+            background-color: var(--bg-color);
             color: var(--text-color);
             font-size: 1rem;
         }
 
-        .input-group input:focus, .input-group select:focus {
+        /* Force dark mode colors for inputs */
+        [data-theme="dark"] .input-group input,
+        [data-theme="dark"] .input-group select,
+        [data-theme="dark"] .input-group textarea {
+            background-color: #1f2937;
+            color: #f9fafb;
+            border-color: #374151;
+        }
+
+        /* Handle autofill in dark mode */
+        [data-theme="dark"] .input-group input:-webkit-autofill,
+        [data-theme="dark"] .input-group input:-webkit-autofill:hover,
+        [data-theme="dark"] .input-group input:-webkit-autofill:focus {
+            -webkit-text-fill-color: #f9fafb;
+            -webkit-box-shadow: 0 0 0 1000px #1f2937 inset;
+            transition: background-color 5000s ease-in-out 0s;
+        }
+
+        .input-group input:focus, .input-group select:focus, .input-group textarea:focus {
             outline: none;
             border-color: var(--primary-color);
         }
@@ -391,6 +409,29 @@
             transform: none;
         }
 
+        .toggle-switch-button {
+            padding: 0.75rem 1.5rem;
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-color);
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-switch-button:hover {
+            border-color: var(--primary-color);
+            background: var(--bg-color);
+        }
+
+        .toggle-switch-button.active {
+            border-color: var(--primary-color);
+            background: var(--primary-color);
+            color: white;
+        }
+
         .results-section {
             background: var(--card-bg);
             border-radius: 12px;
@@ -520,12 +561,12 @@
             <div id="manualTab" class="tab-content active">
                 <div class="input-grid">
                     <div class="input-group">
-                        <label>Distance</label>
+                        <label>Distance (<span id="distanceUnit">km</span>)</label>
                         <input type="number" id="manualDistance" step="0.1" min="0" placeholder="e.g., 10.5">
                         <span class="error-message" id="distanceError"></span>
                     </div>
                     <div class="input-group">
-                        <label>Elevation Gain</label>
+                        <label>Elevation Gain (<span id="elevationUnit">m</span>)</label>
                         <input type="number" id="manualElevation" step="1" min="0" placeholder="e.g., 800">
                         <span class="error-message" id="elevationError"></span>
                     </div>
@@ -682,34 +723,82 @@
             <div class="gearing-section">
                 <div class="gearing-group">
                     <h4>Chainrings</h4>
-                    <div class="preset-buttons">
-                        <button class="preset-button" onclick="selectChainringPreset('50,34')">50/34 Compact</button>
-                        <button class="preset-button" onclick="selectChainringPreset('52,36')">52/36 Semi</button>
-                        <button class="preset-button" onclick="selectChainringPreset('53,39')">53/39 Standard</button>
-                        <button class="preset-button" onclick="selectChainringPreset('46,30')">46/30 Gravel</button>
-                        <button class="preset-button" onclick="selectChainringPreset('48,32')">48/32 Gravel</button>
-                        <button class="preset-button" onclick="selectChainringPreset('42')">42 1x</button>
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label>Configuration</label>
+                            <div style="display: flex; gap: 1rem;">
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                    <input type="radio" name="chainringConfig" value="1x" onchange="updateChainringConfig()">
+                                    <span>1x</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                    <input type="radio" name="chainringConfig" value="2x" checked onchange="updateChainringConfig()">
+                                    <span>2x</span>
+                                </label>
+                            </div>
+                        </div>
                     </div>
-                    <div class="input-group">
-                        <label>Custom (comma-separated)</label>
-                        <input type="text" id="chainringsCustom" placeholder="e.g., 46,34">
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label>Smallest (teeth)</label>
+                            <input type="number" id="chainringSmall" step="1" min="20" max="60" value="34" oninput="updateGearing()">
+                        </div>
+                        <div class="input-group" id="chainringLargeGroup">
+                            <label>Largest (teeth)</label>
+                            <input type="number" id="chainringLarge" step="1" min="20" max="60" value="50" oninput="updateGearing()">
+                        </div>
+                    </div>
+                    <div class="input-group" id="chainringManualGroup" style="display: none;">
+                        <label>Manual Entry (comma-separated)</label>
+                        <input type="text" id="chainringsManual" placeholder="e.g., 34,50" oninput="updateGearing()">
+                    </div>
+                    <div id="chainringsDisplay" style="margin-top: 0.5rem; padding: 0.5rem; background: var(--card-bg); border-radius: 6px; font-size: 0.9rem;">
+                        <strong>Chainrings:</strong> <span id="chainringsValue">34, 50</span>
                     </div>
                 </div>
 
                 <div class="gearing-group">
                     <h4>Cassette</h4>
-                    <div class="preset-buttons">
-                        <button class="preset-button" onclick="selectCassettePreset('11-28')">11-28 Road</button>
-                        <button class="preset-button" onclick="selectCassettePreset('11-30')">11-30 Road</button>
-                        <button class="preset-button" onclick="selectCassettePreset('11-32')">11-32 Climb</button>
-                        <button class="preset-button" onclick="selectCassettePreset('11-34')">11-34 Wide</button>
-                        <button class="preset-button" onclick="selectCassettePreset('11-36')">11-36 Climb</button>
-                        <button class="preset-button" onclick="selectCassettePreset('10-50')">10-50 1x</button>
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label>Number of Cogs</label>
+                            <select id="cassetteNumCogs" onchange="updateGearing()">
+                                <option value="1">1 (Single speed)</option>
+                                <option value="5">5 (Vintage)</option>
+                                <option value="6">6 (Vintage)</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                                <option value="11" selected>11</option>
+                                <option value="12">12</option>
+                                <option value="13">13</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="input-group">
-                        <label>Custom (range or comma-separated)</label>
-                        <input type="text" id="cassetteCustom" placeholder="e.g., 11-36 or 11,12,13,...">
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label>Smallest (teeth)</label>
+                            <input type="number" id="cassetteSmall" step="1" min="8" max="50" value="11" oninput="updateGearing()">
+                        </div>
+                        <div class="input-group">
+                            <label>Largest (teeth)</label>
+                            <input type="number" id="cassetteLarge" step="1" min="8" max="60" value="32" oninput="updateGearing()">
+                        </div>
                     </div>
+                    <div class="input-group" id="cassetteManualGroup" style="display: none;">
+                        <label>Manual Entry (comma-separated)</label>
+                        <input type="text" id="cassetteManual" placeholder="e.g., 11,12,13,15,17,19,21,24,28,32" oninput="updateGearing()">
+                    </div>
+                    <div id="cassetteDisplay" style="margin-top: 0.5rem; padding: 0.5rem; background: var(--card-bg); border-radius: 6px; font-size: 0.9rem;">
+                        <strong>Cassette:</strong> <span id="cassetteValue">11, 12, 13, 15, 17, 19, 21, 24, 28, 32</span>
+                    </div>
+                </div>
+
+                <div style="margin-top: 1rem; text-align: center;">
+                    <button class="toggle-switch-button" id="manualOverrideToggle" onclick="toggleManualOverride()">
+                        <span>🔧 Manual Override</span>
+                    </button>
                 </div>
             </div>
 
@@ -838,6 +927,7 @@
                         break;
                     case 'unitSystemChange':
                         state.isMetric = event.data.isMetric;
+                        updateUnitLabels();
                         break;
                 }
             }
@@ -845,6 +935,28 @@
 
         // Signal that tool is ready
         window.parent.postMessage({ type: 'toolReady' }, '*');
+
+        // Update unit labels based on current unit system
+        function updateUnitLabels() {
+            if (state.isMetric) {
+                document.getElementById('distanceUnit').textContent = 'km';
+                document.getElementById('elevationUnit').textContent = 'm';
+            } else {
+                document.getElementById('distanceUnit').textContent = 'miles';
+                document.getElementById('elevationUnit').textContent = 'feet';
+            }
+        }
+
+        // Unit conversion helpers
+        function getDistanceInKm(value) {
+            // Input is already in the current unit system, convert to km if needed
+            return state.isMetric ? value : value * 1.60934; // miles to km
+        }
+
+        function getElevationInMeters(value) {
+            // Input is already in the current unit system, convert to m if needed
+            return state.isMetric ? value : value * 0.3048; // feet to meters
+        }
 
         // Tab switching
         function switchClimbInputTab(tab) {
@@ -905,11 +1017,14 @@
         });
 
         function calculateGrade() {
-            const distance = parseFloat(document.getElementById('manualDistance').value);
-            const elevation = parseFloat(document.getElementById('manualElevation').value);
+            const distanceInput = parseFloat(document.getElementById('manualDistance').value);
+            const elevationInput = parseFloat(document.getElementById('manualElevation').value);
 
-            if (distance > 0 && elevation > 0) {
-                const grade = (elevation / (distance * 1000)) * 100;
+            if (distanceInput > 0 && elevationInput > 0) {
+                // Convert to metric for calculation
+                const distanceKm = getDistanceInKm(distanceInput);
+                const elevationM = getElevationInMeters(elevationInput);
+                const grade = (elevationM / (distanceKm * 1000)) * 100;
                 document.getElementById('manualGrade').value = grade.toFixed(1);
             }
         }
@@ -929,7 +1044,9 @@
                 const elevation = parseFloat(document.getElementById('manualElevation').value);
                 const grade = parseFloat(document.getElementById('manualGrade').value);
 
-                summaryText.textContent = `${distance} km, ${elevation} m elevation gain, ${grade.toFixed(1)}% average grade`;
+                const distanceUnit = state.isMetric ? 'km' : 'miles';
+                const elevationUnit = state.isMetric ? 'm' : 'feet';
+                summaryText.textContent = `${distance} ${distanceUnit}, ${elevation} ${elevationUnit} elevation gain, ${grade.toFixed(1)}% average grade`;
                 summaryDiv.style.display = 'block';
             } else if (state.climbInputMode === 'gpx' && state.selectedClimb) {
                 const climb = state.selectedClimb;
@@ -1124,12 +1241,15 @@
 
         // Power calculations
         function updatePowerCalculations() {
-            // Get climb parameters
+            // Get climb parameters (always in metric for calculations)
             let distance, elevation, grade;
 
             if (state.climbInputMode === 'manual' && hasManualClimbData()) {
-                distance = parseFloat(document.getElementById('manualDistance').value);
-                elevation = parseFloat(document.getElementById('manualElevation').value);
+                const distanceInput = parseFloat(document.getElementById('manualDistance').value);
+                const elevationInput = parseFloat(document.getElementById('manualElevation').value);
+                // Convert to metric for calculations
+                distance = getDistanceInKm(distanceInput);
+                elevation = getElevationInMeters(elevationInput);
                 grade = parseFloat(document.getElementById('manualGrade').value);
             } else if (state.climbInputMode === 'gpx' && state.selectedClimb) {
                 distance = state.selectedClimb.length;
@@ -1240,27 +1360,129 @@
             return points[points.length - 1].power;
         }
 
-        // Gearing presets
-        function selectChainringPreset(value) {
-            document.getElementById('chainringsCustom').value = value;
-            event.target.parentElement.querySelectorAll('.preset-button').forEach(btn => btn.classList.remove('selected'));
-            event.target.classList.add('selected');
+        // Gearing configuration
+        let manualOverrideMode = false;
+
+        function updateChainringConfig() {
+            const is1x = document.querySelector('input[name="chainringConfig"]:checked').value === '1x';
+            const largeGroup = document.getElementById('chainringLargeGroup');
+
+            if (is1x) {
+                largeGroup.style.display = 'none';
+            } else {
+                largeGroup.style.display = 'block';
+            }
+
+            updateGearing();
         }
 
-        function selectCassettePreset(value) {
-            document.getElementById('cassetteCustom').value = value;
-            event.target.parentElement.querySelectorAll('.preset-button').forEach(btn => btn.classList.remove('selected'));
-            event.target.classList.add('selected');
+        function toggleManualOverride() {
+            manualOverrideMode = !manualOverrideMode;
+            const toggleButton = document.getElementById('manualOverrideToggle');
+            const chainringManualGroup = document.getElementById('chainringManualGroup');
+            const cassetteManualGroup = document.getElementById('cassetteManualGroup');
+
+            if (manualOverrideMode) {
+                toggleButton.classList.add('active');
+                chainringManualGroup.style.display = 'block';
+                cassetteManualGroup.style.display = 'block';
+            } else {
+                toggleButton.classList.remove('active');
+                chainringManualGroup.style.display = 'none';
+                cassetteManualGroup.style.display = 'none';
+            }
+
+            updateGearing();
         }
+
+        function updateGearing() {
+            // Update chainrings
+            if (manualOverrideMode) {
+                const manualChainrings = document.getElementById('chainringsManual').value;
+                document.getElementById('chainringsValue').textContent = manualChainrings || '(enter values)';
+            } else {
+                const is1x = document.querySelector('input[name="chainringConfig"]:checked').value === '1x';
+                const small = document.getElementById('chainringSmall').value;
+                const large = document.getElementById('chainringLarge').value;
+
+                if (is1x) {
+                    document.getElementById('chainringsValue').textContent = small;
+                } else {
+                    document.getElementById('chainringsValue').textContent = `${small}, ${large}`;
+                }
+            }
+
+            // Update cassette
+            if (manualOverrideMode) {
+                const manualCassette = document.getElementById('cassetteManual').value;
+                document.getElementById('cassetteValue').textContent = manualCassette || '(enter values)';
+            } else {
+                const numCogs = parseInt(document.getElementById('cassetteNumCogs').value);
+                const small = parseInt(document.getElementById('cassetteSmall').value);
+                const large = parseInt(document.getElementById('cassetteLarge').value);
+
+                const cogs = calculateCassetteCogs(numCogs, small, large);
+                document.getElementById('cassetteValue').textContent = cogs.join(', ');
+            }
+        }
+
+        function calculateCassetteCogs(numCogs, smallest, largest) {
+            if (numCogs === 1) {
+                return [smallest];
+            }
+
+            const cogs = [];
+
+            // Use standard cassette patterns based on common Shimano/SRAM ratios
+            if (numCogs === 11 && smallest === 11 && largest <= 34) {
+                // Standard 11-speed road patterns
+                if (largest === 28) return [11, 12, 13, 14, 15, 16, 17, 19, 21, 24, 28];
+                if (largest === 30) return [11, 12, 13, 14, 15, 17, 19, 21, 24, 27, 30];
+                if (largest === 32) return [11, 12, 13, 14, 15, 17, 19, 21, 24, 28, 32];
+                if (largest === 34) return [11, 12, 13, 14, 15, 17, 19, 21, 24, 28, 34];
+            }
+
+            if (numCogs === 12 && smallest === 10 && largest >= 45) {
+                // Standard 12-speed 1x patterns
+                if (largest === 50) return [10, 12, 14, 16, 18, 21, 24, 28, 33, 39, 45, 50];
+                if (largest === 52) return [10, 12, 14, 16, 18, 21, 24, 28, 33, 39, 46, 52];
+            }
+
+            // Fallback: geometric progression for smooth shifting
+            // This creates smaller jumps at small cogs, larger jumps at big cogs
+            const ratio = Math.pow(largest / smallest, 1 / (numCogs - 1));
+
+            for (let i = 0; i < numCogs; i++) {
+                const cog = Math.round(smallest * Math.pow(ratio, i));
+                cogs.push(cog);
+            }
+
+            // Ensure first and last match exactly
+            cogs[0] = smallest;
+            cogs[numCogs - 1] = largest;
+
+            // Remove duplicates and sort
+            const uniqueCogs = [...new Set(cogs)].sort((a, b) => a - b);
+
+            return uniqueCogs;
+        }
+
+        // Initialize gearing on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateGearing();
+        });
 
         // Main calculation
         function calculateClimb() {
-            // Get climb parameters
+            // Get climb parameters (always in metric for calculations)
             let distance, elevation, grade;
 
             if (state.climbInputMode === 'manual' && hasManualClimbData()) {
-                distance = parseFloat(document.getElementById('manualDistance').value);
-                elevation = parseFloat(document.getElementById('manualElevation').value);
+                const distanceInput = parseFloat(document.getElementById('manualDistance').value);
+                const elevationInput = parseFloat(document.getElementById('manualElevation').value);
+                // Convert to metric for calculations
+                distance = getDistanceInKm(distanceInput);
+                elevation = getElevationInMeters(elevationInput);
                 grade = parseFloat(document.getElementById('manualGrade').value);
             } else if (state.climbInputMode === 'gpx' && state.selectedClimb) {
                 distance = state.selectedClimb.length;
@@ -1302,16 +1524,13 @@
             const totalWeight = riderWeight + bikeWeight;
 
             // Get gearing
-            const chainringsStr = document.getElementById('chainringsCustom').value;
-            const cassetteStr = document.getElementById('cassetteCustom').value;
+            const chainrings = getCurrentChainrings();
+            const cassette = getCurrentCassette();
 
-            if (!chainringsStr || !cassetteStr) {
-                alert('Please select or enter gearing');
+            if (!chainrings || chainrings.length === 0 || !cassette || cassette.length === 0) {
+                alert('Please configure your gearing');
                 return;
             }
-
-            const chainrings = parseChainrings(chainringsStr);
-            const cassette = parseCassette(cassetteStr);
 
             // Calculate drivetrain efficiency
             const maintenanceLevel = document.getElementById('maintenanceLevel').value;
@@ -1433,6 +1652,35 @@
             });
 
             return bestGear;
+        }
+
+        function getCurrentChainrings() {
+            if (manualOverrideMode) {
+                const manualInput = document.getElementById('chainringsManual').value;
+                return parseChainrings(manualInput);
+            } else {
+                const is1x = document.querySelector('input[name="chainringConfig"]:checked').value === '1x';
+                const small = parseInt(document.getElementById('chainringSmall').value);
+
+                if (is1x) {
+                    return [small];
+                } else {
+                    const large = parseInt(document.getElementById('chainringLarge').value);
+                    return [small, large];
+                }
+            }
+        }
+
+        function getCurrentCassette() {
+            if (manualOverrideMode) {
+                const manualInput = document.getElementById('cassetteManual').value;
+                return parseCassette(manualInput);
+            } else {
+                const numCogs = parseInt(document.getElementById('cassetteNumCogs').value);
+                const small = parseInt(document.getElementById('cassetteSmall').value);
+                const large = parseInt(document.getElementById('cassetteLarge').value);
+                return calculateCassetteCogs(numCogs, small, large);
+            }
         }
 
         function parseChainrings(str) {

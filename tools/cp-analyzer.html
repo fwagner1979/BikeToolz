@@ -44,6 +44,31 @@
             transition: all 0.3s ease;
         }
 
+        /* General input/select styling */
+        input, select, textarea {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            border: 2px solid var(--border-color);
+        }
+
+        /* Force dark mode colors for all form elements */
+        [data-theme="dark"] input,
+        [data-theme="dark"] select,
+        [data-theme="dark"] textarea {
+            background-color: #1f2937;
+            color: #f9fafb;
+            border-color: #374151;
+        }
+
+        /* Handle autofill in dark mode */
+        [data-theme="dark"] input:-webkit-autofill,
+        [data-theme="dark"] input:-webkit-autofill:hover,
+        [data-theme="dark"] input:-webkit-autofill:focus {
+            -webkit-text-fill-color: #f9fafb;
+            -webkit-box-shadow: 0 0 0 1000px #1f2937 inset;
+            transition: background-color 5000s ease-in-out 0s;
+        }
+
         .container {
             max-width: 1400px;
             margin: 0 auto;
