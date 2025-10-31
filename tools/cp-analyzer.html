@@ -869,10 +869,18 @@
         // Detect max efforts in power data
         function detectEfforts(powerData, fileId, fileName) {
             const efforts = [];
-            const durations = [180, 300, 420, 600, 900, 1200]; // 3, 5, 7, 10, 15, 20 minutes
 
-            durations.forEach(duration => {
-                if (powerData.length < duration) return;
+            // Smart detection: scan multiple durations from 3 to 20 minutes
+            // Check every 30 seconds to catch efforts like 8min, 12min, 10min45s, etc.
+            const minDuration = 180; // 3 minutes
+            const maxDuration = 1200; // 20 minutes
+            const stepSize = 30; // Check every 30 seconds
+
+            const allEfforts = []; // Store all detected efforts before filtering
+
+            // Scan all durations
+            for (let duration = minDuration; duration <= maxDuration; duration += stepSize) {
+                if (powerData.length < duration) continue;
 
                 let maxAvgPower = 0;
                 let bestStartIndex = 0;
@@ -896,23 +904,69 @@
                     // Check if surrounded by recovery (for multi-effort files)
                     const hasRecovery = checkRecoveryPeriods(powerData, bestStartIndex, duration);
 
-                    efforts.push({
+                    allEfforts.push({
                         id: `${fileId}-${duration}`,
                         fileId: fileId,
                         fileName: fileName,
                         duration: duration,
-                        durationMinutes: Math.floor(duration / 60),
+                        durationMinutes: (duration / 60).toFixed(1),
+                        durationDisplay: formatDuration(duration),
                         avgPower: Math.round(maxAvgPower),
                         normalizedPower: Math.round(np),
                         startIndex: bestStartIndex,
+                        startTime: powerData[bestStartIndex].time,
                         powerData: segment,
                         hasRecovery: hasRecovery,
-                        type: hasRecovery ? 'Multi-effort file' : 'Single effort'
+                        type: hasRecovery ? 'Multi-effort file' : 'Single effort',
+                        // Quality score for ranking (normalized power is better metric)
+                        qualityScore: np * Math.log(duration / 60) // Favor longer efforts with high NP
                     });
                 }
-            });
+            }
 
-            return efforts;
+            // Filter to avoid showing very similar efforts (e.g., 8min and 8min30s that are the same interval)
+            const filteredEfforts = filterSimilarEfforts(allEfforts);
+
+            // Sort by quality score (best efforts first)
+            filteredEfforts.sort((a, b) => b.qualityScore - a.qualityScore);
+
+            // Keep top 12 efforts to avoid overwhelming the user
+            return filteredEfforts.slice(0, 12);
+        }
+
+        // Format duration in human-readable format
+        function formatDuration(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            if (remainingSeconds === 0) {
+                return `${minutes}min`;
+            } else {
+                return `${minutes}min${remainingSeconds}s`;
+            }
+        }
+
+        // Filter out efforts that are essentially the same interval
+        function filterSimilarEfforts(efforts) {
+            const filtered = [];
+
+            for (const effort of efforts) {
+                // Check if we already have a very similar effort
+                const isDuplicate = filtered.some(existing => {
+                    // Consider efforts duplicates if:
+                    // 1. They start within 30 seconds of each other AND
+                    // 2. Their durations differ by less than 60 seconds
+                    const startTimeDiff = Math.abs(existing.startIndex - effort.startIndex);
+                    const durationDiff = Math.abs(existing.duration - effort.duration);
+
+                    return startTimeDiff < 30 && durationDiff < 60;
+                });
+
+                if (!isDuplicate) {
+                    filtered.push(effort);
+                }
+            }
+
+            return filtered;
         }
 
         function calculateNormalizedPower(segment) {
@@ -956,18 +1010,19 @@
 
             effortsSection.classList.remove('hidden');
 
-            // Sort efforts by duration
-            const sortedEfforts = [...state.detectedEfforts].sort((a, b) => a.duration - b.duration);
+            // Efforts are already sorted by quality score from detectEfforts()
+            // But we can re-sort by duration or quality if needed
+            const sortedEfforts = [...state.detectedEfforts].sort((a, b) => b.qualityScore - a.qualityScore);
 
-            effortsList.innerHTML = sortedEfforts.map(effort => `
+            effortsList.innerHTML = sortedEfforts.map((effort, index) => `
                 <div class="effort-card" onclick="toggleEffort('${effort.id}', event)">
                     <input type="checkbox" id="checkbox-${effort.id}" onclick="toggleEffort('${effort.id}', event)">
                     <div class="effort-details">
                         <div class="effort-title">
-                            ${effort.durationMinutes} minute effort - ${effort.avgPower}W avg
+                            ${index === 0 ? '⭐ ' : ''}${effort.durationDisplay} effort - ${effort.avgPower}W avg
                         </div>
                         <div class="effort-stats">
-                            From: ${effort.fileName} • NP: ${effort.normalizedPower}W
+                            From: ${effort.fileName} • NP: ${effort.normalizedPower}W • Start: ${formatTime(effort.startTime)}
                         </div>
                     </div>
                     <span class="effort-badge ${effort.hasRecovery ? 'badge-success' : 'badge-info'}">
@@ -977,6 +1032,19 @@
             `).join('');
 
             updateCalculateButton();
+        }
+
+        // Format elapsed time in HH:MM:SS format
+        function formatTime(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+
+            if (hours > 0) {
+                return `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            } else {
+                return `${minutes}:${String(secs).padStart(2, '0')}`;
+            }
         }
 
         function toggleEffort(effortId, event) {
