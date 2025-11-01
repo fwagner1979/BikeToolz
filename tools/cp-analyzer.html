@@ -1024,7 +1024,7 @@
 
             console.log(`Final efforts to display: ${sortedEfforts.length}`);
             sortedEfforts.forEach((e, i) => {
-                console.log(`  ${i+1}. ${e.durationDisplay} @ ${e.normalizedPower}W (${e.fileName})`);
+                console.log(`  ${i+1}. ${e.durationDisplay} @ ${e.avgPower}W avg (${e.fileName})`);
             });
             console.log('=== END DEBUG ===');
 
@@ -1050,6 +1050,7 @@
 
         // Consolidate efforts by duration: keep only the best effort per duration across all files
         // Group by display duration (e.g., "20min") not exact seconds
+        // Uses AVERAGE POWER (not NP) since CP calculations use average power
         function consolidateEffortsByDuration(efforts) {
             const byDurationDisplay = {};
 
@@ -1057,15 +1058,15 @@
 
             efforts.forEach(effort => {
                 const displayKey = effort.durationDisplay; // e.g., "20min", "19min30s"
-                // Keep the effort with highest normalized power for each display duration
+                // Keep the effort with highest AVERAGE power for each display duration (for CP calculations)
                 if (!byDurationDisplay[displayKey]) {
                     byDurationDisplay[displayKey] = effort;
-                    console.log(`  First ${displayKey}: ${effort.normalizedPower}W from ${effort.fileName}`);
-                } else if (effort.normalizedPower > byDurationDisplay[displayKey].normalizedPower) {
-                    console.log(`  Replacing ${displayKey}: ${byDurationDisplay[displayKey].normalizedPower}W -> ${effort.normalizedPower}W (from ${effort.fileName})`);
+                    console.log(`  First ${displayKey}: ${effort.avgPower}W avg from ${effort.fileName}`);
+                } else if (effort.avgPower > byDurationDisplay[displayKey].avgPower) {
+                    console.log(`  Replacing ${displayKey}: ${byDurationDisplay[displayKey].avgPower}W -> ${effort.avgPower}W avg (from ${effort.fileName})`);
                     byDurationDisplay[displayKey] = effort;
                 } else {
-                    console.log(`  Skipping ${displayKey}: ${effort.normalizedPower}W < ${byDurationDisplay[displayKey].normalizedPower}W`);
+                    console.log(`  Skipping ${displayKey}: ${effort.avgPower}W < ${byDurationDisplay[displayKey].avgPower}W avg`);
                 }
             });
 
@@ -1106,10 +1107,11 @@
                     // If longer effort has similar/higher power, shorter effort is submaximal
                     // Example: 12min @ 288W exists, so 10min30s should be at least 288 + (1.5 * 2) = 291W
                     // Use > instead of >= so efforts that meet expectations are kept
-                    const expectedPower = longerEffort.normalizedPower + minExpectedIncrease;
-                    if (expectedPower > effort.normalizedPower + tolerance) {
+                    // Uses AVERAGE POWER (not NP) since CP calculations use average power
+                    const expectedPower = longerEffort.avgPower + minExpectedIncrease;
+                    if (expectedPower > effort.avgPower + tolerance) {
                         isMaximal = false;
-                        console.log(`Filtering submaximal effort: ${effort.durationDisplay} @ ${effort.normalizedPower}W (expected ≥${Math.round(expectedPower)}W based on ${longerEffort.durationDisplay} @ ${longerEffort.normalizedPower}W)`);
+                        console.log(`Filtering submaximal effort: ${effort.durationDisplay} @ ${effort.avgPower}W avg (expected ≥${Math.round(expectedPower)}W based on ${longerEffort.durationDisplay} @ ${longerEffort.avgPower}W avg)`);
                         break;
                     }
                 }
