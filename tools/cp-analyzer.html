@@ -1135,6 +1135,7 @@
             const keep = [];
             const maxCV = 15; // Maximum coefficient of variation (%) - 15% allows for normal pacing variance
 
+            console.log('Variability check for all efforts:');
             efforts.forEach(effort => {
                 // Calculate coefficient of variation (CV = stddev / mean * 100)
                 const powers = effort.powerData.map(p => p.power);
@@ -1148,9 +1149,10 @@
                 const cv = (stdDev / mean) * 100;
 
                 if (cv <= maxCV) {
+                    console.log(`  ✓ KEEP: ${effort.durationDisplay} @ ${effort.avgPower}W avg (CV=${cv.toFixed(1)}%)`);
                     keep.push(effort);
                 } else {
-                    console.log(`Filtering non-sustained effort: ${effort.durationDisplay} @ ${effort.avgPower}W avg (CV=${cv.toFixed(1)}% > ${maxCV}% - too much variation)`);
+                    console.log(`  ✗ FILTER: ${effort.durationDisplay} @ ${effort.avgPower}W avg (CV=${cv.toFixed(1)}% > ${maxCV}%)`);
                 }
             });
 
