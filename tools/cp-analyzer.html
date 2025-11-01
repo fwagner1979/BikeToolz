@@ -897,8 +897,7 @@
                 }
 
                 // Check if this is a valid effort (not too low power)
-                // Lowered threshold to 150W to catch lighter efforts (e.g., 3-5min at moderate power)
-                if (maxAvgPower > 150) {
+                if (maxAvgPower > 180) {
                     const segment = powerData.slice(bestStartIndex, bestStartIndex + duration);
                     const np = calculateNormalizedPower(segment);
 
@@ -928,11 +927,9 @@
             // Filter to avoid showing very similar efforts (e.g., 8min and 8min30s that are the same interval)
             const filteredEfforts = filterSimilarEfforts(allEfforts);
 
-            // Sort by quality score (best efforts first)
-            filteredEfforts.sort((a, b) => b.qualityScore - a.qualityScore);
-
-            // Keep top 12 efforts to avoid overwhelming the user
-            return filteredEfforts.slice(0, 12);
+            // Return ALL efforts - no artificial limits
+            // displayEfforts() will handle consolidation and submaximal filtering
+            return filteredEfforts;
         }
 
         // Format duration in human-readable format
@@ -1022,14 +1019,10 @@
             consolidatedEfforts = filterSubmaximalEfforts(consolidatedEfforts);
             console.log(`After submaximal filtering: ${consolidatedEfforts.length} efforts`);
 
-            // Step 3: Smart selection to ensure coverage across duration spectrum
-            const selectedEfforts = selectDiverseEfforts(consolidatedEfforts);
-            console.log(`After diverse selection: ${selectedEfforts.length} efforts`);
+            // Step 3: Sort by duration for display (shortest to longest)
+            const sortedEfforts = consolidatedEfforts.sort((a, b) => a.duration - b.duration);
 
-            // Step 4: Sort by quality score for display
-            const sortedEfforts = selectedEfforts.sort((a, b) => b.qualityScore - a.qualityScore);
-
-            console.log('Final efforts to display:');
+            console.log(`Final efforts to display: ${sortedEfforts.length}`);
             sortedEfforts.forEach((e, i) => {
                 console.log(`  ${i+1}. ${e.durationDisplay} @ ${e.normalizedPower}W (${e.fileName})`);
             });
@@ -1040,7 +1033,7 @@
                     <input type="checkbox" id="checkbox-${effort.id}" onclick="toggleEffort('${effort.id}', event)">
                     <div class="effort-details">
                         <div class="effort-title">
-                            ${index === 0 ? '⭐ ' : ''}${effort.durationDisplay} effort - ${effort.avgPower}W avg
+                            ${effort.durationDisplay} effort - ${effort.avgPower}W avg
                         </div>
                         <div class="effort-stats">
                             From: ${effort.fileName} • NP: ${effort.normalizedPower}W • Start: ${formatTime(effort.startTime)}
