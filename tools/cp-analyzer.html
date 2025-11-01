@@ -1013,8 +1013,8 @@
             // Step 1: Consolidate efforts by duration (only keep best per duration across all files)
             let consolidatedEfforts = consolidateEffortsByDuration(state.detectedEfforts);
 
-            // Step 2: Filter physiologically impossible efforts (shorter efforts should have higher power)
-            consolidatedEfforts = filterPhysiologicallyInvalid(consolidatedEfforts);
+            // Step 2: Filter SUBMAXIMAL efforts (shorter efforts should have higher power than longer efforts)
+            consolidatedEfforts = filterSubmaximalEfforts(consolidatedEfforts);
 
             // Step 3: Smart selection to ensure coverage across duration spectrum
             const selectedEfforts = selectDiverseEfforts(consolidatedEfforts);
@@ -1043,38 +1043,75 @@
         }
 
         // Consolidate efforts by duration: keep only the best effort per duration across all files
+        // Group by display duration (e.g., "20min") not exact seconds
         function consolidateEffortsByDuration(efforts) {
-            const byDuration = {};
+            const byDurationDisplay = {};
+
+            console.log(`Consolidating ${efforts.length} efforts...`);
 
             efforts.forEach(effort => {
-                const dur = effort.duration;
-                // Keep the effort with highest normalized power for each duration
-                if (!byDuration[dur] || effort.normalizedPower > byDuration[dur].normalizedPower) {
-                    byDuration[dur] = effort;
+                const displayKey = effort.durationDisplay; // e.g., "20min", "19min30s"
+                // Keep the effort with highest normalized power for each display duration
+                if (!byDurationDisplay[displayKey]) {
+                    byDurationDisplay[displayKey] = effort;
+                    console.log(`  First ${displayKey}: ${effort.normalizedPower}W from ${effort.fileName}`);
+                } else if (effort.normalizedPower > byDurationDisplay[displayKey].normalizedPower) {
+                    console.log(`  Replacing ${displayKey}: ${byDurationDisplay[displayKey].normalizedPower}W -> ${effort.normalizedPower}W (from ${effort.fileName})`);
+                    byDurationDisplay[displayKey] = effort;
+                } else {
+                    console.log(`  Skipping ${displayKey}: ${effort.normalizedPower}W < ${byDurationDisplay[displayKey].normalizedPower}W`);
                 }
             });
 
-            return Object.values(byDuration);
+            console.log(`After consolidation: ${Object.keys(byDurationDisplay).length} unique durations`);
+            return Object.values(byDurationDisplay);
         }
 
-        // Filter physiologically impossible efforts
-        // Rule: If a longer effort has similar/higher power than a shorter effort,
-        // the shorter effort likely wasn't maximal
-        function filterPhysiologicallyInvalid(efforts) {
-            return efforts.filter(effort => {
-                // Check if any longer effort has similar or higher power
-                const hasStrongerLongerEffort = efforts.some(other => {
-                    // If other is longer and has >= power (with 2W/min tolerance), current effort is suspicious
-                    if (other.duration > effort.duration) {
-                        const durationDiffMin = (other.duration - effort.duration) / 60;
-                        const toleranceW = 2 * durationDiffMin; // Allow 2W per extra minute
-                        return other.normalizedPower >= effort.normalizedPower - toleranceW;
-                    }
-                    return false;
-                });
+        // Filter SUBMAXIMAL efforts
+        // Rule: If you can hold 288W for 12min, then 10min30s @ 288W was NOT a maximal effort
+        // A true maximal 10min30s should be significantly higher than 288W
+        function filterSubmaximalEfforts(efforts) {
+            // Sort by duration for easier comparison
+            const sorted = [...efforts].sort((a, b) => a.duration - b.duration);
+            const keep = [];
 
-                return !hasStrongerLongerEffort;
-            });
+            for (let i = 0; i < sorted.length; i++) {
+                const effort = sorted[i];
+                let isMaximal = true;
+
+                // Only check against efforts that are reasonably close in duration
+                // Don't compare 3min efforts to 20min efforts directly (different energy systems)
+                const maxComparisonWindow = 5 * 60; // Only compare within 5 minutes
+
+                for (let j = i + 1; j < sorted.length; j++) {
+                    const longerEffort = sorted[j];
+                    const durationDiffSec = longerEffort.duration - effort.duration;
+
+                    // Only compare efforts within 5 minutes of each other
+                    if (durationDiffSec > maxComparisonWindow) {
+                        break; // Sorted by duration, so all remaining are too far
+                    }
+
+                    // For efforts close in duration, expect ~2W power increase per minute shorter
+                    const durationDiffMin = durationDiffSec / 60;
+                    const minExpectedIncrease = 2.0 * durationDiffMin;
+
+                    // If longer effort has similar/higher power, shorter effort is submaximal
+                    // Example: 12min @ 288W exists, so 10min30s should be at least 288 + (1.5 * 2) = 291W
+                    if (longerEffort.normalizedPower + minExpectedIncrease >= effort.normalizedPower) {
+                        isMaximal = false;
+                        console.log(`Filtering submaximal effort: ${effort.durationDisplay} @ ${effort.normalizedPower}W (longer effort: ${longerEffort.durationDisplay} @ ${longerEffort.normalizedPower}W)`);
+                        break;
+                    }
+                }
+
+                if (isMaximal) {
+                    keep.push(effort);
+                }
+            }
+
+            console.log(`Kept ${keep.length} maximal efforts out of ${efforts.length} total`);
+            return keep;
         }
 
         // Select diverse efforts across duration spectrum
