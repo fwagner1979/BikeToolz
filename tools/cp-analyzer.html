@@ -1135,15 +1135,18 @@
             const keep = [];
             const maxCV = 15; // Maximum coefficient of variation (%) - 15% allows for normal pacing variance
 
-            console.log('Variability check for all efforts:');
+            console.log('Variability check for all efforts (using 3-second rolling average):');
             efforts.forEach(effort => {
+                // Apply 3-second rolling average to smooth 1-second noise
+                const rawPowers = effort.powerData.map(p => p.power);
+                const smoothedPowers = applyRollingAverage(rawPowers, 3);
+
                 // Calculate coefficient of variation (CV = stddev / mean * 100)
-                const powers = effort.powerData.map(p => p.power);
                 const mean = effort.avgPower;
 
-                // Calculate standard deviation
-                const squaredDiffs = powers.map(p => Math.pow(p - mean, 2));
-                const variance = squaredDiffs.reduce((sum, val) => sum + val, 0) / powers.length;
+                // Calculate standard deviation on smoothed data
+                const squaredDiffs = smoothedPowers.map(p => Math.pow(p - mean, 2));
+                const variance = squaredDiffs.reduce((sum, val) => sum + val, 0) / smoothedPowers.length;
                 const stdDev = Math.sqrt(variance);
 
                 const cv = (stdDev / mean) * 100;
@@ -1158,6 +1161,19 @@
 
             console.log(`Kept ${keep.length} sustained efforts out of ${efforts.length} total (filtered ${efforts.length - keep.length} non-sustained)`);
             return keep;
+        }
+
+        // Apply rolling average to smooth 1-second power data noise
+        function applyRollingAverage(data, windowSize) {
+            const smoothed = [];
+            for (let i = 0; i < data.length; i++) {
+                const start = Math.max(0, i - Math.floor(windowSize / 2));
+                const end = Math.min(data.length, i + Math.ceil(windowSize / 2));
+                const window = data.slice(start, end);
+                const avg = window.reduce((sum, val) => sum + val, 0) / window.length;
+                smoothed.push(avg);
+            }
+            return smoothed;
         }
 
         // Select diverse efforts across duration spectrum
