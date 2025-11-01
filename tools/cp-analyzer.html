@@ -897,7 +897,8 @@
                 }
 
                 // Check if this is a valid effort (not too low power)
-                if (maxAvgPower > 180) {
+                // Lowered threshold to 150W to catch lighter efforts (e.g., 3-5min at moderate power)
+                if (maxAvgPower > 150) {
                     const segment = powerData.slice(bestStartIndex, bestStartIndex + duration);
                     const np = calculateNormalizedPower(segment);
 
@@ -1107,12 +1108,15 @@
                     // For efforts close in duration, expect ~2W power increase per minute shorter
                     const durationDiffMin = durationDiffSec / 60;
                     const minExpectedIncrease = 2.0 * durationDiffMin;
+                    const tolerance = 1; // Allow 1W tolerance
 
                     // If longer effort has similar/higher power, shorter effort is submaximal
                     // Example: 12min @ 288W exists, so 10min30s should be at least 288 + (1.5 * 2) = 291W
-                    if (longerEffort.normalizedPower + minExpectedIncrease >= effort.normalizedPower) {
+                    // Use > instead of >= so efforts that meet expectations are kept
+                    const expectedPower = longerEffort.normalizedPower + minExpectedIncrease;
+                    if (expectedPower > effort.normalizedPower + tolerance) {
                         isMaximal = false;
-                        console.log(`Filtering submaximal effort: ${effort.durationDisplay} @ ${effort.normalizedPower}W (longer effort: ${longerEffort.durationDisplay} @ ${longerEffort.normalizedPower}W)`);
+                        console.log(`Filtering submaximal effort: ${effort.durationDisplay} @ ${effort.normalizedPower}W (expected ≥${Math.round(expectedPower)}W based on ${longerEffort.durationDisplay} @ ${longerEffort.normalizedPower}W)`);
                         break;
                     }
                 }
