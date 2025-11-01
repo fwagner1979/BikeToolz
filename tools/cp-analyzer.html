@@ -1019,7 +1019,11 @@
             consolidatedEfforts = filterSubmaximalEfforts(consolidatedEfforts);
             console.log(`After submaximal filtering: ${consolidatedEfforts.length} efforts`);
 
-            // Step 3: Sort by duration for display (shortest to longest)
+            // Step 3: Filter NON-SUSTAINED efforts (high power variability indicates inconsistent pacing)
+            consolidatedEfforts = filterNonSustainedEfforts(consolidatedEfforts);
+            console.log(`After variability filtering: ${consolidatedEfforts.length} efforts`);
+
+            // Step 4: Sort by duration for display (shortest to longest)
             const sortedEfforts = consolidatedEfforts.sort((a, b) => a.duration - b.duration);
 
             console.log(`Final efforts to display: ${sortedEfforts.length}`);
@@ -1102,16 +1106,15 @@
                     // For efforts close in duration, expect ~2W power increase per minute shorter
                     const durationDiffMin = durationDiffSec / 60;
                     const minExpectedIncrease = 2.0 * durationDiffMin;
-                    const tolerance = 1; // Allow 1W tolerance
 
                     // If longer effort has similar/higher power, shorter effort is submaximal
                     // Example: 12min @ 288W exists, so 10min30s should be at least 288 + (1.5 * 2) = 291W
-                    // Use > instead of >= so efforts that meet expectations are kept
+                    // No tolerance - efforts must exceed expectations to be considered maximal
                     // Uses AVERAGE POWER (not NP) since CP calculations use average power
                     const expectedPower = longerEffort.avgPower + minExpectedIncrease;
-                    if (expectedPower > effort.avgPower + tolerance) {
+                    if (expectedPower >= effort.avgPower) {
                         isMaximal = false;
-                        console.log(`Filtering submaximal effort: ${effort.durationDisplay} @ ${effort.avgPower}W avg (expected ≥${Math.round(expectedPower)}W based on ${longerEffort.durationDisplay} @ ${longerEffort.avgPower}W avg)`);
+                        console.log(`Filtering submaximal effort: ${effort.durationDisplay} @ ${effort.avgPower}W avg (expected >${Math.round(expectedPower)}W based on ${longerEffort.durationDisplay} @ ${longerEffort.avgPower}W avg)`);
                         break;
                     }
                 }
@@ -1122,6 +1125,36 @@
             }
 
             console.log(`Kept ${keep.length} maximal efforts out of ${efforts.length} total`);
+            return keep;
+        }
+
+        // Filter NON-SUSTAINED efforts using coefficient of variation
+        // A sustained effort should have relatively consistent power throughout
+        // High variability indicates the effort contains easy sections or big surges
+        function filterNonSustainedEfforts(efforts) {
+            const keep = [];
+            const maxCV = 15; // Maximum coefficient of variation (%) - 15% allows for normal pacing variance
+
+            efforts.forEach(effort => {
+                // Calculate coefficient of variation (CV = stddev / mean * 100)
+                const powers = effort.powerData.map(p => p.power);
+                const mean = effort.avgPower;
+
+                // Calculate standard deviation
+                const squaredDiffs = powers.map(p => Math.pow(p - mean, 2));
+                const variance = squaredDiffs.reduce((sum, val) => sum + val, 0) / powers.length;
+                const stdDev = Math.sqrt(variance);
+
+                const cv = (stdDev / mean) * 100;
+
+                if (cv <= maxCV) {
+                    keep.push(effort);
+                } else {
+                    console.log(`Filtering non-sustained effort: ${effort.durationDisplay} @ ${effort.avgPower}W avg (CV=${cv.toFixed(1)}% > ${maxCV}% - too much variation)`);
+                }
+            });
+
+            console.log(`Kept ${keep.length} sustained efforts out of ${efforts.length} total (filtered ${efforts.length - keep.length} non-sustained)`);
             return keep;
         }
 
