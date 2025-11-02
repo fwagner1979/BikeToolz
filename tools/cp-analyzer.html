@@ -836,6 +836,7 @@
             <button class="modal-close" onclick="closeEffortModal()">×</button>
             <h3 id="modalTitle">Adjust Effort</h3>
 
+            <!-- Metric toggles hidden for MVP - only power data is parsed
             <div class="metric-toggles">
                 <label class="metric-toggle active" id="toggle-power">
                     <input type="checkbox" checked onchange="toggleMetric('power')">
@@ -858,6 +859,7 @@
                     <span>Elevation</span>
                 </label>
             </div>
+            -->
 
             <div class="modal-chart">
                 <canvas id="modalChartCanvas"></canvas>
@@ -1396,7 +1398,7 @@
                             ${effort.activityDate ? effort.activityDate + ' • ' : ''}${effort.fileName} • NP: ${effort.normalizedPower}W • CV: ${effort.cv.toFixed(1)}% • Start: ${formatTime(effort.startTime)}
                         </div>
                     </div>
-                    <canvas class="effort-thumbnail" id="thumbnail-${effort.id}" onclick="openEffortModal('${effort.id}', event)"></canvas>
+                    <canvas class="effort-thumbnail" id="thumbnail-${effort.id}" width="200" height="100" onclick="openEffortModal('${effort.id}', event)"></canvas>
                     <span class="effort-badge ${effort.cv > 20 ? 'badge-warning' : (effort.hasRecovery ? 'badge-success' : 'badge-info')}">
                         ${effort.cv > 20 ? 'High variability' : effort.type}
                     </span>
@@ -2044,8 +2046,12 @@
             document.getElementById('startTimeInput').classList.remove('error');
             document.getElementById('endTimeInput').classList.remove('error');
 
-            // Update stats display
-            updateModalStats(effort.original);
+            // Update stats display (no delta since we're back to original)
+            document.getElementById('modalAvgPower').textContent = `${Math.round(effort.original.avgPower)}W`;
+            document.getElementById('modalAvgPower').classList.remove('increased', 'decreased');
+            document.getElementById('modalNP').textContent = `${Math.round(effort.original.normalizedPower)}W`;
+            document.getElementById('modalCV').textContent = `${effort.original.cv.toFixed(1)}%`;
+            document.getElementById('modalDuration').textContent = effort.original.durationDisplay;
 
             // Update chart
             createModalChart(effort);
