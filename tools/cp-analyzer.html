@@ -478,6 +478,256 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Thumbnail Chart Styles */
+        .effort-thumbnail {
+            width: 200px;
+            height: 100px;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .effort-thumbnail:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 2px 8px rgba(0, 102, 204, 0.2);
+        }
+
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-backdrop {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            cursor: pointer;
+        }
+
+        .modal-content {
+            position: relative;
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 90%;
+            width: 900px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            z-index: 1001;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: transparent;
+            border: none;
+            font-size: 2rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            line-height: 1;
+            padding: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            color: var(--primary-color);
+            transform: scale(1.1);
+        }
+
+        .modal h3 {
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+        }
+
+        .modal-chart {
+            height: 300px;
+            margin-bottom: 2rem;
+        }
+
+        .metric-toggles {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: var(--bg-color);
+            border-radius: 8px;
+        }
+
+        .metric-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+        }
+
+        .metric-toggle:hover {
+            border-color: var(--primary-color);
+        }
+
+        .metric-toggle.active {
+            border-color: var(--primary-color);
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .metric-toggle input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary-color);
+        }
+
+        .adjustment-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .control-group label {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .time-input {
+            padding: 0.75rem;
+            font-size: 1rem;
+            font-family: 'Courier New', monospace;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .time-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        .time-input.error {
+            border-color: var(--danger-color);
+        }
+
+        .live-stats {
+            background: var(--bg-color);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 2px solid var(--border-color);
+            margin-bottom: 1.5rem;
+        }
+
+        .live-stats h4 {
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-color);
+        }
+
+        .stat-value.increased {
+            color: var(--success-color);
+        }
+
+        .stat-value.decreased {
+            color: var(--warning-color);
+        }
+
+        .stat-delta {
+            font-size: 0.85rem;
+            margin-left: 0.5rem;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        .btn-reset {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            color: var(--text-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .btn-reset:hover {
+            border-color: var(--danger-color);
+            color: var(--danger-color);
+        }
+
+        .error-message {
+            color: var(--danger-color);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .modal-content {
+                width: 95%;
+                padding: 1.5rem;
+            }
+
+            .adjustment-controls {
+                grid-template-columns: 1fr;
+            }
+
+            .effort-thumbnail {
+                width: 150px;
+                height: 75px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -579,6 +829,81 @@
         </div>
     </div>
 
+    <!-- Effort Adjustment Modal -->
+    <div id="effortModal" class="modal hidden">
+        <div class="modal-backdrop" onclick="closeEffortModal()"></div>
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeEffortModal()">×</button>
+            <h3 id="modalTitle">Adjust Effort</h3>
+
+            <div class="metric-toggles">
+                <label class="metric-toggle active" id="toggle-power">
+                    <input type="checkbox" checked onchange="toggleMetric('power')">
+                    <span>Power</span>
+                </label>
+                <label class="metric-toggle" id="toggle-hr">
+                    <input type="checkbox" onchange="toggleMetric('hr')">
+                    <span>Heart Rate</span>
+                </label>
+                <label class="metric-toggle" id="toggle-cadence">
+                    <input type="checkbox" onchange="toggleMetric('cadence')">
+                    <span>Cadence</span>
+                </label>
+                <label class="metric-toggle" id="toggle-speed">
+                    <input type="checkbox" onchange="toggleMetric('speed')">
+                    <span>Speed</span>
+                </label>
+                <label class="metric-toggle" id="toggle-elevation">
+                    <input type="checkbox" onchange="toggleMetric('elevation')">
+                    <span>Elevation</span>
+                </label>
+            </div>
+
+            <div class="modal-chart">
+                <canvas id="modalChartCanvas"></canvas>
+            </div>
+
+            <div class="adjustment-controls">
+                <div class="control-group">
+                    <label for="startTimeInput">Start Time (HH:MM:SS)</label>
+                    <input type="text" id="startTimeInput" class="time-input" placeholder="00:08:45">
+                    <small id="startTimeError" class="error-message hidden"></small>
+                </div>
+                <div class="control-group">
+                    <label for="endTimeInput">End Time (HH:MM:SS)</label>
+                    <input type="text" id="endTimeInput" class="time-input" placeholder="00:20:45">
+                    <small id="endTimeError" class="error-message hidden"></small>
+                </div>
+            </div>
+
+            <div class="live-stats">
+                <h4>Live Statistics</h4>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">Avg Power</span>
+                        <span class="stat-value" id="modalAvgPower">288W</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Normalized Power</span>
+                        <span class="stat-value" id="modalNP">295W</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">CV</span>
+                        <span class="stat-value" id="modalCV">12.3%</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Duration</span>
+                        <span class="stat-value" id="modalDuration">12min</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-reset" onclick="resetEffortToOriginal()">Reset to Auto-Detected</button>
+            </div>
+        </div>
+    </div>
+
     <script src="../js/i18n.js"></script>
     <script>
         // State management
@@ -586,7 +911,10 @@
             uploadedFiles: [],
             detectedEfforts: [],
             selectedEfforts: [],
-            cpwResults: null
+            cpwResults: null,
+            currentModalEffortId: null,
+            modalChart: null,
+            thumbnailCharts: {}
         };
 
         let powerDurationChart = null;
@@ -933,6 +1261,7 @@
                         startIndex: bestStartIndex,
                         startTime: powerData[bestStartIndex].time,
                         powerData: segment,
+                        fullPowerData: powerData, // Store full power data for thumbnail/modal context
                         hasRecovery: hasRecovery,
                         type: hasRecovery ? 'Multi-effort file' : 'Single effort',
                         // Quality score for ranking (normalized power is better metric)
@@ -1049,23 +1378,38 @@
             });
             console.log('=== END DEBUG ===');
 
-            effortsList.innerHTML = sortedEfforts.map((effort, index) => `
+            effortsList.innerHTML = sortedEfforts.map((effort, index) => {
+                const displayPower = effort.adjusted ? effort.adjusted.avgPower : effort.avgPower;
+                const displayDuration = effort.adjusted ? effort.adjusted.durationDisplay : effort.durationDisplay;
+                const isAdjusted = !!effort.adjusted;
+
+                return `
                 <div class="effort-card" onclick="toggleEffort('${effort.id}', event)">
                     <input type="checkbox" id="checkbox-${effort.id}" onclick="toggleEffort('${effort.id}', event)">
                     <div class="effort-details">
                         <div class="effort-title">
-                            ${effort.durationDisplay} effort - ${effort.avgPower}W avg
+                            ${displayDuration} effort - ${displayPower}W avg
+                            ${isAdjusted ? '<span style="color: var(--primary-color); margin-left: 8px;">✏️</span>' : ''}
                             ${effort.cv > 20 ? '<span style="color: #f59e0b; margin-left: 8px;">⚠️</span>' : ''}
                         </div>
                         <div class="effort-stats">
                             ${effort.activityDate ? effort.activityDate + ' • ' : ''}${effort.fileName} • NP: ${effort.normalizedPower}W • CV: ${effort.cv.toFixed(1)}% • Start: ${formatTime(effort.startTime)}
                         </div>
                     </div>
+                    <canvas class="effort-thumbnail" id="thumbnail-${effort.id}" onclick="openEffortModal('${effort.id}', event)"></canvas>
                     <span class="effort-badge ${effort.cv > 20 ? 'badge-warning' : (effort.hasRecovery ? 'badge-success' : 'badge-info')}">
                         ${effort.cv > 20 ? 'High variability' : effort.type}
                     </span>
                 </div>
-            `).join('');
+            `;
+            }).join('');
+
+            // Render thumbnail charts after DOM is updated
+            setTimeout(() => {
+                sortedEfforts.forEach(effort => {
+                    createThumbnailChart(effort);
+                });
+            }, 0);
 
             updateCalculateButton();
         }
@@ -1235,6 +1579,496 @@
             }
         }
 
+        // Format seconds to HH:MM:SS
+        function formatHHMMSS(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        // Parse HH:MM:SS or MM:SS to seconds
+        function parseHHMMSS(timeString) {
+            const parts = timeString.trim().split(':');
+
+            if (parts.length === 2) {
+                // MM:SS format
+                const minutes = parseInt(parts[0]);
+                const seconds = parseInt(parts[1]);
+                if (isNaN(minutes) || isNaN(seconds)) return null;
+                return minutes * 60 + seconds;
+            } else if (parts.length === 3) {
+                // HH:MM:SS format
+                const hours = parseInt(parts[0]);
+                const minutes = parseInt(parts[1]);
+                const seconds = parseInt(parts[2]);
+                if (isNaN(hours) || isNaN(minutes) || isNaN(seconds)) return null;
+                return hours * 3600 + minutes * 60 + seconds;
+            }
+
+            return null;
+        }
+
+        // Create thumbnail chart for effort
+        function createThumbnailChart(effort) {
+            const canvasId = `thumbnail-${effort.id}`;
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+
+            // Destroy existing chart if any
+            if (state.thumbnailCharts[effort.id]) {
+                state.thumbnailCharts[effort.id].destroy();
+            }
+
+            const ctx = canvas.getContext('2d');
+            const isDark = document.body.hasAttribute('data-theme');
+
+            // Get context window: 1 min before + effort + 1 min after
+            const contextBefore = 60;
+            const contextAfter = 60;
+            const fullData = effort.fullPowerData || effort.powerData;
+            const startIdx = Math.max(0, effort.startIndex - contextBefore);
+            const endIdx = Math.min(fullData.length - 1, effort.startIndex + effort.duration + contextAfter);
+
+            // Prepare chart data
+            const chartData = [];
+            for (let i = startIdx; i < endIdx; i++) {
+                if (i < fullData.length) {
+                    chartData.push({
+                        x: i - effort.startIndex,
+                        y: fullData[i].power
+                    });
+                }
+            }
+
+            // Create shaded region for detected interval
+            const annotationPlugin = {
+                id: 'shaded-region',
+                beforeDatasetsDraw(chart) {
+                    const { ctx, chartArea: { left, right, top, bottom }, scales: { x, y } } = chart;
+
+                    const startX = x.getPixelForValue(0);
+                    const endX = x.getPixelForValue(effort.duration);
+
+                    ctx.fillStyle = 'rgba(34, 197, 94, 0.1)';
+                    ctx.fillRect(startX, top, endX - startX, bottom - top);
+                }
+            };
+
+            state.thumbnailCharts[effort.id] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        data: chartData,
+                        borderColor: '#3b82f6',
+                        borderWidth: 1.5,
+                        pointRadius: 0,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false }
+                    },
+                    scales: {
+                        x: { display: false },
+                        y: {
+                            display: false,
+                            beginAtZero: false
+                        }
+                    },
+                    animation: false
+                },
+                plugins: [annotationPlugin]
+            });
+        }
+
+        // Open effort adjustment modal
+        function openEffortModal(effortId, event) {
+            if (event) {
+                event.stopPropagation();
+                event.preventDefault();
+            }
+
+            const effort = state.detectedEfforts.find(e => e.id === effortId);
+            if (!effort) return;
+
+            // Store current effort for edits
+            state.currentModalEffortId = effortId;
+
+            // If no original saved yet, save it now
+            if (!effort.original) {
+                effort.original = {
+                    startIndex: effort.startIndex,
+                    startTime: effort.startTime,
+                    duration: effort.duration,
+                    durationDisplay: effort.durationDisplay,
+                    avgPower: effort.avgPower,
+                    normalizedPower: effort.normalizedPower,
+                    cv: effort.cv,
+                    powerData: effort.powerData
+                };
+            }
+
+            // Ensure original also has fullPowerData reference
+            if (!effort.original.fullPowerData && effort.fullPowerData) {
+                effort.original.fullPowerData = effort.fullPowerData;
+            }
+
+            // Set modal title
+            document.getElementById('modalTitle').textContent = `Adjust ${effort.durationDisplay} Effort`;
+
+            // Populate time inputs
+            const currentData = effort.adjusted || effort.original;
+            document.getElementById('startTimeInput').value = formatHHMMSS(currentData.startTime);
+            document.getElementById('endTimeInput').value = formatHHMMSS(currentData.startTime + currentData.duration);
+
+            // Update stats display
+            updateModalStats(currentData);
+
+            // Create modal chart
+            createModalChart(effort);
+
+            // Show modal
+            document.getElementById('effortModal').classList.remove('hidden');
+
+            // Add input listeners for real-time updates
+            const startInput = document.getElementById('startTimeInput');
+            const endInput = document.getElementById('endTimeInput');
+
+            startInput.oninput = () => recalculateEffortStats();
+            endInput.oninput = () => recalculateEffortStats();
+        }
+
+        // Close effort modal
+        function closeEffortModal() {
+            const effortId = state.currentModalEffortId;
+            if (!effortId) {
+                document.getElementById('effortModal').classList.add('hidden');
+                return;
+            }
+
+            const effort = state.detectedEfforts.find(e => e.id === effortId);
+            if (effort && effort.adjusted) {
+                // Refresh the effort card display
+                displayEfforts();
+
+                // Show notification if effort was selected
+                if (state.selectedEfforts.includes(effortId)) {
+                    console.log('Effort adjusted. Recalculate CP/W\' to see updated results.');
+                }
+            }
+
+            // Destroy modal chart
+            if (state.modalChart) {
+                state.modalChart.destroy();
+                state.modalChart = null;
+            }
+
+            state.currentModalEffortId = null;
+            document.getElementById('effortModal').classList.add('hidden');
+        }
+
+        // Create modal chart
+        function createModalChart(effort) {
+            if (state.modalChart) {
+                state.modalChart.destroy();
+            }
+
+            const canvas = document.getElementById('modalChartCanvas');
+            const ctx = canvas.getContext('2d');
+            const isDark = document.body.hasAttribute('data-theme');
+
+            // Get context window: 1 min before + effort + 1 min after
+            const contextBefore = 60;
+            const contextAfter = 60;
+            const currentData = effort.adjusted || effort.original;
+            const fullData = effort.fullPowerData || effort.powerData;
+            const startIdx = Math.max(0, currentData.startIndex - contextBefore);
+            const endIdx = Math.min(fullData.length - 1, currentData.startIndex + currentData.duration + contextAfter);
+
+            // Prepare power data
+            const powerData = [];
+            for (let i = startIdx; i < endIdx; i++) {
+                if (i < fullData.length) {
+                    powerData.push({
+                        x: fullData[i].time,
+                        y: fullData[i].power
+                    });
+                }
+            }
+
+            // Annotation plugin for shaded region
+            const annotationPlugin = {
+                id: 'effort-region',
+                beforeDatasetsDraw(chart) {
+                    const { ctx, chartArea: { left, right, top, bottom }, scales: { x, y } } = chart;
+
+                    const startX = x.getPixelForValue(currentData.startTime);
+                    const endX = x.getPixelForValue(currentData.startTime + currentData.duration);
+
+                    ctx.fillStyle = 'rgba(34, 197, 94, 0.15)';
+                    ctx.fillRect(startX, top, endX - startX, bottom - top);
+
+                    // Draw vertical lines at boundaries
+                    ctx.strokeStyle = 'rgba(34, 197, 94, 0.8)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(startX, top);
+                    ctx.lineTo(startX, bottom);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(endX, top);
+                    ctx.lineTo(endX, bottom);
+                    ctx.stroke();
+                }
+            };
+
+            state.modalChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: 'Power',
+                        data: powerData,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        tension: 0.1,
+                        yAxisID: 'y'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: isDark ? '#f9fafb' : '#1f2937' }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            title: {
+                                display: true,
+                                text: 'Time (seconds)',
+                                color: isDark ? '#9ca3af' : '#6b7280'
+                            },
+                            ticks: { color: isDark ? '#9ca3af' : '#6b7280' },
+                            grid: { color: isDark ? '#374151' : '#e5e7eb' }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Power (watts)',
+                                color: isDark ? '#9ca3af' : '#6b7280'
+                            },
+                            ticks: { color: isDark ? '#9ca3af' : '#6b7280' },
+                            grid: { color: isDark ? '#374151' : '#e5e7eb' }
+                        }
+                    }
+                },
+                plugins: [annotationPlugin]
+            });
+        }
+
+        // Update modal stats display
+        function updateModalStats(data, original = null) {
+            document.getElementById('modalAvgPower').textContent = `${Math.round(data.avgPower)}W`;
+            document.getElementById('modalNP').textContent = `${Math.round(data.normalizedPower)}W`;
+            document.getElementById('modalCV').textContent = `${data.cv.toFixed(1)}%`;
+            document.getElementById('modalDuration').textContent = data.durationDisplay;
+
+            // Show delta if we have original to compare
+            if (original) {
+                const powerDelta = data.avgPower - original.avgPower;
+                const avgPowerEl = document.getElementById('modalAvgPower');
+
+                if (powerDelta > 0) {
+                    avgPowerEl.classList.add('increased');
+                    avgPowerEl.classList.remove('decreased');
+                    avgPowerEl.innerHTML = `${Math.round(data.avgPower)}W <span class="stat-delta">↗️ +${Math.round(powerDelta)}W</span>`;
+                } else if (powerDelta < 0) {
+                    avgPowerEl.classList.add('decreased');
+                    avgPowerEl.classList.remove('increased');
+                    avgPowerEl.innerHTML = `${Math.round(data.avgPower)}W <span class="stat-delta">↘️ ${Math.round(powerDelta)}W</span>`;
+                } else {
+                    avgPowerEl.classList.remove('increased', 'decreased');
+                }
+            }
+        }
+
+        // Recalculate effort stats from time inputs
+        function recalculateEffortStats() {
+            const effortId = state.currentModalEffortId;
+            if (!effortId) return;
+
+            const effort = state.detectedEfforts.find(e => e.id === effortId);
+            if (!effort) return;
+
+            const startTimeStr = document.getElementById('startTimeInput').value;
+            const endTimeStr = document.getElementById('endTimeInput').value;
+
+            // Parse times
+            const newStartTime = parseHHMMSS(startTimeStr);
+            const newEndTime = parseHHMMSS(endTimeStr);
+
+            // Clear previous errors
+            document.getElementById('startTimeError').classList.add('hidden');
+            document.getElementById('endTimeError').classList.add('hidden');
+            document.getElementById('startTimeInput').classList.remove('error');
+            document.getElementById('endTimeInput').classList.remove('error');
+
+            // Validation
+            if (newStartTime === null) {
+                document.getElementById('startTimeError').textContent = '⚠️ Invalid time format. Use HH:MM:SS';
+                document.getElementById('startTimeError').classList.remove('hidden');
+                document.getElementById('startTimeInput').classList.add('error');
+                return;
+            }
+
+            if (newEndTime === null) {
+                document.getElementById('endTimeError').textContent = '⚠️ Invalid time format. Use HH:MM:SS';
+                document.getElementById('endTimeError').classList.remove('hidden');
+                document.getElementById('endTimeInput').classList.add('error');
+                return;
+            }
+
+            const newDuration = newEndTime - newStartTime;
+
+            if (newDuration <= 0) {
+                document.getElementById('endTimeError').textContent = '⚠️ End time must be after start time';
+                document.getElementById('endTimeError').classList.remove('hidden');
+                document.getElementById('endTimeInput').classList.add('error');
+                return;
+            }
+
+            if (newDuration < 180) {
+                document.getElementById('endTimeError').textContent = '⚠️ Effort must be at least 3 minutes long';
+                document.getElementById('endTimeError').classList.remove('hidden');
+                document.getElementById('endTimeInput').classList.add('error');
+                return;
+            }
+
+            // Find new start index in power data
+            const fullData = effort.fullPowerData || effort.powerData;
+            const newStartIndex = fullData.findIndex(p => p.time >= newStartTime);
+            if (newStartIndex === -1) {
+                document.getElementById('startTimeError').textContent = '⚠️ Start time outside activity range';
+                document.getElementById('startTimeError').classList.remove('hidden');
+                document.getElementById('startTimeInput').classList.add('error');
+                return;
+            }
+
+            // Extract new segment
+            const newSegment = [];
+            for (let i = newStartIndex; i < fullData.length && fullData[i].time < newEndTime; i++) {
+                newSegment.push(fullData[i]);
+            }
+
+            if (newSegment.length === 0) {
+                document.getElementById('endTimeError').textContent = '⚠️ No power data in this range';
+                document.getElementById('endTimeError').classList.remove('hidden');
+                document.getElementById('endTimeInput').classList.add('error');
+                return;
+            }
+
+            // Calculate new stats
+            const newAvgPower = newSegment.reduce((sum, p) => sum + p.power, 0) / newSegment.length;
+            const newNP = calculateNormalizedPower(newSegment);
+            const newCV = calculateCVFromSegment(newSegment, newAvgPower);
+
+            // Store adjusted values
+            effort.adjusted = {
+                startIndex: newStartIndex,
+                startTime: newStartTime,
+                duration: newDuration,
+                durationDisplay: formatDuration(newDuration),
+                avgPower: Math.round(newAvgPower),
+                normalizedPower: Math.round(newNP),
+                cv: newCV,
+                powerData: newSegment
+            };
+
+            // Update stats display with delta
+            updateModalStats(effort.adjusted, effort.original);
+
+            // Update chart
+            updateModalChartBoundaries(effort);
+        }
+
+        // Calculate CV from segment
+        function calculateCVFromSegment(segment, mean) {
+            const rawPowers = segment.map(p => p.power);
+            const smoothedPowers = applyRollingAverage(rawPowers, 5);
+
+            const squaredDiffs = smoothedPowers.map(p => Math.pow(p - mean, 2));
+            const variance = squaredDiffs.reduce((sum, val) => sum + val, 0) / smoothedPowers.length;
+            const stdDev = Math.sqrt(variance);
+
+            return (stdDev / mean) * 100;
+        }
+
+        // Update modal chart boundaries
+        function updateModalChartBoundaries(effort) {
+            if (!state.modalChart) return;
+
+            // Just update the annotation plugin data and redraw
+            const currentData = effort.adjusted || effort.original;
+
+            // Recreate chart with new boundaries
+            createModalChart(effort);
+        }
+
+        // Reset effort to original auto-detected values
+        function resetEffortToOriginal() {
+            const effortId = state.currentModalEffortId;
+            if (!effortId) return;
+
+            const effort = state.detectedEfforts.find(e => e.id === effortId);
+            if (!effort || !effort.original) return;
+
+            // Remove adjusted version
+            delete effort.adjusted;
+
+            // Repopulate inputs with original values
+            document.getElementById('startTimeInput').value = formatHHMMSS(effort.original.startTime);
+            document.getElementById('endTimeInput').value = formatHHMMSS(effort.original.startTime + effort.original.duration);
+
+            // Clear errors
+            document.getElementById('startTimeError').classList.add('hidden');
+            document.getElementById('endTimeError').classList.add('hidden');
+            document.getElementById('startTimeInput').classList.remove('error');
+            document.getElementById('endTimeInput').classList.remove('error');
+
+            // Update stats display
+            updateModalStats(effort.original);
+
+            // Update chart
+            createModalChart(effort);
+
+            console.log('Reset to auto-detected values');
+        }
+
+        // Toggle metric visibility in modal chart
+        function toggleMetric(metricName) {
+            // For MVP, we only have power data
+            // This is a placeholder for future enhancement when we parse HR, cadence, etc.
+            console.log(`Toggle metric: ${metricName}`);
+
+            const toggle = document.getElementById(`toggle-${metricName}`);
+            const checkbox = toggle.querySelector('input[type="checkbox"]');
+
+            if (checkbox.checked) {
+                toggle.classList.add('active');
+            } else {
+                toggle.classList.remove('active');
+            }
+        }
+
         function toggleEffort(effortId, event) {
             if (event.target.type === 'checkbox') {
                 // Checkbox was clicked
@@ -1278,11 +2112,13 @@
             );
 
             // Prepare data for regression: Work vs Time
+            // Use adjusted values if they exist, otherwise use original values
             const dataPoints = selectedEffortData.map(effort => {
+                const data = effort.adjusted || effort;
                 return {
-                    time: effort.duration, // seconds
-                    avgPower: effort.avgPower,
-                    work: effort.avgPower * effort.duration // Joules
+                    time: data.duration, // seconds
+                    avgPower: data.avgPower,
+                    work: data.avgPower * data.duration // Joules
                 };
             });
 
@@ -1508,11 +2344,27 @@
         }
 
         function resetAnalysis() {
+            // Destroy all thumbnail charts
+            Object.values(state.thumbnailCharts).forEach(chart => {
+                if (chart) chart.destroy();
+            });
+
+            // Destroy modal chart if open
+            if (state.modalChart) {
+                state.modalChart.destroy();
+            }
+
+            // Close modal if open
+            document.getElementById('effortModal').classList.add('hidden');
+
             state = {
                 uploadedFiles: [],
                 detectedEfforts: [],
                 selectedEfforts: [],
-                cpwResults: null
+                cpwResults: null,
+                currentModalEffortId: null,
+                modalChart: null,
+                thumbnailCharts: {}
             };
 
             document.getElementById('fileList').innerHTML = '';
@@ -1535,6 +2387,21 @@
                 if (state.cpwResults) {
                     createPowerDurationChart(state.cpwResults);
                     createRegressionChart(state.cpwResults);
+                }
+
+                // Recreate thumbnail charts
+                state.detectedEfforts.forEach(effort => {
+                    if (state.thumbnailCharts[effort.id]) {
+                        createThumbnailChart(effort);
+                    }
+                });
+
+                // Recreate modal chart if modal is open
+                if (state.currentModalEffortId) {
+                    const effort = state.detectedEfforts.find(e => e.id === state.currentModalEffortId);
+                    if (effort) {
+                        createModalChart(effort);
+                    }
                 }
             }
         });
