@@ -320,6 +320,11 @@
             color: white;
         }
 
+        .badge-warning {
+            background: #f59e0b;
+            color: white;
+        }
+
         /* Unified Button System */
         .btn-primary, .calculate-button {
             width: 100%;
@@ -627,10 +632,13 @@
                         const fileContent = e.target.result;
                         const fileName = file.name.toLowerCase();
                         let powerData = null;
+                        let activityDate = null;
 
                         // Detect file type and parse accordingly
                         if (fileName.endsWith('.tcx')) {
-                            powerData = parseTCXFile(fileContent);
+                            const result = parseTCXFile(fileContent);
+                            powerData = result.powerData;
+                            activityDate = result.activityDate;
                         } else if (fileName.endsWith('.gpx')) {
                             powerData = parseGPXFile(fileContent);
                         } else if (fileName.endsWith('.csv')) {
@@ -647,7 +655,7 @@
                         }
 
                         // Detect efforts in the parsed power data
-                        const efforts = detectEfforts(powerData, fileId, file.name);
+                        const efforts = detectEfforts(powerData, fileId, file.name, activityDate);
                         state.detectedEfforts.push(...efforts);
 
                         updateFileStatus(fileId, 'done');
@@ -751,7 +759,15 @@
             }
 
             console.log(`Parsed TCX: ${powerData.length} power readings over ${powerData[powerData.length - 1].time} seconds`);
-            return powerData;
+
+            // Format activity date for display
+            const activityDate = startTime ? startTime.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            }) : null;
+
+            return { powerData, activityDate };
         }
 
         // Parse GPX file format
@@ -867,7 +883,7 @@
         }
 
         // Detect max efforts in power data
-        function detectEfforts(powerData, fileId, fileName) {
+        function detectEfforts(powerData, fileId, fileName, activityDate = null) {
             const efforts = [];
 
             // Smart detection: scan multiple durations from 3 to 20 minutes
@@ -908,6 +924,7 @@
                         id: `${fileId}-${duration}`,
                         fileId: fileId,
                         fileName: fileName,
+                        activityDate: activityDate,
                         duration: duration,
                         durationMinutes: (duration / 60).toFixed(1),
                         durationDisplay: formatDuration(duration),
@@ -1019,16 +1036,16 @@
             consolidatedEfforts = filterSubmaximalEfforts(consolidatedEfforts);
             console.log(`After submaximal filtering: ${consolidatedEfforts.length} efforts`);
 
-            // Step 3: Filter NON-SUSTAINED efforts (high power variability indicates inconsistent pacing)
-            consolidatedEfforts = filterNonSustainedEfforts(consolidatedEfforts);
-            console.log(`After variability filtering: ${consolidatedEfforts.length} efforts`);
+            // Step 3: Calculate CV for each effort (for warnings, not filtering)
+            consolidatedEfforts = calculateEffortCV(consolidatedEfforts);
 
             // Step 4: Sort by duration for display (shortest to longest)
             const sortedEfforts = consolidatedEfforts.sort((a, b) => a.duration - b.duration);
 
             console.log(`Final efforts to display: ${sortedEfforts.length}`);
             sortedEfforts.forEach((e, i) => {
-                console.log(`  ${i+1}. ${e.durationDisplay} @ ${e.avgPower}W avg (${e.fileName})`);
+                const warning = e.cv > 20 ? ' ⚠️ HIGH VARIABILITY' : '';
+                console.log(`  ${i+1}. ${e.durationDisplay} @ ${e.avgPower}W avg (CV=${e.cv.toFixed(1)}%)${warning}`);
             });
             console.log('=== END DEBUG ===');
 
@@ -1038,13 +1055,14 @@
                     <div class="effort-details">
                         <div class="effort-title">
                             ${effort.durationDisplay} effort - ${effort.avgPower}W avg
+                            ${effort.cv > 20 ? '<span style="color: #f59e0b; margin-left: 8px;">⚠️</span>' : ''}
                         </div>
                         <div class="effort-stats">
-                            From: ${effort.fileName} • NP: ${effort.normalizedPower}W • Start: ${formatTime(effort.startTime)}
+                            ${effort.activityDate ? effort.activityDate + ' • ' : ''}${effort.fileName} • NP: ${effort.normalizedPower}W • CV: ${effort.cv.toFixed(1)}% • Start: ${formatTime(effort.startTime)}
                         </div>
                     </div>
-                    <span class="effort-badge ${effort.hasRecovery ? 'badge-success' : 'badge-info'}">
-                        ${effort.type}
+                    <span class="effort-badge ${effort.cv > 20 ? 'badge-warning' : (effort.hasRecovery ? 'badge-success' : 'badge-info')}">
+                        ${effort.cv > 20 ? 'High variability' : effort.type}
                     </span>
                 </div>
             `).join('');
@@ -1128,14 +1146,12 @@
             return keep;
         }
 
-        // Filter NON-SUSTAINED efforts using coefficient of variation
-        // A sustained effort should have relatively consistent power throughout
-        // High variability indicates the effort contains easy sections or big surges
-        function filterNonSustainedEfforts(efforts) {
-            const keep = [];
-            const maxCV = 15; // Maximum coefficient of variation (%) - 15% allows for normal pacing variance
+        // Calculate CV (Coefficient of Variation) for each effort
+        // CV indicates power consistency - used for warnings, not filtering
+        // High CV (>20%) may indicate non-sustained effort
+        function calculateEffortCV(efforts) {
+            console.log('Calculating CV for all efforts (using 5-second rolling average):');
 
-            console.log('Variability check for all efforts (using 5-second rolling average):');
             efforts.forEach(effort => {
                 // Apply 5-second rolling average to smooth 1-second noise
                 const rawPowers = effort.powerData.map(p => p.power);
@@ -1149,18 +1165,13 @@
                 const variance = squaredDiffs.reduce((sum, val) => sum + val, 0) / smoothedPowers.length;
                 const stdDev = Math.sqrt(variance);
 
-                const cv = (stdDev / mean) * 100;
+                // Store CV in effort object
+                effort.cv = (stdDev / mean) * 100;
 
-                if (cv <= maxCV) {
-                    console.log(`  ✓ KEEP: ${effort.durationDisplay} @ ${effort.avgPower}W avg (CV=${cv.toFixed(1)}%)`);
-                    keep.push(effort);
-                } else {
-                    console.log(`  ✗ FILTER: ${effort.durationDisplay} @ ${effort.avgPower}W avg (CV=${cv.toFixed(1)}% > ${maxCV}%)`);
-                }
+                console.log(`  ${effort.durationDisplay} @ ${effort.avgPower}W avg: CV=${effort.cv.toFixed(1)}%${effort.cv > 20 ? ' ⚠️' : ''}`);
             });
 
-            console.log(`Kept ${keep.length} sustained efforts out of ${efforts.length} total (filtered ${efforts.length - keep.length} non-sustained)`);
-            return keep;
+            return efforts;
         }
 
         // Apply rolling average to smooth 1-second power data noise
