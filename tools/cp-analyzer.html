@@ -1297,7 +1297,7 @@
             );
 
             const cp = Math.round(regression.slope); // watts
-            const wPrime = Math.round(regression.intercept / 1000); // convert to kJ
+            const wPrime = regression.intercept / 1000; // convert to kJ (keep decimals)
             const r2 = regression.r2;
 
             state.cpwResults = {
@@ -1337,7 +1337,7 @@
             const results = state.cpwResults;
 
             document.getElementById('cpValue').textContent = results.cp + ' W';
-            document.getElementById('wPrimeValue').textContent = results.wPrime + ' kJ';
+            document.getElementById('wPrimeValue').textContent = results.wPrime.toFixed(1) + ' kJ';
             document.getElementById('r2Value').textContent = results.r2.toFixed(3);
             document.getElementById('dataPointsValue').textContent = results.dataPoints.length;
 
@@ -1497,7 +1497,7 @@
                             ticks: {
                                 color: isDark ? '#9ca3af' : '#6b7280',
                                 callback: function(value) {
-                                    return (value / 1000).toFixed(0) + ' kJ';
+                                    return (value / 1000).toFixed(1) + ' kJ';
                                 }
                             },
                             grid: { color: isDark ? '#374151' : '#e5e7eb' }
