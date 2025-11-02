@@ -1135,11 +1135,11 @@
             const keep = [];
             const maxCV = 15; // Maximum coefficient of variation (%) - 15% allows for normal pacing variance
 
-            console.log('Variability check for all efforts (using 3-second rolling average):');
+            console.log('Variability check for all efforts (using 5-second rolling average):');
             efforts.forEach(effort => {
-                // Apply 3-second rolling average to smooth 1-second noise
+                // Apply 5-second rolling average to smooth 1-second noise
                 const rawPowers = effort.powerData.map(p => p.power);
-                const smoothedPowers = applyRollingAverage(rawPowers, 3);
+                const smoothedPowers = applyRollingAverage(rawPowers, 5);
 
                 // Calculate coefficient of variation (CV = stddev / mean * 100)
                 const mean = effort.avgPower;
