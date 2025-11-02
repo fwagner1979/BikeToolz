@@ -513,7 +513,7 @@
             <div class="efforts-header">
                 <div>
                     <h2>Detected Efforts</h2>
-                    <p style="opacity: 0.7; margin-top: 0.5rem;">Select efforts to include in CP/W' calculation (minimum 3 required)</p>
+                    <p style="opacity: 0.7; margin-top: 0.5rem;">Select efforts to include in CP/W' calculation (minimum 2 required)</p>
                 </div>
                 <button class="btn btn-secondary" onclick="resetAnalysis()">Upload New Files</button>
             </div>
@@ -1263,12 +1263,12 @@
 
         function updateCalculateButton() {
             const button = document.getElementById('calculateButton');
-            if (state.selectedEfforts.length >= 3) {
+            if (state.selectedEfforts.length >= 2) {
                 button.disabled = false;
                 button.textContent = `Calculate CP/W' from ${state.selectedEfforts.length} Selected Efforts`;
             } else {
                 button.disabled = true;
-                button.textContent = `Select at least 3 efforts to calculate CP/W' (${state.selectedEfforts.length}/3)`;
+                button.textContent = `Select at least 2 efforts to calculate CP/W' (${state.selectedEfforts.length}/2)`;
             }
         }
 
