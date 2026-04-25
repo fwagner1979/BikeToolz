@@ -468,46 +468,47 @@
             color: white;
         }
 
-        /* Zoom strip — thin overview bar above the chart. Two handles define
-           the chart's visible km range. The strip's coordinate system is
-           always 0..totalKm regardless of zoom, so the handles work even when
-           zoomed in. */
-        .zoom-strip-row {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 0.5rem;
-        }
+        /* Zoom strip — thin overview bar above the chart. Spans the full
+           chart width. Two handles define the chart's visible km range; the
+           strip's coordinate system is always 0..totalKm regardless of zoom,
+           so the handles work even when zoomed in. The Reset button is a
+           small absolute-positioned overlay shown only while zoomed. */
         .zoom-strip {
             position: relative;
             height: 22px;
-            flex: 1 1 auto;
-            min-width: 0;
+            width: 100%;
             background: var(--bg-color);
             border: 1px solid var(--border-color);
             border-radius: 4px;
+            margin-bottom: 0.5rem;
             overflow: visible; /* handles stick out top/bottom slightly */
         }
         .zoom-reset-button {
-            flex: 0 0 auto;
-            padding: 0.4rem 0.75rem;
-            background: var(--bg-color);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            color: var(--text-color);
-            font-size: 0.85rem;
+            position: absolute;
+            top: 50%;
+            right: 4px;
+            transform: translateY(-50%);
+            display: none; /* shown via JS when chart is actually zoomed */
+            padding: 1px 7px;
+            height: 18px;
+            line-height: 1;
+            font-size: 0.7rem;
             font-weight: 600;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-color);
             cursor: pointer;
+            z-index: 5;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
             white-space: nowrap;
-            transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
         }
-        .zoom-reset-button:hover:not(:disabled) {
+        [data-theme="dark"] .zoom-reset-button {
+            background: rgba(26, 31, 46, 0.95);
+        }
+        .zoom-reset-button:hover {
             border-color: var(--primary-color);
             color: var(--primary-color);
-        }
-        .zoom-reset-button:disabled {
-            opacity: 0.45;
-            cursor: not-allowed;
         }
         .zoom-strip-fill {
             position: absolute;
@@ -1674,27 +1675,26 @@
                     <!-- Zoom strip — drag the two blue handles to limit the
                          chart's visible km range. Bottom cursors keep their
                          km values; zooming in just gives them more pixels per
-                         km so they're easier to fine-tune. The Reset button
-                         next to the strip (or double-clicking the strip)
-                         restores the full-route view. -->
-                    <div class="zoom-strip-row">
-                        <div id="zoomStrip" class="zoom-strip" ondblclick="resetZoom()">
-                            <div id="zoomStripFill" class="zoom-strip-fill"></div>
-                            <button type="button" id="zoomStartCursor"
-                                    class="zoom-strip-cursor"
-                                    data-side="zoomStart"
-                                    aria-label="Zoom range start"></button>
-                            <button type="button" id="zoomEndCursor"
-                                    class="zoom-strip-cursor"
-                                    data-side="zoomEnd"
-                                    aria-label="Zoom range end"></button>
-                        </div>
+                         km so they're easier to fine-tune. The small Reset
+                         button overlaid on the strip (or double-clicking the
+                         strip) restores the full-route view; it only appears
+                         while the chart is actually zoomed. -->
+                    <div id="zoomStrip" class="zoom-strip" ondblclick="resetZoom()">
+                        <div id="zoomStripFill" class="zoom-strip-fill"></div>
+                        <button type="button" id="zoomStartCursor"
+                                class="zoom-strip-cursor"
+                                data-side="zoomStart"
+                                aria-label="Zoom range start"></button>
+                        <button type="button" id="zoomEndCursor"
+                                class="zoom-strip-cursor"
+                                data-side="zoomEnd"
+                                aria-label="Zoom range end"></button>
                         <button type="button" id="zoomResetButton"
                                 class="zoom-reset-button"
                                 onclick="resetZoom()"
-                                disabled
-                                data-i18n="climbPlanner.chart.resetZoom">
-                            ↺ Reset zoom
+                                title="Reset zoom"
+                                data-i18n-title="climbPlanner.chart.resetZoom">
+                            ↺ Reset
                         </button>
                     </div>
 
@@ -3361,14 +3361,15 @@
             fill.style.width = Math.max(0, ex - sx) + 'px';
 
             // Reset button is only meaningful when the chart is actually
-            // zoomed in. Enable iff the visible range is narrower than the
-            // full route (epsilon for floating-point dragging).
+            // zoomed in. It overlays the strip's right edge, so we hide it
+            // entirely at full extent (rather than just disabling) — that
+            // also leaves the right end of the strip clickable / draggable.
             const resetBtn = document.getElementById('zoomResetButton');
             if (resetBtn) {
                 const total = totalRouteKm();
                 const visible = state.zoomEndKm - state.zoomStartKm;
                 const isZoomed = total > 0 && visible < total - 0.001;
-                resetBtn.disabled = !isZoomed;
+                resetBtn.style.display = isZoomed ? 'block' : 'none';
             }
         }
 
