@@ -2591,57 +2591,70 @@
         // ---- Auto-detector ----------------------------------------------
 
         // descentTolerance (in metres) controls how much descent between two
-        // adjacent climbs is tolerated before they're treated as one. Detailed
-        // mode = 0 (today's behaviour, every dip splits a climb). Macro mode
-        // tolerates significant dips so an alpine massif made up of several
-        // sub-climbs shows up as a single tick.
+        // adjacent climbs is tolerated before they're treated as one.
+        //   Detailed = 30  → small dips don't fragment a climb
+        //   Macro    = 250 → modest valley descents within a massif merge
+        // Tuned 2026-04-25 against alpine routes after FWA feedback that the
+        // original 0/200 split was too aggressive on Detailed and too lax on
+        // Macro. Numbers are absolute metres; the Phase 3 plan flags these as
+        // tunable.
         function descentToleranceFor(mode) {
-            return mode === 'detailed' ? 0 : 200;
+            return mode === 'detailed' ? 30 : 250;
         }
 
         function detectClimbs(points, descentTolerance) {
-            if (!points || points.length < 12) return [];
+            if (!points || points.length < 5) return [];
 
-            const minClimbLength = 0.5; // km — same as today's detector
+            const minClimbLength = 0.5; // km
             const minGrade = 3;          // percent
-            const windowSize = 10;
+            const windowKm = 0.2;        // 200 m sliding evaluation window
 
             const raw = [];
-            let climbStart = null;
+            let climbStartIdx = null;
             let inClimb = false;
 
-            for (let i = windowSize; i < points.length; i++) {
-                const startIdx = i - windowSize;
-                const elevGain = points[i].elevation - points[startIdx].elevation;
-                const distance = points[i].distance - points[startIdx].distance;
-                const grade = distance > 0 ? (elevGain / (distance * 1000)) * 100 : 0;
+            // Distance-based trailing window via two pointers — robust to
+            // varying GPX point density. For each i we look back up to 200 m
+            // and ask "what's the grade over this window?"; that classifies
+            // whether i is part of a climbing run.
+            let trailIdx = 0;
+            for (let i = 1; i < points.length; i++) {
+                while (trailIdx < i &&
+                       (points[i].distance - points[trailIdx].distance) > windowKm) {
+                    trailIdx++;
+                }
+                if (i - trailIdx < 1) continue;
+
+                const dKm = points[i].distance - points[trailIdx].distance;
+                if (!(dKm > 0)) continue;
+                const dM = points[i].elevation - points[trailIdx].elevation;
+                const grade = (dM / (dKm * 1000)) * 100;
 
                 if (grade >= minGrade && !inClimb) {
-                    climbStart = startIdx;
+                    // Start the climb at the trailing edge so we capture the
+                    // beginning of the ramp, not the point where the window
+                    // first breached 3%.
+                    climbStartIdx = trailIdx;
                     inClimb = true;
                 } else if (grade < minGrade && inClimb) {
-                    const climbEnd = i - windowSize;
-                    const climbDistance = points[climbEnd].distance - points[climbStart].distance;
-                    const climbElevation = points[climbEnd].elevation - points[climbStart].elevation;
-
+                    const climbEnd = i;
+                    const climbDistance = points[climbEnd].distance - points[climbStartIdx].distance;
+                    const climbElevation = points[climbEnd].elevation - points[climbStartIdx].elevation;
                     if (climbDistance >= minClimbLength && climbElevation > 0) {
-                        raw.push({
-                            startIdx: climbStart,
-                            endIdx: climbEnd
-                        });
+                        raw.push({ startIdx: climbStartIdx, endIdx: climbEnd });
                     }
                     inClimb = false;
-                    climbStart = null;
+                    climbStartIdx = null;
                 }
             }
 
             // Close out a climb that ran to the end of the file.
-            if (inClimb && climbStart != null) {
+            if (inClimb && climbStartIdx != null) {
                 const climbEnd = points.length - 1;
-                const climbDistance = points[climbEnd].distance - points[climbStart].distance;
-                const climbElevation = points[climbEnd].elevation - points[climbStart].elevation;
+                const climbDistance = points[climbEnd].distance - points[climbStartIdx].distance;
+                const climbElevation = points[climbEnd].elevation - points[climbStartIdx].elevation;
                 if (climbDistance >= minClimbLength && climbElevation > 0) {
-                    raw.push({ startIdx: climbStart, endIdx: climbEnd });
+                    raw.push({ startIdx: climbStartIdx, endIdx: climbEnd });
                 }
             }
 
@@ -2817,6 +2830,53 @@
             };
         }
 
+        // Local grade at a km position, computed over a sliding window centred
+        // on that point. ~100 m total (50 m each side) keeps colour transitions
+        // smooth without averaging away short ramps.
+        function localGradeAtKm(km) {
+            const points = state.gpxPoints;
+            if (!points || points.length === 0) return 0;
+            const halfWindow = 0.05; // 50 m each side
+            const center = findIdxForKm(km);
+            let i = center, j = center;
+            while (i > 0 && (km - points[i].distance) < halfWindow) i--;
+            while (j < points.length - 1 && (points[j].distance - km) < halfWindow) j++;
+            if (j === i) return 0;
+            const dKm = points[j].distance - points[i].distance;
+            if (!(dKm > 0)) return 0;
+            const dM = points[j].elevation - points[i].elevation;
+            return (dM / (dKm * 1000)) * 100;
+        }
+
+        // Map a grade percent to a colour. Descent (< −1%) = blue, flat
+        // (±1%) = teal-green, climbing ramps from green at 1% through yellow
+        // and orange to red at ~15%+. alpha lets the same function paint
+        // both the line (alpha=1) and the fill (alpha~0.18).
+        function gradeColor(grade, alpha) {
+            const a = (alpha == null) ? 1 : alpha;
+            // Descent: blue
+            if (grade < -1) return `rgba(59, 130, 246, ${a})`;
+            // Flat: green
+            if (grade <= 1) return `rgba(34, 197, 94, ${a})`;
+            // Climbing 1% .. 15%+: green → yellow → orange → red
+            const t = Math.max(0, Math.min(1, (grade - 1) / 14));
+            // Two-stop interpolation through yellow at t=0.5 for a more
+            // perceptually balanced ramp than a single green→red lerp.
+            let r, g, b;
+            if (t < 0.5) {
+                const u = t / 0.5; // 0 .. 1 (green → yellow)
+                r = Math.round(34 + (250 - 34) * u);
+                g = Math.round(197 + (204 - 197) * u);
+                b = Math.round(94 + (21 - 94) * u);
+            } else {
+                const u = (t - 0.5) / 0.5; // 0 .. 1 (yellow → red)
+                r = Math.round(250 + (239 - 250) * u);
+                g = Math.round(204 + (68 - 204) * u);
+                b = Math.round(21 + (68 - 21) * u);
+            }
+            return `rgba(${r}, ${g}, ${b}, ${a})`;
+        }
+
         function renderElevationChart() {
             const canvas = document.getElementById('elevationChart');
             const points = state.gpxPoints;
@@ -2830,20 +2890,36 @@
                 state.elevationChart = null;
             }
 
+            // Per-segment colour: each segment of the line and its fill is
+            // tinted by the local grade at the segment's midpoint, so the
+            // chart visually conveys "where it gets steep". Steep climbs go
+            // red, flat sections green, descents blue.
+            const segmentColor = function (alpha) {
+                return function (ctx) {
+                    if (!ctx || !ctx.p0 || !ctx.p1) return colors.line;
+                    const km = (ctx.p0.parsed.x + ctx.p1.parsed.x) / 2;
+                    return gradeColor(localGradeAtKm(km), alpha);
+                };
+            };
+
             state.elevationChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     datasets: [{
                         label: 'Elevation (m)',
                         data: data,
-                        borderColor: colors.line,
+                        borderColor: colors.line, // fallback for legend etc.
                         backgroundColor: colors.fill,
                         borderWidth: 1.5,
                         pointRadius: 0,
                         pointHoverRadius: 0,
                         fill: true,
                         tension: 0.1,
-                        parsing: false
+                        parsing: false,
+                        segment: {
+                            borderColor: segmentColor(1),
+                            backgroundColor: segmentColor(0.22)
+                        }
                     }]
                 },
                 options: {
@@ -2856,7 +2932,14 @@
                         tooltip: {
                             callbacks: {
                                 title: function (items) { return `km ${items[0].parsed.x.toFixed(2)}`; },
-                                label: function (item) { return `${Math.round(item.parsed.y)} m`; }
+                                label: function (item) {
+                                    const km = item.parsed.x;
+                                    const ele = Math.round(item.parsed.y);
+                                    const grade = localGradeAtKm(km);
+                                    // Returning an array gives the tooltip
+                                    // multiple lines.
+                                    return [`${ele} m`, `${grade.toFixed(1)}% grade`];
+                                }
                             }
                         }
                     },
