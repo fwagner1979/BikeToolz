@@ -56,7 +56,6 @@
             color: var(--text-color);
             line-height: 1.6;
             transition: all 0.3s ease;
-            padding: 1rem;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
@@ -636,9 +635,352 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* ============================================================
+           Chrome — duplicated from index.html. If you change chrome
+           styles, change them on every page. (Phase 2: per-tool URLs)
+           ============================================================ */
+        :root {
+            --primary-color: #0066CC;
+            --primary-hover: #0052A3;
+            --primary-light: #3385D6;
+            --accent-color: #00BFFF;
+            --accent-secondary: #FF6B35;
+            --text-color: #1a1a1a;
+            --text-secondary: #666666;
+            --bg-color: #ffffff;
+            --card-bg: #ffffff;
+            --border-color: #e0e0e0;
+            --ad-bg: #f3f4f6;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+        }
+
+        [data-theme="dark"] {
+            --primary-color: #3385D6;
+            --primary-hover: #4D94DB;
+            --primary-light: #5FA3E0;
+            --accent-color: #00D9FF;
+            --accent-secondary: #FF8A5B;
+            --text-color: #f9fafb;
+            --text-secondary: #9ca3af;
+            --bg-color: #0f1419;
+            --card-bg: #1a1f2e;
+            --border-color: #2d3748;
+            --ad-bg: #374151;
+            --success-color: #34d399;
+            --warning-color: #fbbf24;
+            --danger-color: #f87171;
+        }
+
+        .header-banner {
+            background: linear-gradient(135deg, #0066CC 0%, #004A99 50%, #003366 100%);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            position: relative;
+            min-height: 100px;
+            overflow: hidden;
+            border-bottom: 3px solid var(--accent-color);
+        }
+        .header-banner::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(0, 191, 255, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            position: relative;
+        }
+        .logo {
+            font-size: 2rem;
+            font-weight: 700;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            letter-spacing: -0.02em;
+            color: white;
+            text-decoration: none;
+        }
+        .logo-icon { font-size: 2.5rem; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2)); }
+        .logo-text { letter-spacing: -0.02em; }
+        .logo-tld { font-weight: 400; opacity: 0.9; font-size: 0.85em; }
+        .header-controls { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+        .language-selector {
+            background: rgba(34, 197, 94, 0.2);
+            border: 2px solid #22c55e;
+            border-radius: 8px;
+            color: white;
+            padding: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .theme-toggle, .unit-toggle {
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
+            color: white;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+        .theme-toggle:hover, .unit-toggle:hover { background: rgba(255,255,255,0.3); }
+        .tools-navigation {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        [data-theme="dark"] .tools-navigation {
+            background: rgba(26, 31, 46, 0.95);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        .hamburger-menu {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1001;
+        }
+        .hamburger-line {
+            width: 25px;
+            height: 3px;
+            background: var(--primary-color);
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+        .hamburger-menu.active .hamburger-line:nth-child(1) { transform: rotate(45deg) translate(7px, 7px); }
+        .hamburger-menu.active .hamburger-line:nth-child(2) { opacity: 0; }
+        .hamburger-menu.active .hamburger-line:nth-child(3) { transform: rotate(-45deg) translate(7px, -7px); }
+        .mobile-menu-backdrop {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .mobile-menu-backdrop.active { display: block; opacity: 1; }
+        .tools-nav-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .tool-nav-btn {
+            padding: 0.625rem 1.25rem;
+            background: rgba(0, 102, 204, 0.08);
+            color: var(--primary-color);
+            border: 2px solid transparent;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+        }
+        .tool-nav-btn:hover {
+            background: rgba(0, 102, 204, 0.15);
+            border-color: rgba(0, 102, 204, 0.3);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 102, 204, 0.2);
+        }
+        .tool-nav-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--accent-color);
+            box-shadow: 0 4px 16px rgba(0, 191, 255, 0.3);
+        }
+        .tool-nav-btn.active::before {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 3px;
+            background: var(--accent-color);
+            border-radius: 2px;
+        }
+        [data-theme="dark"] .tool-nav-btn { background: rgba(51, 133, 214, 0.1); }
+        [data-theme="dark"] .tool-nav-btn:hover { background: rgba(51, 133, 214, 0.2); }
+        .tool-icon { font-size: 1.2rem; }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+        .ad-leaderboard {
+            background: var(--ad-bg);
+            border: 2px dashed var(--border-color);
+            height: 90px;
+            margin: 1rem 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            border-radius: 8px;
+        }
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 2rem;
+            margin: 2rem 0;
+            min-height: 600px;
+        }
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            height: fit-content;
+            position: sticky;
+            top: 100px;
+        }
+        .ad-medium-rect, .ad-square, .ad-small-rect {
+            background: var(--ad-bg);
+            border: 2px dashed var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            border-radius: 8px;
+        }
+        .ad-medium-rect { height: 250px; }
+        .ad-square { height: 300px; }
+        .ad-small-rect { height: 150px; }
+        .footer {
+            background: var(--card-bg);
+            border-top: 1px solid var(--border-color);
+            padding: 2rem 0;
+            margin-top: 3rem;
+            text-align: center;
+        }
+        @media (max-width: 768px) {
+            .main-content { grid-template-columns: 1fr; }
+            .sidebar { display: none; }
+            .header-content { flex-direction: column; gap: 1rem; }
+            .logo { font-size: 1.5rem; }
+            .logo-icon { font-size: 2rem; }
+            .hamburger-menu { display: flex; }
+            .tools-nav-content {
+                position: fixed;
+                top: 0;
+                right: -100%;
+                width: 280px;
+                height: 100vh;
+                background: var(--card-bg);
+                box-shadow: -2px 0 10px rgba(0,0,0,0.2);
+                flex-direction: column;
+                align-items: stretch;
+                padding: 5rem 1.5rem 2rem;
+                gap: 0.5rem;
+                z-index: 1000;
+                transition: right 0.3s ease;
+                overflow-y: auto;
+            }
+            .tools-nav-content.active { right: 0; }
+            .tool-nav-btn {
+                width: 100%;
+                justify-content: flex-start;
+                padding: 1rem 1.5rem;
+                border-radius: 12px;
+            }
+            .ad-leaderboard { display: none; }
+        }
     </style>
 </head>
-<body>
+<body data-page="climb-planner">
+    <!-- ========== Chrome (header / nav) — duplicated from index.html ========== -->
+    <header class="header-banner">
+        <div class="header-content">
+            <a class="logo" href="../index.html">
+                <span class="logo-icon">🚴</span>
+                <span class="logo-text">BikeToolz<span class="logo-tld">.info</span></span>
+            </a>
+
+            <div class="header-controls">
+                <select class="language-selector" id="languageSelector" onchange="changeLanguage(this.value)">
+                    <option value="en">🇬🇧 English</option>
+                    <option value="de">🇩🇪 Deutsch</option>
+                    <option value="pt">🇧🇷 Português</option>
+                    <option value="es">🇪🇸 Español</option>
+                </select>
+
+                <button class="theme-toggle" onclick="toggleTheme()" id="themeToggle">
+                    <span data-i18n="navigation.darkMode">🌙 Dark Mode</span>
+                </button>
+
+                <button class="unit-toggle" onclick="toggleUnitSystem()" id="unitToggle">
+                    <span data-i18n="navigation.unitsMetric">⚙️ Units: Metric</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <nav class="tools-navigation">
+        <button class="hamburger-menu" id="hamburgerBtn" onclick="toggleMobileMenu()" aria-label="Toggle navigation menu">
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+        </button>
+
+        <div class="tools-nav-content" id="toolsNavContent">
+            <a class="tool-nav-btn" href="../index.html" data-nav="home">
+                <span class="tool-icon">🏠</span>
+                <span data-i18n="navigation.home">Home</span>
+            </a>
+            <a class="tool-nav-btn" href="climb-planner.html" data-nav="climb-planner">
+                <span class="tool-icon">🗻</span>
+                <span data-i18n="navigation.climbPlanner">Climb Planner</span>
+            </a>
+            <a class="tool-nav-btn" href="cp-analyzer.html" data-nav="cp-analyzer">
+                <span class="tool-icon">📊</span>
+                <span data-i18n="navigation.cpAnalyzer">CP/W' Analyzer</span>
+            </a>
+        </div>
+
+        <div class="mobile-menu-backdrop" id="mobileBackdrop" onclick="closeMobileMenu()"></div>
+    </nav>
+
+    <div class="container">
+        <div class="ad-leaderboard"><!-- AdSense leaderboard --></div>
+
+        <div class="main-content">
+            <main>
+    <!-- ========== End chrome opener ========== -->
+
     <div class="planner-container">
         <h1 class="planner-title">🗻 Climb Planner</h1>
 
@@ -996,42 +1338,162 @@
             </div>
         </div>
     </div>
+    <!-- ========== End planner content; close chrome wrapper ========== -->
+            </main>
 
+            <aside class="sidebar">
+                <div class="ad-medium-rect"><!-- AdSense 300x250 --></div>
+                <div class="ad-square"><!-- AdSense 300x300 --></div>
+                <div class="ad-small-rect"><!-- AdSense 300x150 --></div>
+            </aside>
+        </div>
+
+        <div class="ad-leaderboard"><!-- AdSense leaderboard --></div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p data-i18n="footer.copyright">&copy; 2025 BikeToolz.info - Professional cycling tools for climb planning and power analysis</p>
+        </div>
+    </footer>
+
+    <!-- ========== Chrome scripts (i18n + chrome IIFE) — duplicated from index.html ========== -->
+    <script src="../js/i18n.js"></script>
     <script>
-        // State management
+        (function () {
+            const THEME_KEY = 'bikeToolz_theme';
+            const METRIC_KEY = 'bikeToolz_isMetric';
+
+            if (localStorage.getItem(THEME_KEY) === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+            const savedMetric = localStorage.getItem(METRIC_KEY);
+            window.isMetric = savedMetric === null ? true : savedMetric === '1';
+
+            function i18nReady() {
+                return window.i18n && window.i18n.translations &&
+                    window.i18n.translations[window.i18n.currentLanguage];
+            }
+
+            function refreshThemeButton() {
+                const span = document.querySelector('#themeToggle span');
+                if (!span) return;
+                const isDark = document.documentElement.hasAttribute('data-theme');
+                if (isDark) {
+                    span.textContent = i18nReady() ? window.i18n.t('navigation.lightMode') : '☀️ Light Mode';
+                } else {
+                    span.textContent = i18nReady() ? window.i18n.t('navigation.darkMode') : '🌙 Dark Mode';
+                }
+            }
+
+            function refreshUnitButton() {
+                const span = document.querySelector('#unitToggle span');
+                if (!span) return;
+                if (window.isMetric) {
+                    span.textContent = i18nReady() ? window.i18n.t('navigation.unitsMetric') : '⚙️ Units: Metric';
+                } else {
+                    span.textContent = i18nReady() ? window.i18n.t('navigation.unitsImperial') : '⚙️ Units: Imperial';
+                }
+            }
+
+            window.toggleTheme = function () {
+                const isDark = document.documentElement.hasAttribute('data-theme');
+                if (isDark) {
+                    document.documentElement.removeAttribute('data-theme');
+                    localStorage.setItem(THEME_KEY, 'light');
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    localStorage.setItem(THEME_KEY, 'dark');
+                }
+                refreshThemeButton();
+                document.dispatchEvent(new CustomEvent('bikeToolz:themechange', {
+                    detail: { theme: document.documentElement.hasAttribute('data-theme') ? 'dark' : 'light' }
+                }));
+            };
+
+            window.toggleUnitSystem = function () {
+                window.isMetric = !window.isMetric;
+                localStorage.setItem(METRIC_KEY, window.isMetric ? '1' : '0');
+                refreshUnitButton();
+                if (window.i18n && window.i18n.updateUnitDisplays) {
+                    window.i18n.updateUnitDisplays();
+                }
+                document.dispatchEvent(new CustomEvent('bikeToolz:unitchange', {
+                    detail: { isMetric: window.isMetric }
+                }));
+            };
+
+            window.changeLanguage = async function (code) {
+                if (!window.i18n) return;
+                await window.i18n.changeLanguage(code);
+                refreshThemeButton();
+                refreshUnitButton();
+                document.dispatchEvent(new CustomEvent('bikeToolz:languagechange', {
+                    detail: { language: code }
+                }));
+            };
+
+            window.toggleMobileMenu = function () {
+                const nav = document.getElementById('toolsNavContent');
+                const back = document.getElementById('mobileBackdrop');
+                const burg = document.getElementById('hamburgerBtn');
+                nav.classList.toggle('active');
+                back.classList.toggle('active');
+                burg.classList.toggle('active');
+                document.body.style.overflow = nav.classList.contains('active') ? 'hidden' : '';
+            };
+
+            window.closeMobileMenu = function () {
+                const nav = document.getElementById('toolsNavContent');
+                const back = document.getElementById('mobileBackdrop');
+                const burg = document.getElementById('hamburgerBtn');
+                nav.classList.remove('active');
+                back.classList.remove('active');
+                burg.classList.remove('active');
+                document.body.style.overflow = '';
+            };
+
+            document.addEventListener('DOMContentLoaded', function () {
+                const page = document.body.getAttribute('data-page');
+                if (page) {
+                    document.querySelectorAll('.tool-nav-btn').forEach(btn => {
+                        btn.classList.toggle('active', btn.getAttribute('data-nav') === page);
+                    });
+                }
+                refreshThemeButton();
+                refreshUnitButton();
+
+                (function syncWhenReady() {
+                    if (i18nReady()) {
+                        const selector = document.getElementById('languageSelector');
+                        if (selector) selector.value = window.i18n.getCurrentLanguage();
+                        refreshThemeButton();
+                        refreshUnitButton();
+                    } else {
+                        setTimeout(syncWhenReady, 100);
+                    }
+                })();
+            });
+        })();
+    </script>
+
+    <!-- ========== Tool-specific script ========== -->
+    <script>
+        // State management — isMetric is hydrated from chrome's localStorage
+        // (window.isMetric is already set by the chrome IIFE above).
         let state = {
             climbInputMode: 'manual',
             powerMethod: 'simple',
             detectedClimbs: [],
             selectedClimb: null,
-            isMetric: true
+            isMetric: window.isMetric !== undefined ? window.isMetric : true
         };
 
-        // Listen for messages from parent
-        window.addEventListener('message', function(event) {
-            if (event.data && event.data.type) {
-                switch (event.data.type) {
-                    case 'initialize':
-                        if (event.data.theme) {
-                            document.body.setAttribute('data-theme', event.data.theme);
-                        }
-                        if (typeof event.data.isMetric !== 'undefined') {
-                            state.isMetric = event.data.isMetric;
-                        }
-                        break;
-                    case 'themeChange':
-                        document.body.setAttribute('data-theme', event.data.theme);
-                        break;
-                    case 'unitSystemChange':
-                        state.isMetric = event.data.isMetric;
-                        updateUnitLabels();
-                        break;
-                }
-            }
+        // Stay in sync when the user toggles units in the chrome.
+        document.addEventListener('bikeToolz:unitchange', function (event) {
+            state.isMetric = event.detail.isMetric;
+            if (typeof updateUnitLabels === 'function') updateUnitLabels();
         });
-
-        // Signal that tool is ready
-        window.parent.postMessage({ type: 'toolReady' }, '*');
 
         // Update unit labels based on current unit system
         function updateUnitLabels() {
