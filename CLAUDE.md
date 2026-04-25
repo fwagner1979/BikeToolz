@@ -62,6 +62,93 @@ Post-MVP:
 5. Wait for FWA's approval before doing any code changes.
 6. Branch hygiene comes first when implementation begins: tidy `main`, re-point GitHub Pages, create a feature branch off `main` for MVP work. Do not push to the current deploy branch directly.
 
+## MVP work plan
+
+Drafted 2026-04-25. Five phases, ordered to avoid wasted effort: structural changes first, then features, then translation/polish, then launch. Covers every item in **MVP scope** and **Open issues**. Sizes: S ≈ half-day to a day, M ≈ multi-day, L ≈ week-ish.
+
+**i18n reminder (Hard rule):** every phase below that adds or changes user-visible text updates all 4 `lang/*.json` files *in the same change*. Phase 5 is the back-translation of legacy English-only strings, not a license to defer translations introduced in earlier phases.
+
+---
+
+### Phase 1 — Foundation & cleanup (S) **← START HERE**
+
+**Goal:** clean baseline — code on a stable branch, dead files gone, README real, ready for feature work.
+
+**Covers:**
+- Move publishing off the Claude agent branch onto `main` (or a dedicated `live` branch — FWA picks at start of phase) and re-point GitHub Pages.
+- Create a feature branch off `main` for MVP work; do not push to the deploy branch directly.
+- Delete `tools/climb-calculator.html` and `tools/climb-calculator-enhanced.html`. Remove any references in `index.html`, nav, and `lang/*.json` (any keys belonging to those pages get dropped from all 4 lang files).
+- Replace the single-line `README.md` with a real description: what BikeToolz is, link to live site, status, license / credit if any.
+
+**Why first:** branch hygiene is non-negotiable per the project file, and deleting the two orphans first means we never refactor or translate code we're about to throw away.
+
+---
+
+### Phase 2 — Per-tool URLs / kill the iframe (M)
+
+**Goal:** each tool is its own real page with its own URL, header/footer, language switcher, dark-mode toggle, and ad slots. Homepage links navigate directly to `tools/climb-planner.html` etc. The `toolFrame` iframe is retired.
+
+**Covers:**
+- Site-wide: per-tool URLs refactor (the architectural item promoted into MVP on 2026-04-25).
+- Site-wide: site chrome — header, language switcher, theme toggle, footer, ad-slot containers — factored into a shared snippet that every tool page loads. Each tool page renders its own tool below the chrome.
+- Homepage tool cards become real `<a href>` links instead of iframe loaders.
+
+**Why second:** every later change (translations, Twemoji, ad-placeholder hide, responsive polish) needs the final page structure to land on. Doing them earlier means redoing them.
+
+---
+
+### Phase 3 — Climb Planner: fixes + draggable-cursor chart (L)
+
+**Goal:** Climb Planner is honest and usable end-to-end, including on long alpine GPX files where it currently shreds a 2-massif route into 15 segments.
+
+**Covers (all 5 Climb Planner issues + Step 2 design):**
+1. **Average-grade-only calculation.** Surface the steepest section explicitly — e.g. "you'll need X W to clear the steepest 500m at Y% — your selected power gives you Z." Avg-grade headline number stays; user isn't blindsided by ramps.
+2. **Over-segmentation — interactive elevation chart with draggable cursors.** Chart at top of page after GPX upload. Two cursors set climb start / end. Tool pre-suggests inflection points (with a "macro vs detailed" preset). User can accept, drag, or override. All downstream calculations use the cursor-defined segment.
+3. **Metric / Imperial toggle re-renders after GPX upload.** Toggle repaints parsed GPX summary, displayed numbers, and result outputs. km ↔ miles, m ↔ feet; grade unchanged (it's a ratio).
+4. **Full i18n on `tools/climb-planner.html`.** Replace every hardcoded string with a `data-i18n` key; populate keys in all 4 lang files in the same change. The page is being rewritten anyway, so this lands cleanly inside Phase 3 rather than waiting for Phase 5.
+5. **Step 2 ("Your Power Capability") framing.**
+   - Estimate climb duration first, then default the Power input method: CP/W' for <40 min, recommend Power Curve for 40–60 min, Power Curve for >60 min. Always allow manual override.
+   - Rename Simple Power input to "Sustainable Power (FTP)" or similar.
+   - Tooltip / info icon explaining *why* each method fits which climb length.
+   - Tool intro line stating the tool needs power data — HR-only / no-meter riders are out of scope for MVP.
+
+**Note on size:** the cursor chart is the heaviest single item in the MVP. If a charting library is needed (e.g. Chart.js), we'll keep it small and load it only on this page.
+
+---
+
+### Phase 4 — CP/W' Analyzer: fixes + user-duration mode (M)
+
+**Goal:** Analyzer doesn't make claims it can't keep, has a manual-entry path for users who already know their effort duration, and reflows on every viewport.
+
+**Covers (all 4 Analyzer issues):**
+1. **Drop the `.FIT` claim.** Remove `.fit` from the file picker `accept` attribute; update help text to "Supports .TCX, .CSV, .GPX." Real FIT parsing remains post-MVP.
+2. **User-specified duration mode.** Small alternative input near the auto-detect button: "I know my effort duration." User enters e.g. `3:15`; tool finds the best window of that exact length in the uploaded file(s) and runs the same CV / threshold checks. The auto-detection algorithm itself is *not* touched — confirmed working well per FWA's test.
+3. **Responsive layout.** Add breakpoints between 769–1399 px and a sensible ultrawide cap. Wrap the charts so they reflow rather than sitting in a fixed-width-feeling window.
+4. **Full i18n on `tools/cp-w-analyzer.html`** (or whatever the file is named — confirm in phase). Same approach as Climb Planner — `data-i18n` keys + all 4 lang files in the same change.
+
+---
+
+### Phase 5 — Site-wide polish, final translation sweep, launch (M)
+
+**Goal:** site is launch-ready: flags render on Windows, no orphan ad boxes signalling "unfinished," every page complete in all four languages, README solid, publishing on a stable branch, final QA done.
+
+**Covers:**
+- **Twemoji.** Add the one `<script>` tag (CDN) so language-switcher flags render the same on Windows desktop as on mobile / macOS.
+- **Hide ad placeholders.** `display: none` (or remove from DOM); keep CSS classes / slot IDs so re-enabling is a one-line change after AdSense approval. Stage a short "ad-supported / future ad-free paid plan" footer note (kept hidden until ads go live).
+- **Final i18n sweep.** Walk every page and confirm every user-visible string is keyed and translated in all 4 lang files. Catch any leakage from earlier phases.
+- **Final QA.** Every tool in en / de / es / pt × light + dark mode × three viewport widths (mobile, mid-desktop, ultrawide). Real GPX upload smoke test on Climb Planner; real file upload smoke test on Analyzer.
+- **Branch / publishing handoff.** Confirm GitHub Pages serves from `main` (or `live`) and the agent branch is no longer the source of truth. Tag the launch commit.
+
+---
+
+### Out of MVP (recap, so it doesn't creep in)
+
+Route Planner (whole-route pacing), Fitness Analyzer expansion (FTP / durability / HR drift), accounts + paid ad-free tier, real `.FIT` binary parsing, no-power-meter (HR / RPE) path on Climb Planner, "explain *why* an effort was flagged" UI on the Analyzer.
+
+---
+
+**Approval needed on this plan — and specifically on Phase 1 — before any code changes.** Once approved, we ship Phase 1, re-confirm, then proceed phase by phase.
+
 ## Open issues (master list)
 
 ### Climb Planner
