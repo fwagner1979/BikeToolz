@@ -61,14 +61,34 @@ Post-MVP:
 
 ## Next session — start here
 
-**Phase 3 design has been aligned with FWA on 2026-04-25.** The full plan, including all design decisions and a 5-sub-commit implementation order, lives in [`docs/phase-3-plan.md`](docs/phase-3-plan.md).
+**Sub-commits 1 + 2 of Phase 3 have landed on `main`.** Sub-commit 3 (steepest-section warning) is the next piece. Full design for all 5 sub-commits is in [`docs/phase-3-plan.md`](docs/phase-3-plan.md).
 
-1. Read this file end to end (especially "Current state" — confirm Phase 2 is still the latest landed phase and nothing's changed).
-2. Read [`docs/phase-3-plan.md`](docs/phase-3-plan.md) end to end. **Don't re-open the design questions** — they were settled in the alignment session. If something genuinely doesn't make sense once you're in the code, surface it to FWA before deviating.
-3. Confirm with FWA that nothing has shifted since the design alignment.
-4. Phase 3 work happens on a feature branch off `main` (suggested name: `phase-3-climb-planner`). Land each of the 5 sub-commits in order; pause between each for FWA review and approval before merging to `main`. Don't bundle multiple sub-commits into one push — review fidelity comes from the small-step rhythm.
-5. **i18n exception applies** for Phase 3 only, scoped to `tools/climb-planner.html` only (see plan §5). New strings introduced on that page during Phase 3 may be English-only; full translation pass for the page lands in Phase 5. The hard rule still applies everywhere else (chrome, other pages).
+1. Read this file end to end (especially "Current state" — confirm Sub-commits 1 + 2 are landed and nothing's shifted).
+2. Read [`docs/phase-3-plan.md`](docs/phase-3-plan.md) end to end, paying particular attention to **decision 1 (steepest-section warning algorithm)** since that's Sub-commit 3's spec. **Don't re-open the design questions** — they were settled in the alignment session. If something genuinely doesn't make sense once you're in the code, surface it to FWA before deviating.
+3. Confirm with FWA that nothing has shifted since Sub-commit 2 merged.
+4. Phase 3 work continues on the existing `phase-3-climb-planner` feature branch (already merged into `main` for Sub-commits 1 and 2 via fast-forward; the branch tip == `main` tip). Land Sub-commit 3 there, then pause for FWA review and approval before merging. Don't bundle multiple sub-commits into one push — review fidelity comes from the small-step rhythm. Expect FWA to ask for follow-ups during testing; commit those as small incremental "follow-up N" commits on the same branch (Sub-commit 1 ended up at 9 commits, Sub-commit 2 at 7 commits — that's the rhythm).
+5. **i18n exception applies** for Phase 3 only, scoped to `tools/climb-planner.html` only (see plan §5). New strings introduced on that page during Phase 3 may be English-only with a `data-i18n` key; full translation pass for the page lands in Phase 5. The hard rule still applies everywhere else (chrome, other pages). `js/i18n.js` was patched during Sub-commit 2 to leave inline markup intact when a key has no translation in either the current language or English — so Phase-3-era keys degrade gracefully on DE/ES/PT instead of showing the raw key path.
 6. Don't push directly to `main` for Phase 3 code changes — only for trivial checkpoint edits to this file.
+
+### Sub-commit 3 — implementation pointers
+
+The plan doc has the full algorithm; these are the practical hooks already available in `tools/climb-planner.html`:
+
+- **Cursor-defined planning segment.** `getPlanningSegment()` returns `{ startIdx, endIdx, startKm, endKm, length, elevation, avgGrade, maxGrade }`. That's the segment to scan. `state.gpxPoints` is the underlying array of `{ lat, lon, elevation, distance }`.
+- **Rider's power-duration curve.**
+  - CP/W' available (Step 2 mode = `cpw` AND values entered): `getCPWInputs()` returns `{ cp, wPrime, source }`. Compute `P_max(t) = CP + W'(1 − R) / t` where `R = state.reserveFraction`. **Full mode.**
+  - Power Curve (Step 3 method = `curve` with at least 3 points entered): `collectCurvePoints()` returns `[{time, power}]`; `interpolatePower(points, lookupMinutes)` reads the curve at `t / (1 − R)`. **Full mode.**
+  - Otherwise (Step 3 method = `simple`, or Step 2 is FTP-only / blank): only one number is available — `state.calculatedSustainablePower`. **Degraded mode**: flag any sub-window where required power exceeds that number for ≥ 1 min.
+- **Required power per window.** Pick a rolling speed (the plan suggests "use the time-estimate's pace" — see decision 1 → "Things to revisit"). Required power = `M × g × sin(arctan(grade/100)) × v + rolling + aero`. The existing `findOptimalSpeed` and the in-line physics inside `calculateClimb` are the references.
+- **Window sizes.** 10 s, 30 s, 1 min, 3 min, 5 min, 10 min. For each size, slide across the segment; track the window with the largest required power. Compare to `P_max(window_duration)`. The window with the biggest positive gap is the warning.
+- **Edge case: short segment.** Only scan windows ≤ segment duration. If no window exceeds capability, render a positive note ("within sustainable range across all sub-sections") instead of an alarm.
+- **Where to render.** Under the time estimate / planned-power line in the result section's plan summary (after the Power Analysis is fine too — designer's call). Should auto-update via the existing `calculateClimb` live-refresh path. The `state.reserveFraction` plumbing already flows through every recompute.
+- **Reserve coupling.** The same R fraction used for CP/W' / Power Curve gates the warning so it matches the rider's pacing intent (decision 1 + decision on reserve-in-the-tank).
+
+### Known follow-ups / open issues to keep in mind
+
+- **Cadence calculation is still numerically off** despite the Gear & Cadence card being responsive. Open issue Climb-Planner #0 has the working hypothesis. Either fix it as a small dedicated commit on the Sub-commit 3 branch (since FWA will be testing the planner end-to-end anyway) OR defer to Sub-commit 5 polish. FWA's call.
+- **Phase 3 i18n keys.** Sub-commits 1 + 2 introduced many English-only `data-i18n` keys on `tools/climb-planner.html` (search the file for `data-i18n=` to enumerate). Sub-commit 5's translation pass will add EN/DE/ES/PT entries for all of them in `lang/*.json`.
 
 ## MVP work plan
 
@@ -236,3 +256,21 @@ Route Planner (whole-route pacing), Fitness Analyzer expansion (FTP / durability
 5. FWA is not a programmer. Explain changes at a high level, in plain English. Don't dump diffs unless asked.
 6. Hard rules (top of file) are non-negotiable — particularly the i18n rule: any user-visible string change must update all 4 `lang/*.json` files in the same change.
 7. Use `gh` CLI for GitHub interactions: `C:\Program Files\GitHub CLI\gh.exe` (already authenticated as `fwagner1979`).
+
+### Working-style notes from the Phase 3 sessions
+
+- **No live preview server.** FWA tests manually in a browser after every push. Don't try to spin up a Python `http.server` (the launch.json approach was denied earlier — files live in OneDrive and FWA prefers not to expose them via a network-bound port). Static verification (ID cross-check + brace balance) is the substitute. After a push, FWA hard-refreshes the live page or opens the file directly. OneDrive on-demand sync sometimes lags — if a fresh build seems to show old behaviour, the most likely cause is browser cache or OneDrive not having materialised the file yet.
+- **Commit rhythm.** Each sub-commit ends up as a *family* of commits: the structural commit + several "follow-up N" commits as FWA tests and finds rough edges. Don't try to land a sub-commit in one commit — small follow-ups are cheaper to review and easier to revert. Sub-commit 1 = 9 commits, Sub-commit 2 = 7. Plan for similar.
+- **Static verification before every commit.** A short `python` one-liner that grep-counts braces / parens / brackets and cross-checks `getElementById` IDs against the markup catches >90% of the typos that would otherwise survive into FWA's testing. The pattern lives in this conversation's history; reuse it.
+- **Auto mode.** FWA usually toggles `/auto` on so I keep moving without prompting on every step. Still pause for: (a) merging to `main`, (b) destructive git operations, (c) actions FWA hasn't authorised in advance.
+- **Plain-English summaries.** After every push, FWA expects a "what changed (in plain English)" + "test plan" block. Keep the language non-technical; the user is steering product, not reviewing diffs.
+- **Math accuracy matters.** FWA is a strong domain expert (cyclist, knows CP/W', knows what a paced 3-min PR looks like). When numbers don't match physical intuition, take the report seriously and trace through the math by hand before defending the code. The 3-min/5-min/12-min PR fit producing CP=263 / W'=18.3 was a useful worked example; reuse that style of trace if the discussion turns numerical again.
+
+### Where the Climb Planner code lives
+
+- `tools/climb-planner.html` — single-file tool, ~3700 lines. Sections in order: chrome CSS + tool CSS, chrome HTML, Step 1 / 2 / 3 markup, result section markup, chrome JS (IIFE), tool JS.
+- Tool JS top-level state object (`let state`) is the source of truth for everything: cursor segment, gpxPoints, calculatedSustainablePower, reserveFraction, resultsVisible, lastResult, zoom range, etc. Document any new state additions when you add them.
+- `getPlanningSegment()` returns the cursor-defined segment; everything downstream reads from it (or from `state.selectedClimb` which mirrors it).
+- `updatePowerCalculations()` is the central recompute function. It re-renders the Step 3 banner and (when `state.resultsVisible`) re-runs `calculateClimb(silent=true)` for live results. Wire any new live-update behaviour into this path rather than adding ad-hoc listeners.
+- `calculateClimb(silent)` is both the manual button handler (silent=false, shows alerts) and the auto-refresh path (silent=true, returns quietly on incomplete inputs). Don't break the silent contract — it's load-bearing.
+- `js/i18n.js` was patched during Sub-commit 2 to add a `hasTranslation(key, language)` overload and to skip the markup overwrite when a key has no translation in either the current or fallback language. Future translation work should land in `lang/*.json` and will start showing automatically.
