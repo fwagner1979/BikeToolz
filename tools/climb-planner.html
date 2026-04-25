@@ -472,15 +472,42 @@
            the chart's visible km range. The strip's coordinate system is
            always 0..totalKm regardless of zoom, so the handles work even when
            zoomed in. */
+        .zoom-strip-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
         .zoom-strip {
             position: relative;
             height: 22px;
-            width: 100%;
+            flex: 1 1 auto;
+            min-width: 0;
             background: var(--bg-color);
             border: 1px solid var(--border-color);
             border-radius: 4px;
-            margin-bottom: 0.5rem;
             overflow: visible; /* handles stick out top/bottom slightly */
+        }
+        .zoom-reset-button {
+            flex: 0 0 auto;
+            padding: 0.4rem 0.75rem;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-color);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+        }
+        .zoom-reset-button:hover:not(:disabled) {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+        .zoom-reset-button:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
         }
         .zoom-strip-fill {
             position: absolute;
@@ -1644,21 +1671,31 @@
                         </div>
                     </div>
 
-                    <!-- Zoom strip — drag the two grey handles to limit the
+                    <!-- Zoom strip — drag the two blue handles to limit the
                          chart's visible km range. Bottom cursors keep their
                          km values; zooming in just gives them more pixels per
-                         km so they're easier to fine-tune. Double-click the
-                         strip to reset zoom to the full route. -->
-                    <div id="zoomStrip" class="zoom-strip" ondblclick="resetZoom()">
-                        <div id="zoomStripFill" class="zoom-strip-fill"></div>
-                        <button type="button" id="zoomStartCursor"
-                                class="zoom-strip-cursor"
-                                data-side="zoomStart"
-                                aria-label="Zoom range start"></button>
-                        <button type="button" id="zoomEndCursor"
-                                class="zoom-strip-cursor"
-                                data-side="zoomEnd"
-                                aria-label="Zoom range end"></button>
+                         km so they're easier to fine-tune. The Reset button
+                         next to the strip (or double-clicking the strip)
+                         restores the full-route view. -->
+                    <div class="zoom-strip-row">
+                        <div id="zoomStrip" class="zoom-strip" ondblclick="resetZoom()">
+                            <div id="zoomStripFill" class="zoom-strip-fill"></div>
+                            <button type="button" id="zoomStartCursor"
+                                    class="zoom-strip-cursor"
+                                    data-side="zoomStart"
+                                    aria-label="Zoom range start"></button>
+                            <button type="button" id="zoomEndCursor"
+                                    class="zoom-strip-cursor"
+                                    data-side="zoomEnd"
+                                    aria-label="Zoom range end"></button>
+                        </div>
+                        <button type="button" id="zoomResetButton"
+                                class="zoom-reset-button"
+                                onclick="resetZoom()"
+                                disabled
+                                data-i18n="climbPlanner.chart.resetZoom">
+                            ↺ Reset zoom
+                        </button>
                     </div>
 
                     <div id="chartWrapper" class="chart-wrapper">
@@ -2786,6 +2823,25 @@
                 merged = next;
             }
 
+            // Re-snap each merged climb's endIdx to the overall peak in its
+            // FULL range. Without this, a Macro merge of two sub-climbs
+            // (where the FIRST one has the higher peak) would leave the
+            // merged endIdx on the second, lower peak — so the cursor would
+            // land past the real summit. The earlier per-raw-climb snap is
+            // still required so the merge step's descent calculation uses
+            // accurate raw endpoints.
+            merged.forEach(c => {
+                let peakIdx = c.startIdx;
+                let peakEle = points[c.startIdx].elevation;
+                for (let k = c.startIdx; k <= c.endIdx; k++) {
+                    if (points[k].elevation > peakEle) {
+                        peakEle = points[k].elevation;
+                        peakIdx = k;
+                    }
+                }
+                c.endIdx = peakIdx;
+            });
+
             // Compute the derived stats for each merged climb.
             return merged.map(c => climbStatsFromIdx(points, c.startIdx, c.endIdx));
         }
@@ -3303,6 +3359,17 @@
             endCursor.style.left = ex + 'px';
             fill.style.left = sx + 'px';
             fill.style.width = Math.max(0, ex - sx) + 'px';
+
+            // Reset button is only meaningful when the chart is actually
+            // zoomed in. Enable iff the visible range is narrower than the
+            // full route (epsilon for floating-point dragging).
+            const resetBtn = document.getElementById('zoomResetButton');
+            if (resetBtn) {
+                const total = totalRouteKm();
+                const visible = state.zoomEndKm - state.zoomStartKm;
+                const isZoomed = total > 0 && visible < total - 0.001;
+                resetBtn.disabled = !isZoomed;
+            }
         }
 
         // Apply the current zoom state to the chart and re-position everything
