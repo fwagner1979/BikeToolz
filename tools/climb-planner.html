@@ -8,6 +8,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js — same version as tools/cp-analyzer.html. Loaded for the
+         elevation profile + draggable cursors in Step 1 (Phase 3 / Sub-commit 2). -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         :root {
             /* Performance Cycling Palette */
@@ -411,6 +414,209 @@
         .result-warning-icon { font-size: 1.5rem; line-height: 1; }
         .result-warning-body strong { display: block; margin-bottom: 0.25rem; }
         .result-warning-body p { margin: 0; font-size: 0.9rem; line-height: 1.45; }
+
+        /* Elevation profile + cursor overlay (Phase 3 / Sub-commit 2). */
+        .elevation-panel {
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-top: 1.25rem;
+        }
+        .chart-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.875rem;
+        }
+        .chart-toolbar-left {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+        .chart-toolbar-title {
+            color: var(--primary-color);
+            font-size: 1rem;
+        }
+        .chart-toolbar-hint {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+        .chart-toolbar-toggle {
+            display: inline-flex;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .detector-mode-button {
+            padding: 0.5rem 0.875rem;
+            background: var(--bg-color);
+            border: none;
+            color: var(--text-color);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .detector-mode-button + .detector-mode-button {
+            border-left: 2px solid var(--border-color);
+        }
+        .detector-mode-button:hover { background: var(--card-bg); }
+        .detector-mode-button.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        /* Chart canvas sits inside a relatively-positioned wrapper so the
+           cursor overlay (absolutely positioned siblings) can use the same
+           coordinate space as Chart.js's pixel calculations. */
+        .chart-wrapper {
+            position: relative;
+            height: 240px;
+            width: 100%;
+        }
+        @media (max-width: 600px) {
+            .chart-wrapper { height: 200px; }
+        }
+        .cursor-overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none; /* the handles re-enable pointer events */
+        }
+        .cursor-handle {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 0;
+            pointer-events: auto;
+            touch-action: none; /* prevent the page from scrolling while dragging */
+            transform: translateX(-50%);
+            cursor: ew-resize;
+            z-index: 3;
+        }
+        .cursor-handle:focus { outline: none; }
+        .cursor-line {
+            position: absolute;
+            top: 0;
+            bottom: 28px; /* leave room for the grip + tick lane */
+            left: -1px;
+            width: 2px;
+            background: var(--primary-color);
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6);
+        }
+        [data-theme="dark"] .cursor-line {
+            box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
+        }
+        .cursor-grip {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            transform: translate(-50%, 30%);
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            box-shadow: 0 2px 6px rgba(0, 102, 204, 0.35);
+            user-select: none;
+        }
+        .cursor-handle:focus .cursor-grip,
+        .cursor-handle.dragging .cursor-grip {
+            outline: 3px solid var(--accent-color);
+            outline-offset: 1px;
+        }
+        @media (pointer: coarse) {
+            /* Larger touch target on phones/tablets */
+            .cursor-grip { width: 36px; height: 36px; font-size: 0.85rem; }
+        }
+
+        .chart-ticks {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 14px;
+            pointer-events: none;
+            z-index: 2;
+        }
+        .chart-tick {
+            position: absolute;
+            bottom: 0;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-bottom: 8px solid var(--success-color);
+            cursor: pointer;
+            pointer-events: auto;
+            opacity: 0.85;
+            transition: opacity 0.15s ease;
+        }
+        .chart-tick:hover { opacity: 1; transform: translateX(-50%) scale(1.15); }
+        .chart-tick::after {
+            content: attr(data-label);
+            position: absolute;
+            left: 50%;
+            top: 100%;
+            transform: translate(-50%, 4px);
+            background: var(--text-color);
+            color: var(--bg-color);
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 0.15rem 0.4rem;
+            border-radius: 3px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s ease;
+        }
+        .chart-tick:hover::after { opacity: 1; }
+
+        .cursor-numeric-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 0.875rem;
+            font-size: 0.9rem;
+        }
+        .cursor-numeric-field {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-color);
+            font-weight: 500;
+        }
+        .cursor-numeric-field input {
+            width: 5.5rem;
+            padding: 0.4rem 0.55rem;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-size: 0.95rem;
+            text-align: right;
+        }
+        [data-theme="dark"] .cursor-numeric-field input {
+            background-color: #1a1f2e;
+            color: #f9fafb;
+            border-color: #374151;
+        }
+        .cursor-numeric-unit {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        .cursor-numeric-status {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-left: auto;
+        }
 
         .step-section {
             background: var(--card-bg);
@@ -1365,9 +1571,60 @@
                     <input type="file" id="gpxFileInput" accept=".gpx" style="display: none;" onchange="handleGPXUpload(event)">
                 </div>
 
-                <div id="climbList" class="climb-list" style="display: none;">
-                    <h3 style="color: var(--primary-color); margin-bottom: 1rem;">Detected Climbs</h3>
-                    <div id="climbItems"></div>
+                <!-- Elevation profile + draggable cursors. Replaces the old
+                     "Detected Climbs" dropdown. Hidden until a GPX is parsed. -->
+                <div id="elevationPanel" class="elevation-panel" style="display: none;">
+                    <div class="chart-toolbar">
+                        <div class="chart-toolbar-left">
+                            <strong class="chart-toolbar-title" data-i18n="climbPlanner.chart.title">Pick the climb</strong>
+                            <span class="chart-toolbar-hint" data-i18n="climbPlanner.chart.hint">
+                                Drag the cursors, click a tick, or type the bounds below.
+                            </span>
+                        </div>
+                        <div class="chart-toolbar-toggle" role="group" aria-label="Auto-detect granularity">
+                            <button type="button" class="detector-mode-button active"
+                                    data-detector-mode="macro"
+                                    onclick="setDetectorMode('macro')"
+                                    data-i18n="climbPlanner.chart.macro">Macro</button>
+                            <button type="button" class="detector-mode-button"
+                                    data-detector-mode="detailed"
+                                    onclick="setDetectorMode('detailed')"
+                                    data-i18n="climbPlanner.chart.detailed">Detailed</button>
+                        </div>
+                    </div>
+
+                    <div id="chartWrapper" class="chart-wrapper">
+                        <canvas id="elevationChart"></canvas>
+                        <div id="cursorOverlay" class="cursor-overlay">
+                            <div id="cursorStart" class="cursor-handle" data-side="start"
+                                 role="slider" aria-label="Climb start km"
+                                 tabindex="0">
+                                <div class="cursor-line"></div>
+                                <div class="cursor-grip" aria-hidden="true">⬤</div>
+                            </div>
+                            <div id="cursorEnd" class="cursor-handle" data-side="end"
+                                 role="slider" aria-label="Climb end km"
+                                 tabindex="0">
+                                <div class="cursor-line"></div>
+                                <div class="cursor-grip" aria-hidden="true">⬤</div>
+                            </div>
+                            <div id="chartTicks" class="chart-ticks"></div>
+                        </div>
+                    </div>
+
+                    <div class="cursor-numeric-row">
+                        <label class="cursor-numeric-field">
+                            <span data-i18n="climbPlanner.chart.startKm">Start</span>
+                            <input type="number" id="cursorStartKm" step="0.1" min="0">
+                            <span class="cursor-numeric-unit" id="cursorStartUnit">km</span>
+                        </label>
+                        <label class="cursor-numeric-field">
+                            <span data-i18n="climbPlanner.chart.endKm">End</span>
+                            <input type="number" id="cursorEndKm" step="0.1" min="0">
+                            <span class="cursor-numeric-unit" id="cursorEndUnit">km</span>
+                        </label>
+                        <span class="cursor-numeric-status" id="cursorStatus"></span>
+                    </div>
                 </div>
             </div>
 
@@ -1972,7 +2229,22 @@
         let state = {
             climbInputMode: 'manual',
             powerMethod: 'simple',
+            // Phase 3 / Sub-commit 2 — cursor-based GPX selection.
+            // gpxPoints holds the full parsed GPX (lat/lon/elevation/distance).
+            // cursorStartKm and cursorEndKm define the planning segment along
+            // that route; everything downstream (calculations, summary, banner,
+            // result section) reads the segment via getPlanningSegment().
+            // detectedClimbs is now used only to render tick marks on the chart
+            // and to seed the cursors on first upload.
+            gpxPoints: [],
             detectedClimbs: [],
+            cursorStartKm: null,
+            cursorEndKm: null,
+            detectorMode: 'macro',
+            elevationChart: null,
+            // Selected climb is kept as a derived value for back-compat with
+            // any downstream code that still reads it. Updated whenever the
+            // cursor segment changes.
             selectedClimb: null,
             isMetric: window.isMetric !== undefined ? window.isMetric : true,
             // Reserve in the tank: fraction 0..0.9. Applies to CP/W' and Power Curve only.
@@ -2244,7 +2516,7 @@
                 return;
             }
 
-            // Extract points with elevation and distance
+            // Extract points with elevation and cumulative distance.
             const points = [];
             let totalDistance = 0;
 
@@ -2264,13 +2536,41 @@
                 }
 
                 points.push({
-                    lat, lon, elevation,
+                    lat: lat,
+                    lon: lon,
+                    elevation: elevation,
                     distance: totalDistance
                 });
             });
 
-            // Detect climbs
-            detectClimbs(points);
+            state.gpxPoints = points;
+
+            // Run the auto-detector at the current granularity. Returned climbs
+            // are used both to render tick marks on the chart and (on first
+            // upload) to seed the cursor positions.
+            state.detectedClimbs = detectClimbs(points, descentToleranceFor(state.detectorMode));
+
+            // Seed cursors. If the detector found at least one climb, jump to
+            // the largest one (by elevation gain). Otherwise span the route.
+            const seed = pickSeedClimb(state.detectedClimbs);
+            if (seed) {
+                state.cursorStartKm = seed.startKm;
+                state.cursorEndKm = seed.endKm;
+            } else {
+                state.cursorStartKm = 0;
+                state.cursorEndKm = points[points.length - 1].distance;
+            }
+
+            // Show the elevation panel and render everything.
+            const panel = document.getElementById('elevationPanel');
+            if (panel) panel.style.display = 'block';
+            renderElevationChart();
+            renderTicks();
+            renderCursors();
+            updateCursorNumericInputs();
+            syncSelectedClimbFromCursors();
+            updateClimbSummary();
+            updatePowerCalculations();
         }
 
         function haversineDistance(lat1, lon1, lat2, lon2) {
@@ -2284,13 +2584,27 @@
             return R * c;
         }
 
-        function detectClimbs(points) {
-            const climbs = [];
+        // ---- Auto-detector ----------------------------------------------
+
+        // descentTolerance (in metres) controls how much descent between two
+        // adjacent climbs is tolerated before they're treated as one. Detailed
+        // mode = 0 (today's behaviour, every dip splits a climb). Macro mode
+        // tolerates significant dips so an alpine massif made up of several
+        // sub-climbs shows up as a single tick.
+        function descentToleranceFor(mode) {
+            return mode === 'detailed' ? 0 : 200;
+        }
+
+        function detectClimbs(points, descentTolerance) {
+            if (!points || points.length < 12) return [];
+
+            const minClimbLength = 0.5; // km — same as today's detector
+            const minGrade = 3;          // percent
+            const windowSize = 10;
+
+            const raw = [];
             let climbStart = null;
             let inClimb = false;
-            const minClimbLength = 0.5; // 500m
-            const minGrade = 3; // 3%
-            const windowSize = 10; // Look at 10-point windows
 
             for (let i = windowSize; i < points.length; i++) {
                 const startIdx = i - windowSize;
@@ -2299,85 +2613,529 @@
                 const grade = distance > 0 ? (elevGain / (distance * 1000)) * 100 : 0;
 
                 if (grade >= minGrade && !inClimb) {
-                    // Start of a climb
                     climbStart = startIdx;
                     inClimb = true;
                 } else if (grade < minGrade && inClimb) {
-                    // End of a climb
                     const climbEnd = i - windowSize;
                     const climbDistance = points[climbEnd].distance - points[climbStart].distance;
                     const climbElevation = points[climbEnd].elevation - points[climbStart].elevation;
 
                     if (climbDistance >= minClimbLength && climbElevation > 0) {
-                        const avgGrade = (climbElevation / (climbDistance * 1000)) * 100;
-
-                        // Find max grade in segments
-                        let maxGrade = 0;
-                        for (let j = climbStart; j < climbEnd - 5; j += 5) {
-                            const segElevGain = points[j + 5].elevation - points[j].elevation;
-                            const segDistance = points[j + 5].distance - points[j].distance;
-                            const segGrade = (segElevGain / (segDistance * 1000)) * 100;
-                            maxGrade = Math.max(maxGrade, segGrade);
-                        }
-
-                        climbs.push({
+                        raw.push({
                             startIdx: climbStart,
-                            endIdx: climbEnd,
-                            length: climbDistance,
-                            elevation: climbElevation,
-                            avgGrade: avgGrade,
-                            maxGrade: maxGrade
+                            endIdx: climbEnd
                         });
                     }
-
                     inClimb = false;
                     climbStart = null;
                 }
             }
 
-            state.detectedClimbs = climbs;
-            displayClimbs(climbs);
-        }
-
-        function displayClimbs(climbs) {
-            const climbList = document.getElementById('climbList');
-            const climbItems = document.getElementById('climbItems');
-
-            if (climbs.length === 0) {
-                climbItems.innerHTML = '<p>No significant climbs detected (minimum 3% grade, 500m length)</p>';
-                climbList.style.display = 'block';
-                return;
+            // Close out a climb that ran to the end of the file.
+            if (inClimb && climbStart != null) {
+                const climbEnd = points.length - 1;
+                const climbDistance = points[climbEnd].distance - points[climbStart].distance;
+                const climbElevation = points[climbEnd].elevation - points[climbStart].elevation;
+                if (climbDistance >= minClimbLength && climbElevation > 0) {
+                    raw.push({ startIdx: climbStart, endIdx: climbEnd });
+                }
             }
 
-            climbItems.innerHTML = climbs.map((climb, index) => `
-                <div class="climb-item" onclick="selectClimb(${index})">
-                    <input type="radio" name="selectedClimb" id="climb${index}">
-                    <div class="climb-details">
-                        <div class="climb-name">Climb ${index + 1}</div>
-                        <div class="climb-stats">
-                            ${climb.length.toFixed(1)} km •
-                            ${Math.round(climb.elevation)} m gain •
-                            ${climb.avgGrade.toFixed(1)}% avg grade •
-                            ${climb.maxGrade.toFixed(1)}% max
-                        </div>
-                    </div>
-                </div>
-            `).join('');
+            // Merge adjacent raw climbs whose intervening descent is small
+            // enough — this is the Macro/Detailed knob. Loop until the list
+            // stops shrinking so chains of sub-climbs collapse into one.
+            let merged = raw.slice();
+            let changed = true;
+            while (changed && descentTolerance > 0) {
+                changed = false;
+                const next = [];
+                for (let k = 0; k < merged.length; k++) {
+                    const cur = merged[k];
+                    const last = next[next.length - 1];
+                    if (!last) { next.push(cur); continue; }
 
-            climbList.style.display = 'block';
+                    // Look at the elevation between last.endIdx and cur.startIdx;
+                    // find the lowest point in that gap to compute the descent.
+                    let lowest = points[last.endIdx].elevation;
+                    for (let j = last.endIdx; j <= cur.startIdx; j++) {
+                        if (points[j].elevation < lowest) lowest = points[j].elevation;
+                    }
+                    const descent = points[last.endIdx].elevation - lowest;
+
+                    if (descent <= descentTolerance) {
+                        // Merge: extend `last` to cover `cur`.
+                        last.endIdx = cur.endIdx;
+                        changed = true;
+                    } else {
+                        next.push(cur);
+                    }
+                }
+                merged = next;
+            }
+
+            // Compute the derived stats for each merged climb.
+            return merged.map(c => climbStatsFromIdx(points, c.startIdx, c.endIdx));
         }
 
-        function selectClimb(index) {
-            state.selectedClimb = state.detectedClimbs[index];
+        // Compute length / elevation / avgGrade / maxGrade / startKm / endKm
+        // for an arbitrary index range on the GPX. Used both by the auto-detector
+        // and by getPlanningSegment when reading the cursor positions.
+        function climbStatsFromIdx(points, startIdx, endIdx) {
+            const startKm = points[startIdx].distance;
+            const endKm = points[endIdx].distance;
+            const length = endKm - startKm;
+            const elevation = points[endIdx].elevation - points[startIdx].elevation;
+            const avgGrade = length > 0 ? (elevation / (length * 1000)) * 100 : 0;
+            let maxGrade = 0;
+            for (let j = startIdx; j < endIdx - 5; j += 5) {
+                const segElevGain = points[j + 5].elevation - points[j].elevation;
+                const segDistance = points[j + 5].distance - points[j].distance;
+                const segGrade = segDistance > 0 ? (segElevGain / (segDistance * 1000)) * 100 : 0;
+                if (segGrade > maxGrade) maxGrade = segGrade;
+            }
+            return {
+                startIdx: startIdx,
+                endIdx: endIdx,
+                startKm: startKm,
+                endKm: endKm,
+                length: length,
+                elevation: elevation,
+                avgGrade: avgGrade,
+                maxGrade: maxGrade
+            };
+        }
 
-            // Update visual selection
-            document.querySelectorAll('.climb-item').forEach(item => item.classList.remove('selected'));
-            event.currentTarget.classList.add('selected');
-            document.getElementById(`climb${index}`).checked = true;
+        // Pick the largest detected climb (by elevation gain) to seed the
+        // cursors on first upload. Falls back to null when no climbs found.
+        function pickSeedClimb(climbs) {
+            if (!climbs || climbs.length === 0) return null;
+            return climbs.reduce((best, c) =>
+                (!best || c.elevation > best.elevation) ? c : best, null);
+        }
 
+        // ---- Cursor segment as the source of truth for the planning input -
+
+        // Given a km position along the route, return the index of the closest
+        // GPX point. Linear scan — small enough for typical alpine rides
+        // (~5k-10k points) and runs once per cursor update, not per drag frame.
+        function findIdxForKm(km) {
+            const points = state.gpxPoints;
+            if (!points || points.length === 0) return 0;
+            if (km <= points[0].distance) return 0;
+            if (km >= points[points.length - 1].distance) return points.length - 1;
+            // Binary search since distance is monotonic.
+            let lo = 0, hi = points.length - 1;
+            while (lo < hi) {
+                const mid = (lo + hi) >> 1;
+                if (points[mid].distance < km) lo = mid + 1; else hi = mid;
+            }
+            return Math.max(0, lo);
+        }
+
+        // Returns the planning segment derived from the current cursor positions.
+        // null when there's no GPX loaded or the cursors aren't valid.
+        function getPlanningSegment() {
+            const points = state.gpxPoints;
+            if (!points || points.length === 0) return null;
+            if (state.cursorStartKm == null || state.cursorEndKm == null) return null;
+            let s = state.cursorStartKm;
+            let e = state.cursorEndKm;
+            if (e < s) { const tmp = s; s = e; e = tmp; }
+            const startIdx = findIdxForKm(s);
+            const endIdx = findIdxForKm(e);
+            if (endIdx <= startIdx) return null;
+            return climbStatsFromIdx(points, startIdx, endIdx);
+        }
+
+        // Keep state.selectedClimb in sync with the current cursor segment so
+        // any code that still reads selectedClimb gets the right values.
+        function syncSelectedClimbFromCursors() {
+            state.selectedClimb = getPlanningSegment();
+        }
+
+        // ---- Chart rendering --------------------------------------------
+
+        // Decimate dense GPX traces so Chart.js doesn't redraw 10k points.
+        // Keeps min/max within each bucket so peaks aren't smoothed away.
+        function decimateForChart(points, maxPoints) {
+            if (points.length <= maxPoints) {
+                return points.map(p => ({ x: p.distance, y: p.elevation }));
+            }
+            const step = points.length / maxPoints;
+            const out = [];
+            for (let i = 0; i < maxPoints; i++) {
+                const lo = Math.floor(i * step);
+                const hi = Math.min(points.length, Math.floor((i + 1) * step));
+                let minP = points[lo], maxP = points[lo];
+                for (let j = lo; j < hi; j++) {
+                    if (points[j].elevation < minP.elevation) minP = points[j];
+                    if (points[j].elevation > maxP.elevation) maxP = points[j];
+                }
+                // Keep the min/max in chronological order to preserve shape.
+                if (minP.distance < maxP.distance) {
+                    out.push({ x: minP.distance, y: minP.elevation });
+                    if (minP !== maxP) out.push({ x: maxP.distance, y: maxP.elevation });
+                } else {
+                    out.push({ x: maxP.distance, y: maxP.elevation });
+                    if (minP !== maxP) out.push({ x: minP.distance, y: minP.elevation });
+                }
+            }
+            return out;
+        }
+
+        function chartThemeColors() {
+            const isDark = document.documentElement.hasAttribute('data-theme');
+            return {
+                isDark: isDark,
+                line: isDark ? '#3385D6' : '#0066CC',
+                fill: isDark ? 'rgba(51, 133, 214, 0.18)' : 'rgba(0, 102, 204, 0.12)',
+                tick: isDark ? '#9ca3af' : '#6b7280',
+                grid: isDark ? '#374151' : '#e5e7eb'
+            };
+        }
+
+        function renderElevationChart() {
+            const canvas = document.getElementById('elevationChart');
+            const points = state.gpxPoints;
+            if (!canvas || !points || points.length === 0) return;
+            const ctx = canvas.getContext('2d');
+            const colors = chartThemeColors();
+            const data = decimateForChart(points, 600);
+
+            if (state.elevationChart) {
+                state.elevationChart.destroy();
+                state.elevationChart = null;
+            }
+
+            state.elevationChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: 'Elevation (m)',
+                        data: data,
+                        borderColor: colors.line,
+                        backgroundColor: colors.fill,
+                        borderWidth: 1.5,
+                        pointRadius: 0,
+                        pointHoverRadius: 0,
+                        fill: true,
+                        tension: 0.1,
+                        parsing: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    interaction: { mode: 'nearest', axis: 'x', intersect: false },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: function (items) { return `km ${items[0].parsed.x.toFixed(2)}`; },
+                                label: function (item) { return `${Math.round(item.parsed.y)} m`; }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            title: { display: true, text: 'Distance (km)', color: colors.tick },
+                            ticks: { color: colors.tick },
+                            grid: { color: colors.grid },
+                            min: 0,
+                            max: points[points.length - 1].distance
+                        },
+                        y: {
+                            title: { display: true, text: 'Elevation (m)', color: colors.tick },
+                            ticks: { color: colors.tick },
+                            grid: { color: colors.grid }
+                        }
+                    },
+                    onResize: function () {
+                        // Cursor pixel positions follow the chart's plot area;
+                        // re-place them whenever the chart resizes.
+                        requestAnimationFrame(function () {
+                            renderCursors();
+                            renderTicks();
+                        });
+                    }
+                }
+            });
+
+            // First-time positioning happens after the chart's first layout pass.
+            requestAnimationFrame(function () {
+                renderCursors();
+                renderTicks();
+            });
+        }
+
+        // ---- Cursor + tick positioning ----------------------------------
+
+        function pixelForKm(km) {
+            const chart = state.elevationChart;
+            if (!chart) return null;
+            const xScale = chart.scales.x;
+            const wrapper = document.getElementById('chartWrapper');
+            if (!xScale || !wrapper) return null;
+            const canvas = chart.canvas;
+            // Chart.js gives a pixel relative to its canvas; the cursor overlay
+            // shares the same coordinate system since the canvas fills the
+            // wrapper. canvas.offsetLeft accounts for any padding inside it.
+            return xScale.getPixelForValue(km) + canvas.offsetLeft;
+        }
+
+        function kmForPixel(pixelX) {
+            const chart = state.elevationChart;
+            if (!chart) return null;
+            const xScale = chart.scales.x;
+            if (!xScale) return null;
+            const canvas = chart.canvas;
+            const km = xScale.getValueForPixel(pixelX - canvas.offsetLeft);
+            // Clamp to route bounds.
+            const points = state.gpxPoints;
+            const min = points[0].distance;
+            const max = points[points.length - 1].distance;
+            return Math.max(min, Math.min(max, km));
+        }
+
+        function renderCursors() {
+            const startEl = document.getElementById('cursorStart');
+            const endEl = document.getElementById('cursorEnd');
+            if (!startEl || !endEl || !state.elevationChart) return;
+            const sx = pixelForKm(state.cursorStartKm);
+            const ex = pixelForKm(state.cursorEndKm);
+            if (sx == null || ex == null) return;
+            startEl.style.left = sx + 'px';
+            endEl.style.left = ex + 'px';
+
+            // Constrain the cursor rectangles vertically to the chart's plot
+            // area so the line + grip line up with the elevation chart, not
+            // with the title or x-axis labels.
+            const chartArea = state.elevationChart.chartArea;
+            if (chartArea) {
+                [startEl, endEl].forEach(el => {
+                    el.style.top = chartArea.top + 'px';
+                    el.style.height = (chartArea.bottom - chartArea.top + 8) + 'px';
+                });
+            }
+        }
+
+        function renderTicks() {
+            const container = document.getElementById('chartTicks');
+            if (!container || !state.elevationChart) return;
+            container.innerHTML = '';
+
+            // Position the tick lane at the chart's bottom axis.
+            const chartArea = state.elevationChart.chartArea;
+            if (chartArea) {
+                container.style.top = chartArea.bottom + 'px';
+            }
+
+            const points = state.gpxPoints;
+            (state.detectedClimbs || []).forEach(climb => {
+                const px = pixelForKm(climb.startKm);
+                if (px == null) return;
+                const tick = document.createElement('div');
+                tick.className = 'chart-tick';
+                tick.style.left = px + 'px';
+                tick.dataset.label =
+                    `${climb.length.toFixed(1)} km · ${Math.round(climb.elevation)} m · ${climb.avgGrade.toFixed(1)}%`;
+                tick.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    state.cursorStartKm = climb.startKm;
+                    state.cursorEndKm = climb.endKm;
+                    renderCursors();
+                    updateCursorNumericInputs();
+                    syncSelectedClimbFromCursors();
+                    updateClimbSummary();
+                    updatePowerCalculations();
+                });
+                container.appendChild(tick);
+            });
+        }
+
+        function updateCursorNumericInputs() {
+            const startInput = document.getElementById('cursorStartKm');
+            const endInput = document.getElementById('cursorEndKm');
+            if (!startInput || !endInput) return;
+            // Display in the user's unit system (km or miles). Internal state
+            // is always in km — conversion is display-only.
+            const toDisplay = function (km) {
+                return state.isMetric ? km : km / 1.60934;
+            };
+            startInput.value = toDisplay(state.cursorStartKm).toFixed(2);
+            endInput.value = toDisplay(state.cursorEndKm).toFixed(2);
+            const points = state.gpxPoints;
+            if (points && points.length) {
+                const totalKm = points[points.length - 1].distance;
+                startInput.max = toDisplay(totalKm).toFixed(2);
+                endInput.max = toDisplay(totalKm).toFixed(2);
+            }
+            const startUnit = document.getElementById('cursorStartUnit');
+            const endUnit = document.getElementById('cursorEndUnit');
+            if (startUnit) startUnit.textContent = state.isMetric ? 'km' : 'mi';
+            if (endUnit) endUnit.textContent = state.isMetric ? 'km' : 'mi';
+
+            // Live status note — updated alongside the numeric inputs so the
+            // user gets instant feedback while dragging without scrolling
+            // down to look at the climb summary box.
+            const status = document.getElementById('cursorStatus');
+            if (status) {
+                const seg = getPlanningSegment();
+                if (seg) {
+                    const distLabel = state.isMetric
+                        ? seg.length.toFixed(2) + ' km'
+                        : (seg.length / 1.60934).toFixed(2) + ' mi';
+                    const gainLabel = state.isMetric
+                        ? Math.round(seg.elevation) + ' m'
+                        : Math.round(seg.elevation / 0.3048) + ' ft';
+                    status.textContent =
+                        `${distLabel} · ${gainLabel} gain · ${seg.avgGrade.toFixed(1)}% avg · ${seg.maxGrade.toFixed(1)}% max`;
+                } else {
+                    status.textContent = '';
+                }
+            }
+        }
+
+        // ---- Cursor drag (pointer events for mouse + touch) -------------
+
+        let dragState = null;
+        let lastDragRender = 0;
+
+        function onCursorPointerDown(side, ev) {
+            ev.preventDefault();
+            const handle = document.getElementById(side === 'start' ? 'cursorStart' : 'cursorEnd');
+            if (!handle) return;
+            dragState = { side: side, pointerId: ev.pointerId };
+            handle.setPointerCapture(ev.pointerId);
+            handle.classList.add('dragging');
+        }
+
+        function onCursorPointerMove(ev) {
+            if (!dragState) return;
+            const wrapper = document.getElementById('chartWrapper');
+            if (!wrapper) return;
+            const rect = wrapper.getBoundingClientRect();
+            const localX = ev.clientX - rect.left;
+            const km = kmForPixel(localX);
+            if (km == null) return;
+
+            // Constrain so start <= end with at least a 1 m gap.
+            if (dragState.side === 'start') {
+                state.cursorStartKm = Math.min(km, state.cursorEndKm - 0.001);
+            } else {
+                state.cursorEndKm = Math.max(km, state.cursorStartKm + 0.001);
+            }
+
+            renderCursors();
+
+            // Throttle the heavy work (numeric summary + Step 3 banner) to
+            // ~30 fps so dragging stays smooth even on big GPX files.
+            const now = performance.now();
+            if (now - lastDragRender > 33) {
+                lastDragRender = now;
+                updateCursorNumericInputs();
+                syncSelectedClimbFromCursors();
+                updateClimbSummary();
+            }
+        }
+
+        function onCursorPointerUp(ev) {
+            if (!dragState) return;
+            const handle = document.getElementById(dragState.side === 'start' ? 'cursorStart' : 'cursorEnd');
+            if (handle && handle.hasPointerCapture(ev.pointerId)) {
+                handle.releasePointerCapture(ev.pointerId);
+            }
+            if (handle) handle.classList.remove('dragging');
+            dragState = null;
+
+            // On release, run the full update — including the heavier
+            // updatePowerCalculations which feeds Step 3 / live results.
+            updateCursorNumericInputs();
+            syncSelectedClimbFromCursors();
             updateClimbSummary();
             updatePowerCalculations();
         }
+
+        function attachCursorDrag() {
+            ['start', 'end'].forEach(side => {
+                const handle = document.getElementById(side === 'start' ? 'cursorStart' : 'cursorEnd');
+                if (!handle) return;
+                handle.addEventListener('pointerdown', function (ev) { onCursorPointerDown(side, ev); });
+            });
+            document.addEventListener('pointermove', onCursorPointerMove);
+            document.addEventListener('pointerup', onCursorPointerUp);
+            document.addEventListener('pointercancel', onCursorPointerUp);
+        }
+
+        // ---- Numeric km inputs ------------------------------------------
+
+        function attachCursorNumericInputs() {
+            const startInput = document.getElementById('cursorStartKm');
+            const endInput = document.getElementById('cursorEndKm');
+            if (!startInput || !endInput) return;
+
+            const handleChange = function () {
+                const points = state.gpxPoints;
+                if (!points || points.length === 0) return;
+                const totalKm = points[points.length - 1].distance;
+                const fromDisplay = function (v) {
+                    return state.isMetric ? v : v * 1.60934;
+                };
+                let s = fromDisplay(parseFloat(startInput.value));
+                let e = fromDisplay(parseFloat(endInput.value));
+                if (!isFinite(s)) s = 0;
+                if (!isFinite(e)) e = totalKm;
+                s = Math.max(0, Math.min(totalKm, s));
+                e = Math.max(0, Math.min(totalKm, e));
+                if (e <= s) e = Math.min(totalKm, s + 0.05);
+                state.cursorStartKm = s;
+                state.cursorEndKm = e;
+                renderCursors();
+                syncSelectedClimbFromCursors();
+                updateClimbSummary();
+                updatePowerCalculations();
+            };
+
+            startInput.addEventListener('change', handleChange);
+            endInput.addEventListener('change', handleChange);
+        }
+
+        // ---- Macro / Detailed toggle ------------------------------------
+
+        function setDetectorMode(mode) {
+            if (mode !== 'macro' && mode !== 'detailed') return;
+            state.detectorMode = mode;
+            document.querySelectorAll('.detector-mode-button').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.detectorMode === mode);
+            });
+            const points = state.gpxPoints;
+            if (!points || points.length === 0) return;
+            state.detectedClimbs = detectClimbs(points, descentToleranceFor(mode));
+            renderTicks();
+        }
+
+        // ---- Theme handling ---------------------------------------------
+
+        document.addEventListener('bikeToolz:themechange', function () {
+            if (state.gpxPoints && state.gpxPoints.length) {
+                renderElevationChart();
+                renderTicks();
+            }
+        });
+
+        // ---- Bootstrap --------------------------------------------------
+
+        document.addEventListener('DOMContentLoaded', function () {
+            attachCursorDrag();
+            attachCursorNumericInputs();
+        });
+
+        // Update km/mi labels and re-render when the user toggles units.
+        document.addEventListener('bikeToolz:unitchange', function () {
+            updateCursorNumericInputs();
+        });
 
         // ---- Step 2 helpers: power-capability radio + duration estimate ----
 
