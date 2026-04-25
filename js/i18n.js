@@ -147,8 +147,18 @@ class I18n {
         // updates the page title. Pages without data-i18n on <title> keep their
         // hardcoded title untouched.
 
+        // Helper: only overwrite an element's text/attribute when the key is
+        // actually translated. Falls back to the markup's own inline text
+        // when neither the current language nor English has the key — keeps
+        // Phase-3-era English-only strings (e.g. climb-planner.html new keys)
+        // showing the inline English instead of the raw key path in DE/ES/PT.
+        const hasAny = (key) =>
+            this.hasTranslation(key, this.currentLanguage) ||
+            this.hasTranslation(key, this.fallbackLanguage);
+
         document.querySelectorAll('[data-i18n]').forEach(element => {
             const key = element.getAttribute('data-i18n');
+            if (!hasAny(key)) return;
             const replacements = this.getReplacements(element);
             if (element.hasAttribute('data-i18n-html')) {
                 element.innerHTML = this.t(key, replacements);
@@ -158,15 +168,21 @@ class I18n {
         });
 
         document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
-            element.placeholder = this.t(element.getAttribute('data-i18n-placeholder'));
+            const key = element.getAttribute('data-i18n-placeholder');
+            if (!hasAny(key)) return;
+            element.placeholder = this.t(key);
         });
 
         document.querySelectorAll('[data-i18n-title]').forEach(element => {
-            element.title = this.t(element.getAttribute('data-i18n-title'));
+            const key = element.getAttribute('data-i18n-title');
+            if (!hasAny(key)) return;
+            element.title = this.t(key);
         });
 
         document.querySelectorAll('[data-i18n-value]').forEach(element => {
-            element.value = this.t(element.getAttribute('data-i18n-value'));
+            const key = element.getAttribute('data-i18n-value');
+            if (!hasAny(key)) return;
+            element.value = this.t(key);
         });
 
         if (typeof this.updateWheelSizeOptions === 'function') {
@@ -180,9 +196,10 @@ class I18n {
         document.documentElement.lang = this.currentLanguage;
     }
 
-    hasTranslation(keyPath) {
+    hasTranslation(keyPath, language) {
+        const lang = language || this.currentLanguage;
         const keys = keyPath.split('.');
-        let value = this.translations[this.currentLanguage];
+        let value = this.translations[lang];
         for (const key of keys) {
             if (value && typeof value === 'object' && key in value) {
                 value = value[key];

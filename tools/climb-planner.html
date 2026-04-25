@@ -499,7 +499,7 @@
         .cursor-line {
             position: absolute;
             top: 0;
-            bottom: 28px; /* leave room for the grip + tick lane */
+            bottom: 0;
             left: -1px;
             width: 2px;
             background: var(--primary-color);
@@ -508,11 +508,15 @@
         [data-theme="dark"] .cursor-line {
             box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
         }
+        /* Grip sits below the cursor-handle. The handle itself is positioned to
+           span exactly the chart's plot area (renderCursors sets top/height),
+           and the grip's `top: 100%` puts it below the plot area in the
+           x-axis label / tick lane — never overlapping the elevation curve. */
         .cursor-grip {
             position: absolute;
-            bottom: 0;
+            top: 100%;
             left: 0;
-            transform: translate(-50%, 30%);
+            transform: translate(-50%, 4px);
             width: 28px;
             height: 28px;
             border-radius: 50%;
@@ -2680,19 +2684,38 @@
         // Compute length / elevation / avgGrade / maxGrade / startKm / endKm
         // for an arbitrary index range on the GPX. Used both by the auto-detector
         // and by getPlanningSegment when reading the cursor positions.
+        //
+        // maxGrade uses a distance-based 100 m sliding window scanned with
+        // step=1 via two pointers. Critically, the candidate windows for any
+        // larger range are a strict superset of those for a smaller range, so
+        // max grade is guaranteed monotonic when the user expands the cursor
+        // segment — moving a cursor outward from a high-grade section can
+        // never make max grade *decrease*, only stay the same or grow.
         function climbStatsFromIdx(points, startIdx, endIdx) {
             const startKm = points[startIdx].distance;
             const endKm = points[endIdx].distance;
             const length = endKm - startKm;
             const elevation = points[endIdx].elevation - points[startIdx].elevation;
             const avgGrade = length > 0 ? (elevation / (length * 1000)) * 100 : 0;
+
+            const WINDOW_KM = 0.1; // 100 m sliding window
             let maxGrade = 0;
-            for (let j = startIdx; j < endIdx - 5; j += 5) {
-                const segElevGain = points[j + 5].elevation - points[j].elevation;
-                const segDistance = points[j + 5].distance - points[j].distance;
-                const segGrade = segDistance > 0 ? (segElevGain / (segDistance * 1000)) * 100 : 0;
-                if (segGrade > maxGrade) maxGrade = segGrade;
+            let j = startIdx + 1;
+            for (let i = startIdx; i < endIdx; i++) {
+                // Advance j to the first point at least WINDOW_KM ahead of i.
+                while (j < endIdx && (points[j].distance - points[i].distance) < WINDOW_KM) {
+                    j++;
+                }
+                if (j > i && j <= endIdx) {
+                    const dKm = points[j].distance - points[i].distance;
+                    if (dKm > 0) {
+                        const dM = points[j].elevation - points[i].elevation;
+                        const grade = (dM / (dKm * 1000)) * 100;
+                        if (grade > maxGrade) maxGrade = grade;
+                    }
+                }
             }
+
             return {
                 startIdx: startIdx,
                 endIdx: endIdx,
@@ -2909,14 +2932,15 @@
             startEl.style.left = sx + 'px';
             endEl.style.left = ex + 'px';
 
-            // Constrain the cursor rectangles vertically to the chart's plot
-            // area so the line + grip line up with the elevation chart, not
-            // with the title or x-axis labels.
+            // Pin the cursor handle to the chart's plot area exactly. The grip
+            // is positioned via top:100% in CSS so it sits BELOW the plot area
+            // (in the axis-label region next to the tick triangles) rather
+            // than overlapping the elevation curve.
             const chartArea = state.elevationChart.chartArea;
             if (chartArea) {
                 [startEl, endEl].forEach(el => {
                     el.style.top = chartArea.top + 'px';
-                    el.style.height = (chartArea.bottom - chartArea.top + 8) + 'px';
+                    el.style.height = (chartArea.bottom - chartArea.top) + 'px';
                 });
             }
         }
