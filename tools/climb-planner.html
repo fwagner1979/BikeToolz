@@ -397,6 +397,21 @@
             margin-top: 0.2rem;
         }
 
+        /* Speed-too-low warning at the top of the result section. */
+        .result-warning {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            background: var(--warning-color);
+            color: white;
+            padding: 1rem 1.25rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+        }
+        .result-warning-icon { font-size: 1.5rem; line-height: 1; }
+        .result-warning-body strong { display: block; margin-bottom: 0.25rem; }
+        .result-warning-body p { margin: 0; font-size: 0.9rem; line-height: 1.45; }
+
         .step-section {
             background: var(--card-bg);
             border-radius: 12px;
@@ -1558,37 +1573,6 @@
                 <h2 class="step-title" data-i18n="climbPlanner.step3.title">Power for this climb</h2>
             </div>
 
-            <div id="reserveBlock" class="reserve-block">
-                <div class="reserve-header">
-                    <strong data-i18n="climbPlanner.step3.reserve.title">Reserve in the tank</strong>
-                    <span class="reserve-not-applied" id="reserveNotApplied"
-                          data-i18n="climbPlanner.step3.reserve.notApplied">(not applied to this method)</span>
-                </div>
-                <p class="step-helper reserve-helper" data-i18n="climbPlanner.step3.reserve.helper">
-                    How much of your W' (your "matches") to keep in reserve for the rest of the ride.
-                    Used by CP/W' and Power Curve only. Higher reserve = lower planned power = slower pace.
-                </p>
-                <div class="reserve-controls">
-                    <button type="button" class="preset-button reserve-preset selected"
-                            data-reserve="0" onclick="selectReservePreset(0)">
-                        <span data-i18n="climbPlanner.step3.reserve.preset.race">0% — Race</span>
-                    </button>
-                    <button type="button" class="preset-button reserve-preset"
-                            data-reserve="25" onclick="selectReservePreset(25)">
-                        <span data-i18n="climbPlanner.step3.reserve.preset.hard">25% — Hard</span>
-                    </button>
-                    <button type="button" class="preset-button reserve-preset"
-                            data-reserve="50" onclick="selectReservePreset(50)">
-                        <span data-i18n="climbPlanner.step3.reserve.preset.cruise">50% — Cruise</span>
-                    </button>
-                    <div class="reserve-custom">
-                        <label for="reserveCustom" data-i18n="climbPlanner.step3.reserve.custom">or custom</label>
-                        <input type="number" id="reserveCustom" min="0" max="90" step="1" placeholder="0" value="0">
-                        <span>%</span>
-                    </div>
-                </div>
-            </div>
-
             <div class="method-tabs" role="tablist">
                 <button type="button" class="method-tab active" data-method="simple"
                         role="tab" aria-selected="true"
@@ -1707,6 +1691,22 @@
                 <p>Based on your parameters and power capability</p>
             </div>
 
+            <!-- Speed-too-low warning. Fires when computed climbing speed
+                 drops below ~5 km/h — at that point the climb is essentially
+                 walking pace and not realistically rideable without lower
+                 gearing or more watts. -->
+            <div id="speedWarning" class="result-warning" style="display: none;">
+                <div class="result-warning-icon">⚠️</div>
+                <div class="result-warning-body">
+                    <strong>Below sustainable cycling speed</strong>
+                    <p id="speedWarningText">
+                        At this power and gradient, you'd be moving below ~5 km/h —
+                        essentially walking pace. You may need to find lower gearing,
+                        push more watts, or walk parts of the climb.
+                    </p>
+                </div>
+            </div>
+
             <div class="results-grid">
                 <div class="result-card">
                     <div class="result-icon">🚴</div>
@@ -1757,6 +1757,40 @@
                 </div>
                 <!-- Hidden carriers for back-compat with existing code that may reference these IDs. -->
                 <span id="resultGear" hidden>--</span>
+            </div>
+
+            <!-- Reserve in the tank — moved from Step 3 to here so the user can
+                 sweep through reserve values and watch climbing speed, time,
+                 cadence, and the power analysis update live, all in one place. -->
+            <div id="reserveBlock" class="reserve-block">
+                <div class="reserve-header">
+                    <strong data-i18n="climbPlanner.step3.reserve.title">Reserve in the tank</strong>
+                    <span class="reserve-not-applied" id="reserveNotApplied"
+                          data-i18n="climbPlanner.step3.reserve.notApplied">(not applied to this method)</span>
+                </div>
+                <p class="step-helper reserve-helper" data-i18n="climbPlanner.step3.reserve.helper">
+                    How much of your W' (your "matches") to keep in reserve for the rest of the ride.
+                    Used by CP/W' and Power Curve only. Higher reserve = lower planned power = slower pace.
+                </p>
+                <div class="reserve-controls">
+                    <button type="button" class="preset-button reserve-preset selected"
+                            data-reserve="0" onclick="selectReservePreset(0)">
+                        <span data-i18n="climbPlanner.step3.reserve.preset.race">0% — Race</span>
+                    </button>
+                    <button type="button" class="preset-button reserve-preset"
+                            data-reserve="25" onclick="selectReservePreset(25)">
+                        <span data-i18n="climbPlanner.step3.reserve.preset.hard">25% — Hard</span>
+                    </button>
+                    <button type="button" class="preset-button reserve-preset"
+                            data-reserve="50" onclick="selectReservePreset(50)">
+                        <span data-i18n="climbPlanner.step3.reserve.preset.cruise">50% — Cruise</span>
+                    </button>
+                    <div class="reserve-custom">
+                        <label for="reserveCustom" data-i18n="climbPlanner.step3.reserve.custom">or custom</label>
+                        <input type="number" id="reserveCustom" min="0" max="90" step="1" placeholder="0" value="0">
+                        <span>%</span>
+                    </div>
+                </div>
             </div>
 
             <div class="power-breakdown">
@@ -2968,6 +3002,16 @@
             document.getElementById('resultSpeed').textContent = (speed * 3.6).toFixed(1) + ' km/h';
             document.getElementById('resultTime').textContent = `${timeMinutes}:${timeSeconds.toString().padStart(2, '0')}`;
 
+            // Speed-too-low warning. ~5 km/h is roughly the lower bound for
+            // sustained balanced riding on a road bike — below that you're
+            // essentially walking, not cycling.
+            const MIN_RIDEABLE_KMH = 5;
+            const speedKmh = speed * 3.6;
+            const speedWarningEl = document.getElementById('speedWarning');
+            if (speedWarningEl) {
+                speedWarningEl.style.display = (speedKmh < MIN_RIDEABLE_KMH) ? 'flex' : 'none';
+            }
+
             // Gear & cadence card — populate the dropdowns from the configured
             // drivetrain, default-select the cadence-optimal pick, and render
             // the resulting cadence + ratio. Subsequent picks re-render via
@@ -3010,20 +3054,40 @@
             }
         }
 
-        // Populate the chainring + cog dropdowns from the configured drivetrain
-        // and default-select the cadence-optimal pick. Wires the cadence
-        // readout and the optimal-pick badge.
+        // Populate the chainring + cog dropdowns from the configured drivetrain.
+        // Only rebuilds the option lists when the drivetrain configuration has
+        // actually changed — otherwise the user's manual gear selection would
+        // be reset every time auto-refresh fires (e.g. when they tweak power).
+        // After the rebuild (or skip), renderGearCadenceReadout recomputes
+        // ratio + cadence from the *current* dropdown values and the latest
+        // speed, so cadence updates correctly when speed changes.
         function populateGearPickers(chainrings, cassette, optimalGear, speed, wheelCircumference, preferredCadence) {
             const cringSel = document.getElementById('resultChainring');
             const cogSel = document.getElementById('resultCog');
             if (!cringSel || !cogSel) return;
 
-            cringSel.innerHTML = chainrings.map(c =>
-                `<option value="${c}"${c === optimalGear.chainring ? ' selected' : ''}>${c}</option>`
-            ).join('');
-            cogSel.innerHTML = cassette.map(c =>
-                `<option value="${c}"${c === optimalGear.cog ? ' selected' : ''}>${c}</option>`
-            ).join('');
+            const currentCrings = Array.from(cringSel.options).map(o => parseInt(o.value, 10));
+            const currentCogs = Array.from(cogSel.options).map(o => parseInt(o.value, 10));
+            const cringsSame = currentCrings.length === chainrings.length &&
+                currentCrings.every((v, i) => v === chainrings[i]);
+            const cogsSame = currentCogs.length === cassette.length &&
+                currentCogs.every((v, i) => v === cassette[i]);
+
+            if (!cringsSame) {
+                const prev = parseInt(cringSel.value, 10);
+                const target = chainrings.includes(prev) ? prev : optimalGear.chainring;
+                cringSel.innerHTML = chainrings.map(c =>
+                    `<option value="${c}"${c === target ? ' selected' : ''}>${c}</option>`
+                ).join('');
+            }
+
+            if (!cogsSame) {
+                const prev = parseInt(cogSel.value, 10);
+                const target = cassette.includes(prev) ? prev : optimalGear.cog;
+                cogSel.innerHTML = cassette.map(c =>
+                    `<option value="${c}"${c === target ? ' selected' : ''}>${c}</option>`
+                ).join('');
+            }
 
             renderGearCadenceReadout();
         }
