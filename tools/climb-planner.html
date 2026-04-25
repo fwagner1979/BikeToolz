@@ -1486,7 +1486,7 @@
                                     <span>Calculated Sustainable Power: </span>
                                     <span id="cpwCalculatedPower">--</span> W
                                     <div style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.9;">
-                                        for <span id="cpwDuration">--</span> minutes
+                                        for <span id="cpwDuration">--:--</span>
                                     </div>
                                 </div>
                             </div>
@@ -1523,7 +1523,7 @@
                                     <span>Calculated Sustainable Power: </span>
                                     <span id="curveCalculatedPower">--</span> W
                                     <div style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.9;">
-                                        for <span id="curveDuration">--</span> minutes
+                                        for <span id="curveDuration">--:--</span>
                                     </div>
                                 </div>
                             </div>
@@ -2267,7 +2267,7 @@
                 const userPower = parseFloat(document.getElementById('simplePower').value);
                 if (!(userPower > 0)) return initialMinutes;
                 const refined = estimateClimbDurationMinutes(distance, grade, totalMassKg, userPower);
-                return refined ? Math.max(1, Math.round(refined)) : initialMinutes;
+                return refined || initialMinutes;
             }
 
             if (method === 'cpw') {
@@ -2279,10 +2279,10 @@
                     const power = cpw.cp + usableJ / (t * 60);
                     const newT = estimateClimbDurationMinutes(distance, grade, totalMassKg, power);
                     if (!newT) return initialMinutes;
-                    if (Math.abs(newT - t) < 0.05) { t = newT; break; }
+                    if (Math.abs(newT - t) < 0.01) { t = newT; break; }
                     t = newT;
                 }
-                return Math.max(1, Math.round(t));
+                return t;
             }
 
             if (method === 'curve') {
@@ -2292,15 +2292,25 @@
                 for (let i = 0; i < 4; i++) {
                     const lookup = t / Math.max(1 - state.reserveFraction, 0.1);
                     const power = interpolatePower(points, lookup);
+                    if (!(power > 0)) return initialMinutes;
                     const newT = estimateClimbDurationMinutes(distance, grade, totalMassKg, power);
                     if (!newT) return initialMinutes;
-                    if (Math.abs(newT - t) < 0.05) { t = newT; break; }
+                    if (Math.abs(newT - t) < 0.01) { t = newT; break; }
                     t = newT;
                 }
-                return Math.max(1, Math.round(t));
+                return t;
             }
 
             return initialMinutes;
+        }
+
+        // Format a duration in fractional minutes as "MM:SS" — e.g. 22.4 → "22:24".
+        function formatMMSS(minutesFloat) {
+            if (!(minutesFloat > 0)) return '--:--';
+            const totalSec = Math.round(minutesFloat * 60);
+            const mm = Math.floor(totalSec / 60);
+            const ss = totalSec - mm * 60;
+            return mm + ':' + String(ss).padStart(2, '0');
         }
 
         // Power calculations
@@ -2332,16 +2342,14 @@
                 ((bikeW > 0) ? bikeW : BASELINE_BIKE_KG);
             const sustainablePowerW = getEffectivePowerForEstimateW();
 
-            const estimatedTimeMinutesRaw =
+            const initialEstimateMinutes =
                 estimateClimbDurationMinutes(distance, grade, totalMassKg, sustainablePowerW);
-            const initialEstimateMinutes = estimatedTimeMinutesRaw
-                ? Math.max(1, Math.round(estimatedTimeMinutesRaw))
-                : null;
 
             // Refine the estimate using the actually-chosen Step 3 method + reserve.
             // This makes the displayed time react to reserve changes, and keeps it
             // honest when the user's CP/W' or Power Curve implies a different pace
-            // than the rough CP-based first pass.
+            // than the rough CP-based first pass. Kept as float minutes so the
+            // MM:SS display can show sub-minute differences from reserve.
             const estimatedTimeMinutes = initialEstimateMinutes
                 ? refineEstimateForMethod(distance, grade, totalMassKg, initialEstimateMinutes)
                 : null;
@@ -2386,7 +2394,7 @@
                 recoText = '<strong>Power Curve</strong> recommended (best for climbs over ~60 min).';
             }
 
-            titleEl.textContent = `Estimated climb time: ~${estimatedTimeMinutes} min`;
+            titleEl.textContent = `Estimated climb time: ~${formatMMSS(estimatedTimeMinutes)}`;
             recoEl.innerHTML = '💡 ' + recoText;
 
             const step2Provided = isStep2PowerProvided();
@@ -2421,7 +2429,7 @@
             const sustainablePower = cpw.cp + (usableWPrime / estimatedTimeSeconds);
 
             document.getElementById('cpwCalculatedPower').textContent = Math.round(sustainablePower);
-            document.getElementById('cpwDuration').textContent = estimatedTimeMinutes;
+            document.getElementById('cpwDuration').textContent = formatMMSS(estimatedTimeMinutes);
             document.getElementById('calculatedPowerCPW').style.display = 'block';
             annotateMethodCalculatedValue('calculatedPowerCPW');
         }
@@ -2448,7 +2456,7 @@
                 const sustainablePower = interpolatePower(points, lookupMinutes);
 
                 document.getElementById('curveCalculatedPower').textContent = Math.round(sustainablePower);
-                document.getElementById('curveDuration').textContent = estimatedTimeMinutes;
+                document.getElementById('curveDuration').textContent = formatMMSS(estimatedTimeMinutes);
                 document.getElementById('calculatedPowerCurve').style.display = 'block';
                 annotateMethodCalculatedValue('calculatedPowerCurve');
             }
