@@ -100,6 +100,19 @@ Recommendation bands (unchanged from CLAUDE.md): < 40 min → CP/W'; 40–60 min
 **Tool intro (above Step 1):** add a short line stating power data is required:
 > *"This tool needs a power capability number (FTP, CP, or your historical best). HR-only and no-meter riders aren't supported yet."*
 
+#### Reserve in the tank (CP/W' and Power Curve)
+
+A "reserve" control sits at the top of Step 3 (under the smart-default banner, above the method radios) for users who don't want every climb plan to assume an all-out, W'-depleting effort. Three preset chips (0% / 25% / 50%) plus a small custom-% input.
+
+- Default: 0% — preserves today's "best possible effort" semantics, useful for KOM hunts.
+- Applies to **CP/W'** as `P(t) = CP + W' × (1 − R) / t`.
+- Applies to **Power Curve** by reading off the curve at `t / (1 − R)` — the power you could hold for the climb duration plus enough margin to finish with R fraction of W' still in the tank.
+- Does **not** apply to "Expected avg. power for this climb" (Simple Power) — that's already the user's gut-feel sustainable number; applying reserve to it is meaningless. When Simple Power is the chosen method, the reserve control fades (50% opacity) and shows "*(not applied to this method)*".
+- Capped at 90% so the read-off never divides by zero.
+- The same reserve fraction will feed into Sub-commit 3's steepest-section warning, so the warning's threshold matches the rider's chosen pacing intent rather than always assuming all-out.
+
+Decided 2026-04-25 mid-implementation: FWA noticed during the first real GPX test that a 30-min CP/W' suggestion was honest but burned the entire W' reserve on one climb. Adding this control keeps the original "race-pace" framing valid while offering an alternative for riders saving matches for later in the ride. Bolted onto Sub-commit 1.
+
 ### 3. Cursor chart — interactive elevation profile with draggable bounds
 
 Today, after a GPX upload, the auto-detector finds 15 climbs on a 134 km alpine route — useless. The fix: an interactive elevation chart at the top of Step 1, with two draggable cursors that define the planning segment.

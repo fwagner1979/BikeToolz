@@ -133,6 +133,74 @@
             line-height: 1.4;
         }
 
+        .reserve-block {
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.875rem 1rem;
+            margin-bottom: 1.25rem;
+            transition: opacity 0.2s ease;
+        }
+        .reserve-block.muted { opacity: 0.55; }
+        .reserve-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.25rem;
+            color: var(--primary-color);
+        }
+        .reserve-not-applied {
+            display: none;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+        .reserve-block.muted .reserve-not-applied { display: inline; }
+        .reserve-helper {
+            margin-bottom: 0.75rem;
+            margin-top: 0;
+        }
+        .reserve-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        .reserve-preset {
+            margin: 0;
+            padding: 0.5rem 0.875rem;
+            font-size: 0.9rem;
+        }
+        .reserve-custom {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-left: 0.25rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        .reserve-custom label { font-weight: 500; }
+        .reserve-custom input {
+            width: 4.5rem;
+            padding: 0.4rem 0.5rem;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-size: 0.95rem;
+            text-align: right;
+        }
+        .reserve-custom input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+        [data-theme="dark"] .reserve-custom input {
+            background-color: #1a1f2e;
+            color: #f9fafb;
+            border-color: #374151;
+        }
+        .reserve-block.muted .reserve-controls { pointer-events: none; }
+
         .step-section {
             background: var(--card-bg);
             border-radius: 12px;
@@ -1302,6 +1370,37 @@
                 <div class="smart-default-disclaimer" id="smartDefaultDisclaimer" style="display: none;"></div>
             </div>
 
+            <div id="reserveBlock" class="reserve-block">
+                <div class="reserve-header">
+                    <strong data-i18n="climbPlanner.step3.reserve.title">Reserve in the tank</strong>
+                    <span class="reserve-not-applied" id="reserveNotApplied"
+                          data-i18n="climbPlanner.step3.reserve.notApplied">(not applied to this method)</span>
+                </div>
+                <p class="step-helper reserve-helper" data-i18n="climbPlanner.step3.reserve.helper">
+                    How much of your W' (your "matches") to keep in reserve for the rest of the ride.
+                    Used by CP/W' and Power Curve only. Higher reserve = lower planned power = slower pace.
+                </p>
+                <div class="reserve-controls">
+                    <button type="button" class="preset-button reserve-preset selected"
+                            data-reserve="0" onclick="selectReservePreset(0)">
+                        <span data-i18n="climbPlanner.step3.reserve.preset.race">0% — Race</span>
+                    </button>
+                    <button type="button" class="preset-button reserve-preset"
+                            data-reserve="25" onclick="selectReservePreset(25)">
+                        <span data-i18n="climbPlanner.step3.reserve.preset.hard">25% — Hard</span>
+                    </button>
+                    <button type="button" class="preset-button reserve-preset"
+                            data-reserve="50" onclick="selectReservePreset(50)">
+                        <span data-i18n="climbPlanner.step3.reserve.preset.cruise">50% — Cruise</span>
+                    </button>
+                    <div class="reserve-custom">
+                        <label for="reserveCustom" data-i18n="climbPlanner.step3.reserve.custom">or custom</label>
+                        <input type="number" id="reserveCustom" min="0" max="90" step="1" placeholder="0" value="0">
+                        <span>%</span>
+                    </div>
+                </div>
+            </div>
+
             <div class="radio-group">
                 <label class="radio-option selected" onclick="selectPowerMethod('simple')">
                     <input type="radio" name="powerMethod" value="simple" checked>
@@ -1608,8 +1707,14 @@
             powerMethod: 'simple',
             detectedClimbs: [],
             selectedClimb: null,
-            isMetric: window.isMetric !== undefined ? window.isMetric : true
+            isMetric: window.isMetric !== undefined ? window.isMetric : true,
+            // Reserve in the tank: fraction 0..0.9. Applies to CP/W' and Power Curve only.
+            // Default 0 preserves the original "best possible effort" semantics.
+            reserveFraction: 0
         };
+
+        // Hard cap so the Power Curve read-off never divides by zero.
+        const RESERVE_MAX_PERCENT = 90;
 
         // Stay in sync when the user toggles units in the chrome.
         document.addEventListener('bikeToolz:unitchange', function (event) {
@@ -1673,10 +1778,63 @@
             document.getElementById('cpwInputs').style.display = method === 'cpw' ? 'block' : 'none';
             document.getElementById('curveInputs').style.display = method === 'curve' ? 'block' : 'none';
 
+            // Reserve only applies to CP/W' and Power Curve; mute the block otherwise.
+            updateReserveBlockMuted();
+
             // Trigger recalculation if we have climb data
             if (state.selectedClimb || hasManualClimbData()) {
                 updatePowerCalculations();
             }
+        }
+
+        // ---- Reserve in the tank ----
+
+        function updateReserveBlockMuted() {
+            const block = document.getElementById('reserveBlock');
+            if (!block) return;
+            block.classList.toggle('muted', state.powerMethod === 'simple');
+        }
+
+        function setReserveFraction(percent) {
+            const clamped = Math.max(0, Math.min(RESERVE_MAX_PERCENT, percent || 0));
+            state.reserveFraction = clamped / 100;
+
+            // Sync visual state of preset chips
+            document.querySelectorAll('.reserve-preset').forEach(btn => {
+                const presetVal = parseFloat(btn.dataset.reserve);
+                btn.classList.toggle('selected', presetVal === clamped);
+            });
+
+            // Sync the custom input value (avoid clobbering it while the user is mid-typing)
+            const customInput = document.getElementById('reserveCustom');
+            if (customInput && document.activeElement !== customInput) {
+                customInput.value = clamped;
+            }
+        }
+
+        function selectReservePreset(percent) {
+            setReserveFraction(percent);
+            // Push value back into custom input so it always reflects current state.
+            const customInput = document.getElementById('reserveCustom');
+            if (customInput) customInput.value = percent;
+            updatePowerCalculations();
+        }
+
+        // Wire the custom-% field
+        document.addEventListener('DOMContentLoaded', function () {
+            const customInput = document.getElementById('reserveCustom');
+            if (customInput) {
+                customInput.addEventListener('input', function () {
+                    const val = parseFloat(this.value);
+                    setReserveFraction(isNaN(val) ? 0 : val);
+                    updatePowerCalculations();
+                });
+            }
+            updateReserveBlockMuted();
+        });
+
+        function reservePctText() {
+            return Math.round(state.reserveFraction * 100);
         }
 
         // Manual climb inputs
@@ -2117,13 +2275,17 @@
             if (cp > 0 && wPrime > 0) {
                 const estimatedTimeSeconds = estimatedTimeMinutes * 60;
                 const wPrimeJoules = wPrime * 1000;
+                // Reserve in the tank: only spend (1 - R) fraction of W'.
+                const reserveR = state.reserveFraction;
+                const usableWPrime = wPrimeJoules * (1 - reserveR);
 
-                // Power = CP + (W' / time)
-                const sustainablePower = cp + (wPrimeJoules / estimatedTimeSeconds);
+                // Power = CP + (usable W' / time)
+                const sustainablePower = cp + (usableWPrime / estimatedTimeSeconds);
 
                 document.getElementById('cpwCalculatedPower').textContent = Math.round(sustainablePower);
                 document.getElementById('cpwDuration').textContent = estimatedTimeMinutes;
                 document.getElementById('calculatedPowerCPW').style.display = 'block';
+                annotateMethodCalculatedValue('calculatedPowerCPW');
             }
         }
 
@@ -2141,13 +2303,42 @@
             if (power120 > 0) points.push({time: 120, power: power120});
 
             if (points.length >= 3) {
-                // Fit exponential curve: Power = a * time^b + c
-                // For simplicity, use linear interpolation/extrapolation
-                const sustainablePower = interpolatePower(points, estimatedTimeMinutes);
+                // Reserve in the tank: read off the curve at a longer duration so the
+                // returned power is what the rider could hold for `t / (1 - R)` minutes
+                // — i.e. they'd finish the climb with R fraction of W' still untouched.
+                const reserveR = state.reserveFraction;
+                const lookupMinutes = estimatedTimeMinutes / Math.max(1 - reserveR, 0.1);
+                const sustainablePower = interpolatePower(points, lookupMinutes);
 
                 document.getElementById('curveCalculatedPower').textContent = Math.round(sustainablePower);
                 document.getElementById('curveDuration').textContent = estimatedTimeMinutes;
                 document.getElementById('calculatedPowerCurve').style.display = 'block';
+                annotateMethodCalculatedValue('calculatedPowerCurve');
+            }
+        }
+
+        // Append a "while keeping ~X% in reserve" line under the calculated power
+        // for CP/W' and Power Curve. Removed cleanly when reserve is 0%.
+        function annotateMethodCalculatedValue(containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const inner = container.querySelector('.calculated-value');
+            if (!inner) return;
+
+            let note = inner.querySelector('.reserve-note');
+            const pct = reservePctText();
+            if (pct > 0) {
+                if (!note) {
+                    note = document.createElement('div');
+                    note.className = 'reserve-note';
+                    note.style.fontSize = '0.85rem';
+                    note.style.marginTop = '0.35rem';
+                    note.style.opacity = '0.9';
+                    inner.appendChild(note);
+                }
+                note.textContent = `while keeping ~${pct}% of W' in reserve`;
+            } else if (note) {
+                note.remove();
             }
         }
 
