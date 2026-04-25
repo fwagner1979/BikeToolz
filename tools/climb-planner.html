@@ -296,6 +296,107 @@
             margin-top: 0.25rem;
         }
 
+        /* Gear & Cadence — single interactive card. Picking a different
+           chainring or cog updates the cadence live; the climbing speed
+           and time don't change because gear doesn't affect them. */
+        .gear-cadence-card {
+            background: var(--bg-color);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+        }
+        .gear-cadence-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .gear-cadence-title {
+            font-weight: 600;
+            color: var(--primary-color);
+            font-size: 1.05rem;
+        }
+        .gear-cadence-optimal-badge {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            background: var(--success-color);
+            color: white;
+            padding: 0.15rem 0.5rem;
+            border-radius: 999px;
+        }
+        .gear-cadence-body {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .gear-cadence-pickers {
+            display: flex;
+            align-items: flex-end;
+            gap: 0.5rem;
+            flex: 0 0 auto;
+        }
+        .gear-picker-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        .gear-picker-label {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        .gear-picker-group select {
+            padding: 0.5rem 0.625rem;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-size: 1rem;
+            font-weight: 600;
+            min-width: 4.5rem;
+        }
+        [data-theme="dark"] .gear-picker-group select {
+            background-color: #1a1f2e;
+            color: #f9fafb;
+            border-color: #374151;
+        }
+        .gear-picker-x {
+            font-size: 1.4rem;
+            color: var(--text-secondary);
+            padding-bottom: 0.5rem;
+        }
+        .gear-cadence-readout {
+            display: flex;
+            gap: 1.75rem;
+            flex: 1 1 auto;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+        .gear-cadence-cell {
+            text-align: center;
+            min-width: 5rem;
+        }
+        .gear-cadence-cell-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+        .gear-cadence-cell-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        .gear-cadence-cell-sub {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.2rem;
+        }
+
         .step-section {
             background: var(--card-bg);
             border-radius: 12px;
@@ -1619,33 +1720,61 @@
                     <div class="result-value" id="resultTime">--</div>
                 </div>
 
-                <div class="result-card">
-                    <div class="result-icon">⚙️</div>
-                    <div class="result-label">Optimal Gear</div>
-                    <div class="result-value" id="resultGear">--</div>
-                    <div class="result-subvalue" id="resultGearRatio"></div>
-                </div>
+            </div>
 
-                <div class="result-card">
-                    <div class="result-icon">🔄</div>
-                    <div class="result-label">Actual Cadence</div>
-                    <div class="result-value" id="resultCadence">--</div>
-                    <div class="result-subvalue" id="resultCadenceTarget"></div>
+            <!-- Gear & cadence together: pick a different chainring/cog and the
+                 cadence updates live. Default selection is the cadence-optimal
+                 pick from the configured drivetrain. -->
+            <div class="gear-cadence-card" id="gearCadenceCard">
+                <div class="gear-cadence-header">
+                    <span class="result-icon">⚙️</span>
+                    <span class="gear-cadence-title">Gear &amp; Cadence</span>
+                    <span class="gear-cadence-optimal-badge" id="gearOptimalBadge" hidden>cadence-optimal</span>
                 </div>
+                <div class="gear-cadence-body">
+                    <div class="gear-cadence-pickers">
+                        <label class="gear-picker-group">
+                            <span class="gear-picker-label">Chainring</span>
+                            <select id="resultChainring" onchange="updateGearCadenceFromPickers()"></select>
+                        </label>
+                        <span class="gear-picker-x">×</span>
+                        <label class="gear-picker-group">
+                            <span class="gear-picker-label">Cog</span>
+                            <select id="resultCog" onchange="updateGearCadenceFromPickers()"></select>
+                        </label>
+                    </div>
+                    <div class="gear-cadence-readout">
+                        <div class="gear-cadence-cell">
+                            <div class="gear-cadence-cell-label">Ratio</div>
+                            <div class="gear-cadence-cell-value" id="resultGearRatio">--</div>
+                        </div>
+                        <div class="gear-cadence-cell">
+                            <div class="gear-cadence-cell-label">Cadence</div>
+                            <div class="gear-cadence-cell-value" id="resultCadence">-- RPM</div>
+                            <div class="gear-cadence-cell-sub" id="resultCadenceTarget"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Hidden carriers for back-compat with existing code that may reference these IDs. -->
+                <span id="resultGear" hidden>--</span>
             </div>
 
             <div class="power-breakdown">
                 <h3>💪 Power Analysis</h3>
                 <div class="power-row">
-                    <span>Available Power:</span>
-                    <span id="powerAvailable" style="font-weight: 600;">-- W</span>
+                    <span>Sustainable power:</span>
+                    <span id="powerSustainable" style="font-weight: 600;">-- W</span>
                 </div>
                 <div class="power-row" style="font-size: 0.9rem; opacity: 0.85;">
-                    <span style="padding-left: 1rem; font-style: italic;">Drivetrain:</span>
+                    <span style="padding-left: 1rem; font-style: italic;">Drivetrain losses:</span>
                     <span id="drivetrainInfo" style="font-style: italic;">--</span>
                 </div>
-                <div class="power-row">
-                    <span>Required Power:</span>
+                <div class="power-row" style="border-top: 1px solid var(--border-color); padding-top: 0.75rem; margin-top: 0.25rem;">
+                    <span>Power at the wheel:</span>
+                    <span id="powerAvailable" style="font-weight: 600; color: var(--success-color);">-- W</span>
+                </div>
+                <div class="power-row" style="margin-top: 0.75rem;">
+                    <span>Required at the wheel:</span>
                     <span id="powerRequired" style="font-weight: 600;">-- W</span>
                 </div>
                 <div class="power-row">
@@ -1653,16 +1782,12 @@
                     <span id="powerGravity">-- W</span>
                 </div>
                 <div class="power-row">
-                    <span style="padding-left: 1rem;">├ Rolling Resistance:</span>
+                    <span style="padding-left: 1rem;">├ Rolling resistance:</span>
                     <span id="powerRolling">-- W</span>
                 </div>
                 <div class="power-row">
-                    <span style="padding-left: 1rem;">└ Aerodynamic Drag:</span>
+                    <span style="padding-left: 1rem;">└ Aerodynamic drag:</span>
                     <span id="powerAero">-- W</span>
-                </div>
-                <div class="power-row total" id="powerBalance">
-                    <span>Power Balance:</span>
-                    <span id="powerBalanceValue">-- W</span>
                 </div>
             </div>
         </div>
@@ -1822,7 +1947,15 @@
             // The planned sustainable power (watts) for the chosen Step 3 method,
             // after reserve is applied. Set in updatePowerCalculations and read by
             // calculateClimb. null when inputs are insufficient.
-            calculatedSustainablePower: null
+            calculatedSustainablePower: null,
+            // True after the user has clicked Calculate Climb Plan at least once.
+            // While true, any change in Step 3 (power method, reserve, etc.)
+            // re-runs calculateClimb so the result section stays live.
+            resultsVisible: false,
+            // Stash of the last successful calculateClimb result. Used by the
+            // gear-cadence pickers to recompute cadence on dropdown change
+            // without re-running physics.
+            lastResult: null
         };
 
         // Hard cap so the Power Curve read-off never divides by zero.
@@ -2450,6 +2583,15 @@
             }
 
             renderSmartDefaultBanner(estimatedTimeMinutes, plannedPower);
+
+            // Once the user has clicked "Calculate Climb Plan" at least once,
+            // every change in Step 3 should also refresh the result section
+            // — climbing speed, time, gear, cadence, power analysis. This is
+            // what makes the result section feel interactive rather than a
+            // one-shot snapshot.
+            if (state.resultsVisible && plannedPower != null) {
+                calculateClimb(true /* silent */);
+            }
         }
 
         // Returns the planned watts for the currently-chosen Step 3 method, given
@@ -2732,8 +2874,12 @@
             });
         })();
 
-        // Main calculation
-        function calculateClimb() {
+        // Main calculation. When `silent` is true (auto-refresh from Step 3 edits)
+        // the function bails out quietly on incomplete inputs instead of popping
+        // alert dialogs, which would be horrible UX while the user is typing.
+        function calculateClimb(silent) {
+            const showAlert = function (msg) { if (!silent) alert(msg); };
+
             // Get climb parameters (always in metric for calculations)
             let distance, elevation, grade;
 
@@ -2749,7 +2895,7 @@
                 elevation = state.selectedClimb.elevation;
                 grade = state.selectedClimb.avgGrade;
             } else {
-                alert('Please define your climb first');
+                showAlert('Please define your climb first');
                 return;
             }
 
@@ -2757,7 +2903,7 @@
             // updatePowerCalculations whichever Step 3 method is active.
             const sustainablePower = state.calculatedSustainablePower;
             if (!sustainablePower || sustainablePower <= 0) {
-                alert('Please enter your power capability');
+                showAlert('Please enter your power capability');
                 return;
             }
 
@@ -2768,7 +2914,7 @@
             const wheelCircumference = parseFloat(document.getElementById('wheelCircumference').value);
 
             if (!riderWeight || !bikeWeight || !preferredCadence || !wheelCircumference) {
-                alert('Please fill in all rider & equipment parameters');
+                showAlert('Please fill in all rider & equipment parameters');
                 return;
             }
 
@@ -2779,7 +2925,7 @@
             const cassette = getCurrentCassette();
 
             if (!chainrings || chainrings.length === 0 || !cassette || cassette.length === 0) {
-                alert('Please configure your gearing');
+                showAlert('Please configure your gearing');
                 return;
             }
 
@@ -2821,43 +2967,101 @@
             // Display results
             document.getElementById('resultSpeed').textContent = (speed * 3.6).toFixed(1) + ' km/h';
             document.getElementById('resultTime').textContent = `${timeMinutes}:${timeSeconds.toString().padStart(2, '0')}`;
-            document.getElementById('resultGear').textContent = `${optimalGear.chainring}×${optimalGear.cog}`;
-            document.getElementById('resultGearRatio').textContent = `${optimalGear.ratio}:1 ratio`;
-            document.getElementById('resultCadence').textContent = Math.round(optimalGear.cadence) + ' RPM';
-            const cadenceDelta = Math.round(optimalGear.cadence - preferredCadence);
-            const deltaText = cadenceDelta === 0
-                ? `(matches your ${preferredCadence} target)`
-                : (cadenceDelta > 0
-                    ? `(+${cadenceDelta} vs your ${preferredCadence} target)`
-                    : `(${cadenceDelta} vs your ${preferredCadence} target)`);
-            document.getElementById('resultCadenceTarget').textContent = deltaText;
 
-            document.getElementById('powerAvailable').textContent = Math.round(availablePower) + ' W';
+            // Gear & cadence card — populate the dropdowns from the configured
+            // drivetrain, default-select the cadence-optimal pick, and render
+            // the resulting cadence + ratio. Subsequent picks re-render via
+            // updateGearCadenceFromPickers.
+            populateGearPickers(chainrings, cassette, optimalGear, speed, wheelCircumference, preferredCadence);
 
-            // Display drivetrain efficiency info
+            // Power Analysis — clear flow:
+            //   sustainable - drivetrain losses = power at the wheel
+            //   power at the wheel = required (sum of gravity, rolling, aero)
             const drivetrainType = is1x ? '1x' : '2x';
             const efficiencyPercent = (drivetrainEfficiency * 100).toFixed(1);
             const powerLoss = Math.round(sustainablePower - availablePower);
+            document.getElementById('powerSustainable').textContent = Math.round(sustainablePower) + ' W';
             document.getElementById('drivetrainInfo').textContent =
-                `${sustainablePower}W × ${efficiencyPercent}% (${drivetrainType}, -${powerLoss}W loss)`;
-
+                `−${powerLoss} W (${efficiencyPercent}% efficiency, ${drivetrainType})`;
+            document.getElementById('powerAvailable').textContent = Math.round(availablePower) + ' W';
             document.getElementById('powerRequired').textContent = Math.round(requiredPower) + ' W';
             document.getElementById('powerGravity').textContent = Math.round(gravitationalPower) + ' W';
             document.getElementById('powerRolling').textContent = Math.round(rollingPower) + ' W';
             document.getElementById('powerAero').textContent = Math.round(aeroPower) + ' W';
 
-            const powerBalance = availablePower - requiredPower;
-            const balanceRow = document.getElementById('powerBalance');
-            const balanceValue = document.getElementById('powerBalanceValue');
+            // Stash the latest values so updateGearCadenceFromPickers can
+            // recompute cadence on dropdown change without re-running physics.
+            state.lastResult = {
+                speed: speed,
+                wheelCircumference: wheelCircumference,
+                preferredCadence: preferredCadence,
+                optimalChainring: optimalGear.chainring,
+                optimalCog: optimalGear.cog
+            };
+            state.resultsVisible = true;
 
-            balanceValue.textContent = (powerBalance >= 0 ? '+' : '') + Math.round(powerBalance) + ' W ' +
-                                       (powerBalance >= 0 ? 'surplus' : 'deficit');
+            // Show results — only scroll into view on the first reveal so live
+            // refreshes from Step 3 don't yank the page around.
+            const resultsEl = document.getElementById('resultsSection');
+            const wasHidden = resultsEl.classList.contains('hidden');
+            resultsEl.classList.remove('hidden');
+            if (wasHidden) {
+                resultsEl.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
 
-            balanceRow.className = 'power-row total ' + (powerBalance >= 0 ? 'surplus' : 'deficit');
+        // Populate the chainring + cog dropdowns from the configured drivetrain
+        // and default-select the cadence-optimal pick. Wires the cadence
+        // readout and the optimal-pick badge.
+        function populateGearPickers(chainrings, cassette, optimalGear, speed, wheelCircumference, preferredCadence) {
+            const cringSel = document.getElementById('resultChainring');
+            const cogSel = document.getElementById('resultCog');
+            if (!cringSel || !cogSel) return;
 
-            // Show results
-            document.getElementById('resultsSection').classList.remove('hidden');
-            document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+            cringSel.innerHTML = chainrings.map(c =>
+                `<option value="${c}"${c === optimalGear.chainring ? ' selected' : ''}>${c}</option>`
+            ).join('');
+            cogSel.innerHTML = cassette.map(c =>
+                `<option value="${c}"${c === optimalGear.cog ? ' selected' : ''}>${c}</option>`
+            ).join('');
+
+            renderGearCadenceReadout();
+        }
+
+        // Recompute cadence + ratio from the currently-selected dropdown values
+        // and the last calculated speed. Called on every dropdown change.
+        function updateGearCadenceFromPickers() {
+            renderGearCadenceReadout();
+        }
+
+        function renderGearCadenceReadout() {
+            const last = state.lastResult;
+            if (!last) return;
+            const cring = parseInt(document.getElementById('resultChainring').value, 10);
+            const cog = parseInt(document.getElementById('resultCog').value, 10);
+            if (!(cring > 0) || !(cog > 0)) return;
+
+            const ratio = cring / cog;
+            const wheelRpm = (last.speed * 60) / last.wheelCircumference;
+            const cadence = wheelRpm / ratio;
+
+            document.getElementById('resultGear').textContent = `${cring}×${cog}`;
+            document.getElementById('resultGearRatio').textContent = ratio.toFixed(2) + ':1';
+            document.getElementById('resultCadence').textContent = Math.round(cadence) + ' RPM';
+
+            const delta = Math.round(cadence - last.preferredCadence);
+            const deltaText = delta === 0
+                ? `matches your ${last.preferredCadence} target`
+                : (delta > 0
+                    ? `+${delta} vs your ${last.preferredCadence} target`
+                    : `${delta} vs your ${last.preferredCadence} target`);
+            document.getElementById('resultCadenceTarget').textContent = deltaText;
+
+            // Show the "cadence-optimal" badge when the picked gear matches
+            // the gear that calculateClimb originally selected.
+            const isOptimal = (cring === last.optimalChainring && cog === last.optimalCog);
+            const badge = document.getElementById('gearOptimalBadge');
+            if (badge) badge.hidden = !isOptimal;
         }
 
         function findOptimalSpeed(availablePower, totalWeightKg, gradeRadians) {
