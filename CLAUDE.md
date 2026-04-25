@@ -61,15 +61,14 @@ Post-MVP:
 
 ## Next session — start here
 
-1. Read this file end to end (especially "MVP work plan", "Current state", and "Open issues / Climb Planner").
-2. Confirm with FWA that nothing has changed since the previous checkpoint.
-3. Phase 2 is **complete**. Phase 3 is **Climb Planner: fixes + draggable-cursor elevation chart** (size L — heaviest single MVP item). Scope is in "MVP work plan" above; details are under "Open issues / Climb Planner" and "Open design questions".
-4. Before writing code, plan with FWA:
-   - **Cursor chart UX:** chart library choice (Chart.js is already a dependency in `cp-analyzer.html` — same library would minimize tooling), interaction model (two draggable cursors over an elevation profile, "macro vs detailed" preset, accept / drag / override), and how the auto-suggested inflection points are computed.
-   - **Avg-grade-only fix:** does the steepest-section warning live alongside the avg-grade calculation (additive), or does the cursor chart also let users opt-in to a "use the steepest 500m as the planning grade" mode?
-   - **Step 2 power-input framing:** confirm the smart-default duration-based picker UI before coding it, and confirm the tooltip copy that explains why each method fits which climb length.
-5. **i18n hard rule kicks in hard for Phase 3.** `tools/climb-planner.html` is currently English-only (Open Issue #4). Every UI string introduced or migrated needs keys in all 4 `lang/*.json` files **in the same change**. Plan to do this in a single coordinated commit per Climb Planner sub-issue, not piecemeal.
-6. Phase 3 work happens on a feature branch off `main` (suggested name: `phase-3-climb-planner`). Wait for FWA approval before code lands. Do not push directly to `main` for code changes — only for trivial checkpoint edits to this file.
+**Phase 3 design has been aligned with FWA on 2026-04-25.** The full plan, including all design decisions and a 5-sub-commit implementation order, lives in [`docs/phase-3-plan.md`](docs/phase-3-plan.md).
+
+1. Read this file end to end (especially "Current state" — confirm Phase 2 is still the latest landed phase and nothing's changed).
+2. Read [`docs/phase-3-plan.md`](docs/phase-3-plan.md) end to end. **Don't re-open the design questions** — they were settled in the alignment session. If something genuinely doesn't make sense once you're in the code, surface it to FWA before deviating.
+3. Confirm with FWA that nothing has shifted since the design alignment.
+4. Phase 3 work happens on a feature branch off `main` (suggested name: `phase-3-climb-planner`). Land each of the 5 sub-commits in order; pause between each for FWA review and approval before merging to `main`. Don't bundle multiple sub-commits into one push — review fidelity comes from the small-step rhythm.
+5. **i18n exception applies** for Phase 3 only, scoped to `tools/climb-planner.html` only (see plan §5). New strings introduced on that page during Phase 3 may be English-only; full translation pass for the page lands in Phase 5. The hard rule still applies everywhere else (chrome, other pages).
+6. Don't push directly to `main` for Phase 3 code changes — only for trivial checkpoint edits to this file.
 
 ## MVP work plan
 
@@ -107,6 +106,8 @@ Drafted 2026-04-25. Five phases, ordered to avoid wasted effort: structural chan
 ---
 
 ### Phase 3 — Climb Planner: fixes + draggable-cursor chart (L)
+
+> **Design aligned 2026-04-25 — see [`docs/phase-3-plan.md`](docs/phase-3-plan.md) for the full plan, all settled design decisions, and the 5-sub-commit implementation order. Read that file before coding Phase 3.**
 
 **Goal:** Climb Planner is honest and usable end-to-end, including on long alpine GPX files where it currently shreds a 2-massif route into 15 segments.
 
@@ -220,6 +221,7 @@ Route Planner (whole-route pacing), Fitness Analyzer expansion (FTP / durability
 - **2026-04-25** — **Naming decision: keep `tools/cp-analyzer.html` URL** rather than renaming to e.g. `fitness-analyzer`. Reasoning: SEO authority is per-URL; future post-MVP analyzers (FTP estimator, HR drift, durability) get their own sibling URLs (`tools/ftp-estimator.html` etc.) so each can rank for its own keyword cluster. One growing mega-tool would have diluted SEO across mismatched search intents. Implication: when each new analyzer ships, it gets its own URL + its own page.
 - **2026-04-25** — **Chrome architecture: Option A (duplicate-and-discipline).** HTML chrome, chrome CSS, and chrome JS are all duplicated verbatim into each page (`index.html`, `tools/climb-planner.html`, `tools/cp-analyzer.html`). If chrome design changes, all three pages must be edited together. Picked over JS-injected partials (would hurt SEO — defeats the point of the URL refactor) and a build step (overkill at 3 pages, contradicts the project's "no build step" stack discipline). Revisit if pages reach ~6+.
 - **2026-04-25** — **Future-tools UX flag (post-MVP, not blocking):** when sibling analyzers ship (FTP estimator, HR drift, etc.), users will have to re-upload ride files for each tool. Solvable later with sessionStorage hand-off + a "see this same data in &lt;sibling&gt; →" link. Not in MVP scope; flagged so it's on the radar.
+- **2026-04-25** — **Phase 3 design aligned.** All open design questions for the Climb Planner settled in a focused alignment session; full record in [`docs/phase-3-plan.md`](docs/phase-3-plan.md). Highlights: (a) steepest-section warning uses a **time-window scan** comparing required power to the rider's power-duration curve (full mode with CP+W'/Power Curve, degraded mode with Simple Power only), not a fixed-distance window; (b) Steps 2 and 3 **flip** — new Step 2 is "Rider Profile" (weight + optional FTP-or-CP+W' radio), new Step 3 is "Power for this climb" with the smart default driven by Step 2 inputs; (c) "Simple Power" relabeled to **"Expected avg. power for this climb"** — its semantic stays a gut-feel sustainable-for-this-climb number, not FTP; (d) cursor chart is **Chart.js + custom HTML cursor overlays**, with auto-detected climbs surfaced as **clickable ticks on the chart axis** (not a dropdown), and a Macro / Detailed toggle controlling the auto-detector's descent tolerance; (e) **i18n exception** for Phase 3 — `tools/climb-planner.html` may receive English-only new strings; full translation deferred to Phase 5. Plan covers 5 sub-commits in order: step flip → cursor chart → warning → units re-render → polish.
 
 ## For future Claude sessions
 
