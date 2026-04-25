@@ -249,6 +249,53 @@
             color: var(--text-secondary);
         }
 
+        /* Step 3 method picker — tab strip + tab content. Only the selected
+           method's input fields are visible at a time, keeping the section
+           short enough that the plan summary stays near the input fields
+           even on small screens. */
+        .method-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        .method-tab {
+            flex: 1 1 9rem;
+            padding: 0.75rem 0.875rem;
+            background: var(--bg-color);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.92rem;
+            color: var(--text-color);
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+        .method-tab:hover {
+            border-color: var(--primary-color);
+        }
+        .method-tab.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            box-shadow: 0 2px 6px rgba(0, 102, 204, 0.25);
+        }
+        .method-content { display: none; }
+        .method-content.active { display: block; }
+        .method-help {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 0.75rem;
+            line-height: 1.45;
+        }
+
+        .result-subvalue {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
         .step-section {
             background: var(--card-bg);
             border-radius: 12px;
@@ -1410,20 +1457,6 @@
                 <h2 class="step-title" data-i18n="climbPlanner.step3.title">Power for this climb</h2>
             </div>
 
-            <div id="smartDefaultBanner" class="smart-default-banner" style="display: none;">
-                <div class="smart-default-title" id="smartDefaultTitle">
-                    Estimated climb time: ~—:—
-                </div>
-                <div class="plan-power-line" id="planPowerLine" style="display: none;">
-                    Planned power:
-                    <strong><span id="planPower">--</span> W</strong>
-                    <span class="plan-method-tag" id="planMethodTag"></span>
-                    <span class="plan-reserve-tag" id="planReserveTag"></span>
-                </div>
-                <div id="smartDefaultRecommendation"></div>
-                <div class="smart-default-disclaimer" id="smartDefaultDisclaimer" style="display: none;"></div>
-            </div>
-
             <div id="reserveBlock" class="reserve-block">
                 <div class="reserve-header">
                     <strong data-i18n="climbPlanner.step3.reserve.title">Reserve in the tank</strong>
@@ -1455,95 +1488,110 @@
                 </div>
             </div>
 
-            <div class="radio-group">
-                <label class="radio-option selected" onclick="selectPowerMethod('simple')">
-                    <input type="radio" name="powerMethod" value="simple" checked>
-                    <div class="radio-label">
-                        <strong data-i18n="climbPlanner.step3.simple.title">Expected avg. power for this climb</strong>
-                        <small data-i18n="climbPlanner.step3.simple.help">
-                            What you can hold for this climb's duration — your gut feel.
-                        </small>
-                        <div id="simplePowerInputs" class="sub-inputs">
-                            <div class="input-group">
-                                <label data-i18n="climbPlanner.step3.simple.label">Expected average power (watts)</label>
-                                <input type="number" id="simplePower" step="1" min="50" max="1000" placeholder="e.g., 250">
-                            </div>
-                        </div>
-                    </div>
-                </label>
+            <div class="method-tabs" role="tablist">
+                <button type="button" class="method-tab active" data-method="simple"
+                        role="tab" aria-selected="true"
+                        onclick="selectPowerMethod('simple')"
+                        data-i18n="climbPlanner.step3.tab.simple">Expected avg. power</button>
+                <button type="button" class="method-tab" data-method="cpw"
+                        role="tab" aria-selected="false"
+                        onclick="selectPowerMethod('cpw')"
+                        data-i18n="climbPlanner.step3.tab.cpw">CP/W' Model</button>
+                <button type="button" class="method-tab" data-method="curve"
+                        role="tab" aria-selected="false"
+                        onclick="selectPowerMethod('curve')"
+                        data-i18n="climbPlanner.step3.tab.curve">Power Curve</button>
+            </div>
 
-                <label class="radio-option" onclick="selectPowerMethod('cpw')">
-                    <input type="radio" name="powerMethod" value="cpw">
-                    <div class="radio-label">
-                        <strong data-i18n="climbPlanner.step3.cpw.title">CP/W' Model (Recommended for climbs &lt;40 min)</strong>
-                        <small data-i18n="climbPlanner.step3.cpw.help">
-                            Calculate sustainable power from Critical Power and W-prime.
-                            Uses your CP and W' from Step 2 when entered there.
-                            The model is most accurate for efforts in the 3–30 min range.
-                        </small>
-                        <div id="cpwInputs" class="sub-inputs" style="display: none;">
-                            <div id="cpwFromStep2Notice" class="from-step2-notice" style="display: none;">
-                                <div class="from-step2-title">
-                                    <span>📌</span>
-                                    <span data-i18n="climbPlanner.step3.cpw.fromStep2.title">Using your CP and W' from Step 2</span>
-                                </div>
-                                <div class="from-step2-values">
-                                    <span>CP: <strong id="cpwStep2CP">--</strong> W</span>
-                                    <span>W': <strong id="cpwStep2WPrime">--</strong> kJ</span>
-                                </div>
-                                <div class="from-step2-hint" data-i18n="climbPlanner.step3.cpw.fromStep2.hint">
-                                    To change, edit Step 2 above.
-                                </div>
-                            </div>
-                            <div id="cpwManualFields" class="input-grid">
-                                <div class="input-group">
-                                    <label data-i18n="climbPlanner.step3.cpw.cp">Critical Power (CP) - watts</label>
-                                    <input type="number" id="cpValue" step="1" min="50" max="500" placeholder="e.g., 220">
-                                </div>
-                                <div class="input-group">
-                                    <label data-i18n="climbPlanner.step3.cpw.wPrime">W-prime (W') - kJ</label>
-                                    <input type="number" id="wPrimeValue" step="0.1" min="5" max="50" placeholder="e.g., 18.5">
-                                </div>
-                            </div>
-                            <!-- Hidden carriers; the visible plan summary lives in the top banner. -->
-                            <span id="cpwCalculatedPower" hidden>--</span>
-                            <span id="cpwDuration" hidden>--:--</span>
-                            <span id="calculatedPowerCPW" hidden></span>
-                        </div>
-                    </div>
-                </label>
+            <div id="simplePowerInputs" class="method-content active">
+                <p class="method-help" data-i18n="climbPlanner.step3.simple.help">
+                    What you can hold for this climb's duration — your gut feel.
+                </p>
+                <div class="input-group">
+                    <label data-i18n="climbPlanner.step3.simple.label">Expected average power (watts)</label>
+                    <input type="number" id="simplePower" step="1" min="50" max="1000" placeholder="e.g., 250">
+                </div>
+            </div>
 
-                <label class="radio-option" onclick="selectPowerMethod('curve')">
-                    <input type="radio" name="powerMethod" value="curve">
-                    <div class="radio-label">
-                        <strong data-i18n="climbPlanner.step3.curve.title">Power Curve (For climbs &gt;40 min)</strong>
-                        <small data-i18n="climbPlanner.step3.curve.help">Calculate from multiple power-duration points.</small>
-                        <div id="curveInputs" class="sub-inputs" style="display: none;">
-                            <div class="input-grid">
-                                <div class="input-group">
-                                    <label>5-minute power (watts)</label>
-                                    <input type="number" id="power5min" step="1" placeholder="e.g., 280">
-                                </div>
-                                <div class="input-group">
-                                    <label>20-minute power (watts)</label>
-                                    <input type="number" id="power20min" step="1" placeholder="e.g., 250">
-                                </div>
-                                <div class="input-group">
-                                    <label>60-minute power (watts)</label>
-                                    <input type="number" id="power60min" step="1" placeholder="e.g., 230">
-                                </div>
-                                <div class="input-group">
-                                    <label>120-minute power (watts) - optional</label>
-                                    <input type="number" id="power120min" step="1" placeholder="e.g., 210">
-                                </div>
-                            </div>
-                            <!-- Hidden carriers; the visible plan summary lives in the top banner. -->
-                            <span id="curveCalculatedPower" hidden>--</span>
-                            <span id="curveDuration" hidden>--:--</span>
-                            <span id="calculatedPowerCurve" hidden></span>
-                        </div>
+            <div id="cpwInputs" class="method-content">
+                <p class="method-help" data-i18n="climbPlanner.step3.cpw.help">
+                    Sustainable power from Critical Power and W-prime. Uses your CP and W'
+                    from Step 2 when entered there. Most accurate for efforts in the 3–30 min range.
+                    Recommended for climbs under ~40 min.
+                </p>
+                <div id="cpwFromStep2Notice" class="from-step2-notice" style="display: none;">
+                    <div class="from-step2-title">
+                        <span>📌</span>
+                        <span data-i18n="climbPlanner.step3.cpw.fromStep2.title">Using your CP and W' from Step 2</span>
                     </div>
-                </label>
+                    <div class="from-step2-values">
+                        <span>CP: <strong id="cpwStep2CP">--</strong> W</span>
+                        <span>W': <strong id="cpwStep2WPrime">--</strong> kJ</span>
+                    </div>
+                    <div class="from-step2-hint" data-i18n="climbPlanner.step3.cpw.fromStep2.hint">
+                        To change, edit Step 2 above.
+                    </div>
+                </div>
+                <div id="cpwManualFields" class="input-grid">
+                    <div class="input-group">
+                        <label data-i18n="climbPlanner.step3.cpw.cp">Critical Power (CP) - watts</label>
+                        <input type="number" id="cpValue" step="1" min="50" max="500" placeholder="e.g., 220">
+                    </div>
+                    <div class="input-group">
+                        <label data-i18n="climbPlanner.step3.cpw.wPrime">W-prime (W') - kJ</label>
+                        <input type="number" id="wPrimeValue" step="0.1" min="5" max="50" placeholder="e.g., 18.5">
+                    </div>
+                </div>
+                <!-- Hidden carriers; the visible plan summary lives in the bottom banner. -->
+                <span id="cpwCalculatedPower" hidden>--</span>
+                <span id="cpwDuration" hidden>--:--</span>
+                <span id="calculatedPowerCPW" hidden></span>
+            </div>
+
+            <div id="curveInputs" class="method-content">
+                <p class="method-help" data-i18n="climbPlanner.step3.curve.help">
+                    Reads off your historical best power for the climb's duration.
+                    Recommended for climbs over ~40 min.
+                </p>
+                <div class="input-grid">
+                    <div class="input-group">
+                        <label>5-minute power (watts)</label>
+                        <input type="number" id="power5min" step="1" placeholder="e.g., 280">
+                    </div>
+                    <div class="input-group">
+                        <label>20-minute power (watts)</label>
+                        <input type="number" id="power20min" step="1" placeholder="e.g., 250">
+                    </div>
+                    <div class="input-group">
+                        <label>60-minute power (watts)</label>
+                        <input type="number" id="power60min" step="1" placeholder="e.g., 230">
+                    </div>
+                    <div class="input-group">
+                        <label>120-minute power (watts) - optional</label>
+                        <input type="number" id="power120min" step="1" placeholder="e.g., 210">
+                    </div>
+                </div>
+                <!-- Hidden carriers; the visible plan summary lives in the bottom banner. -->
+                <span id="curveCalculatedPower" hidden>--</span>
+                <span id="curveDuration" hidden>--:--</span>
+                <span id="calculatedPowerCurve" hidden></span>
+            </div>
+
+            <!-- Live plan summary — placed below the active method's input fields
+                 so the user sees the time and planned power update right where
+                 they're typing, without having to scroll up. -->
+            <div id="planSummaryBottom" class="smart-default-banner" style="display: none; margin-top: 1.25rem; margin-bottom: 0;">
+                <div class="smart-default-title" id="planSummaryTime">
+                    Estimated climb time: ~—:—
+                </div>
+                <div class="plan-power-line" id="planSummaryPowerLine" style="display: none;">
+                    Planned power:
+                    <strong><span id="planSummaryPower">--</span> W</strong>
+                    <span class="plan-method-tag" id="planSummaryMethodTag"></span>
+                    <span class="plan-reserve-tag" id="planSummaryReserveTag"></span>
+                </div>
+                <div id="planSummaryRecommendation"></div>
+                <div class="smart-default-disclaimer" id="planSummaryDisclaimer" style="display: none;"></div>
             </div>
         </div>
 
@@ -1575,12 +1623,14 @@
                     <div class="result-icon">⚙️</div>
                     <div class="result-label">Optimal Gear</div>
                     <div class="result-value" id="resultGear">--</div>
+                    <div class="result-subvalue" id="resultGearRatio"></div>
                 </div>
 
                 <div class="result-card">
                     <div class="result-icon">🔄</div>
                     <div class="result-label">Actual Cadence</div>
                     <div class="result-value" id="resultCadence">--</div>
+                    <div class="result-subvalue" id="resultCadenceTarget"></div>
                 </div>
             </div>
 
@@ -1827,18 +1877,24 @@
             updateClimbSummary();
         }
 
-        // Power method selection
+        // Power method selection — drives the tab strip in Step 3.
         function selectPowerMethod(method) {
             state.powerMethod = method;
 
-            // Update radio options visual state
-            document.querySelectorAll('.radio-option').forEach(opt => opt.classList.remove('selected'));
-            event.currentTarget.classList.add('selected');
+            // Update tab buttons
+            document.querySelectorAll('.method-tab').forEach(btn => {
+                const isActive = btn.dataset.method === method;
+                btn.classList.toggle('active', isActive);
+                btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            });
 
-            // Show/hide sub-inputs
-            document.getElementById('simplePowerInputs').style.display = method === 'simple' ? 'block' : 'none';
-            document.getElementById('cpwInputs').style.display = method === 'cpw' ? 'block' : 'none';
-            document.getElementById('curveInputs').style.display = method === 'curve' ? 'block' : 'none';
+            // Show only the active method's content panel
+            document.querySelectorAll('.method-content').forEach(panel => panel.classList.remove('active'));
+            const panelId = method === 'simple' ? 'simplePowerInputs'
+                          : method === 'cpw' ? 'cpwInputs'
+                          : 'curveInputs';
+            const panel = document.getElementById(panelId);
+            if (panel) panel.classList.add('active');
 
             // Reserve only applies to CP/W' and Power Curve; mute the block otherwise.
             updateReserveBlockMuted();
@@ -2425,19 +2481,19 @@
         }
 
         function hideSmartDefaultBanner() {
-            const banner = document.getElementById('smartDefaultBanner');
+            const banner = document.getElementById('planSummaryBottom');
             if (banner) banner.style.display = 'none';
         }
 
         function renderSmartDefaultBanner(estimatedTimeMinutes, plannedPower) {
-            const banner = document.getElementById('smartDefaultBanner');
-            const titleEl = document.getElementById('smartDefaultTitle');
-            const recoEl = document.getElementById('smartDefaultRecommendation');
-            const discEl = document.getElementById('smartDefaultDisclaimer');
-            const powerLineEl = document.getElementById('planPowerLine');
-            const powerEl = document.getElementById('planPower');
-            const methodTagEl = document.getElementById('planMethodTag');
-            const reserveTagEl = document.getElementById('planReserveTag');
+            const banner = document.getElementById('planSummaryBottom');
+            const titleEl = document.getElementById('planSummaryTime');
+            const recoEl = document.getElementById('planSummaryRecommendation');
+            const discEl = document.getElementById('planSummaryDisclaimer');
+            const powerLineEl = document.getElementById('planSummaryPowerLine');
+            const powerEl = document.getElementById('planSummaryPower');
+            const methodTagEl = document.getElementById('planSummaryMethodTag');
+            const reserveTagEl = document.getElementById('planSummaryReserveTag');
             if (!banner || !titleEl || !recoEl || !discEl) return;
 
             if (!estimatedTimeMinutes) {
@@ -2766,7 +2822,15 @@
             document.getElementById('resultSpeed').textContent = (speed * 3.6).toFixed(1) + ' km/h';
             document.getElementById('resultTime').textContent = `${timeMinutes}:${timeSeconds.toString().padStart(2, '0')}`;
             document.getElementById('resultGear').textContent = `${optimalGear.chainring}×${optimalGear.cog}`;
+            document.getElementById('resultGearRatio').textContent = `${optimalGear.ratio}:1 ratio`;
             document.getElementById('resultCadence').textContent = Math.round(optimalGear.cadence) + ' RPM';
+            const cadenceDelta = Math.round(optimalGear.cadence - preferredCadence);
+            const deltaText = cadenceDelta === 0
+                ? `(matches your ${preferredCadence} target)`
+                : (cadenceDelta > 0
+                    ? `(+${cadenceDelta} vs your ${preferredCadence} target)`
+                    : `(${cadenceDelta} vs your ${preferredCadence} target)`);
+            document.getElementById('resultCadenceTarget').textContent = deltaText;
 
             document.getElementById('powerAvailable').textContent = Math.round(availablePower) + ' W';
 
