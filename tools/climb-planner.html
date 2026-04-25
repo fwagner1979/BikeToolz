@@ -132,6 +132,25 @@
             color: var(--text-secondary);
             line-height: 1.4;
         }
+        .plan-power-line {
+            margin-top: 0.4rem;
+            font-size: 0.95rem;
+            color: var(--text-color);
+        }
+        .plan-power-line strong { color: var(--success-color); }
+        .plan-method-tag {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-left: 0.4rem;
+        }
+        .plan-reserve-tag {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-left: 0.4rem;
+        }
+        .plan-reserve-tag::before { content: "•"; margin-right: 0.4rem; }
+        .plan-reserve-tag:empty { display: none; }
+        .plan-reserve-tag:empty::before { content: ""; margin: 0; }
 
         .reserve-block {
             background: var(--card-bg);
@@ -1393,7 +1412,13 @@
 
             <div id="smartDefaultBanner" class="smart-default-banner" style="display: none;">
                 <div class="smart-default-title" id="smartDefaultTitle">
-                    Estimated climb time: ~— min
+                    Estimated climb time: ~—:—
+                </div>
+                <div class="plan-power-line" id="planPowerLine" style="display: none;">
+                    Planned power:
+                    <strong><span id="planPower">--</span> W</strong>
+                    <span class="plan-method-tag" id="planMethodTag"></span>
+                    <span class="plan-reserve-tag" id="planReserveTag"></span>
                 </div>
                 <div id="smartDefaultRecommendation"></div>
                 <div class="smart-default-disclaimer" id="smartDefaultDisclaimer" style="display: none;"></div>
@@ -1453,9 +1478,8 @@
                         <strong data-i18n="climbPlanner.step3.cpw.title">CP/W' Model (Recommended for climbs &lt;40 min)</strong>
                         <small data-i18n="climbPlanner.step3.cpw.help">
                             Calculate sustainable power from Critical Power and W-prime.
-                            Uses your CP and W' from Step 2 when entered there. If the result feels
-                            higher than what you've actually held for similar durations, your CP
-                            and/or W' may be too generous — try Power Curve from real best efforts.
+                            Uses your CP and W' from Step 2 when entered there.
+                            The model is most accurate for efforts in the 3–30 min range.
                         </small>
                         <div id="cpwInputs" class="sub-inputs" style="display: none;">
                             <div id="cpwFromStep2Notice" class="from-step2-notice" style="display: none;">
@@ -1481,15 +1505,10 @@
                                     <input type="number" id="wPrimeValue" step="0.1" min="5" max="50" placeholder="e.g., 18.5">
                                 </div>
                             </div>
-                            <div id="calculatedPowerCPW" style="display: none;">
-                                <div class="calculated-value">
-                                    <span>Calculated Sustainable Power: </span>
-                                    <span id="cpwCalculatedPower">--</span> W
-                                    <div style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.9;">
-                                        for <span id="cpwDuration">--:--</span>
-                                    </div>
-                                </div>
-                            </div>
+                            <!-- Hidden carriers; the visible plan summary lives in the top banner. -->
+                            <span id="cpwCalculatedPower" hidden>--</span>
+                            <span id="cpwDuration" hidden>--:--</span>
+                            <span id="calculatedPowerCPW" hidden></span>
                         </div>
                     </div>
                 </label>
@@ -1518,15 +1537,10 @@
                                     <input type="number" id="power120min" step="1" placeholder="e.g., 210">
                                 </div>
                             </div>
-                            <div id="calculatedPowerCurve" style="display: none;">
-                                <div class="calculated-value">
-                                    <span>Calculated Sustainable Power: </span>
-                                    <span id="curveCalculatedPower">--</span> W
-                                    <div style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.9;">
-                                        for <span id="curveDuration">--:--</span>
-                                    </div>
-                                </div>
-                            </div>
+                            <!-- Hidden carriers; the visible plan summary lives in the top banner. -->
+                            <span id="curveCalculatedPower" hidden>--</span>
+                            <span id="curveDuration" hidden>--:--</span>
+                            <span id="calculatedPowerCurve" hidden></span>
                         </div>
                     </div>
                 </label>
@@ -1754,7 +1768,11 @@
             isMetric: window.isMetric !== undefined ? window.isMetric : true,
             // Reserve in the tank: fraction 0..0.9. Applies to CP/W' and Power Curve only.
             // Default 0 preserves the original "best possible effort" semantics.
-            reserveFraction: 0
+            reserveFraction: 0,
+            // The planned sustainable power (watts) for the chosen Step 3 method,
+            // after reserve is applied. Set in updatePowerCalculations and read by
+            // calculateClimb. null when inputs are insufficient.
+            calculatedSustainablePower: null
         };
 
         // Hard cap so the Power Curve read-off never divides by zero.
@@ -2354,14 +2372,56 @@
                 ? refineEstimateForMethod(distance, grade, totalMassKg, initialEstimateMinutes)
                 : null;
 
-            renderSmartDefaultBanner(estimatedTimeMinutes);
+            // Compute the planned sustainable power for the chosen Step 3 method.
+            // For 'simple' that's the user's input; for 'cpw' / 'curve' it's the
+            // derived value at the refined time, with reserve applied. May be null
+            // when the method's inputs aren't yet sufficient.
+            const plannedPower = estimatedTimeMinutes
+                ? computePlannedPowerForMethod(estimatedTimeMinutes)
+                : null;
+            state.calculatedSustainablePower = plannedPower;
 
-            // Calculate power based on method
-            if (estimatedTimeMinutes && state.powerMethod === 'cpw') {
-                calculateCPWPower(estimatedTimeMinutes);
-            } else if (estimatedTimeMinutes && state.powerMethod === 'curve') {
-                calculateCurvePower(estimatedTimeMinutes);
+            // Side-effect: keep the hidden carrier spans in sync for back-compat
+            // (calculateClimb still reads from them today).
+            if (plannedPower != null) {
+                if (state.powerMethod === 'cpw') {
+                    document.getElementById('cpwCalculatedPower').textContent = Math.round(plannedPower);
+                    document.getElementById('cpwDuration').textContent = formatMMSS(estimatedTimeMinutes);
+                } else if (state.powerMethod === 'curve') {
+                    document.getElementById('curveCalculatedPower').textContent = Math.round(plannedPower);
+                    document.getElementById('curveDuration').textContent = formatMMSS(estimatedTimeMinutes);
+                }
             }
+
+            renderSmartDefaultBanner(estimatedTimeMinutes, plannedPower);
+        }
+
+        // Returns the planned watts for the currently-chosen Step 3 method, given
+        // a refined time-on-climb in minutes. Returns null if inputs are missing.
+        function computePlannedPowerForMethod(timeMinutes) {
+            const method = state.powerMethod;
+
+            if (method === 'simple') {
+                const userPower = parseFloat(document.getElementById('simplePower').value);
+                return userPower > 0 ? userPower : null;
+            }
+
+            if (method === 'cpw') {
+                const cpw = getCPWInputs();
+                if (!cpw.cp || !cpw.wPrime) return null;
+                const usableJ = cpw.wPrime * 1000 * (1 - state.reserveFraction);
+                return cpw.cp + usableJ / (timeMinutes * 60);
+            }
+
+            if (method === 'curve') {
+                const points = collectCurvePoints();
+                if (points.length < 3) return null;
+                const lookup = timeMinutes / Math.max(1 - state.reserveFraction, 0.1);
+                const p = interpolatePower(points, lookup);
+                return p > 0 ? p : null;
+            }
+
+            return null;
         }
 
         function hideSmartDefaultBanner() {
@@ -2369,11 +2429,15 @@
             if (banner) banner.style.display = 'none';
         }
 
-        function renderSmartDefaultBanner(estimatedTimeMinutes) {
+        function renderSmartDefaultBanner(estimatedTimeMinutes, plannedPower) {
             const banner = document.getElementById('smartDefaultBanner');
             const titleEl = document.getElementById('smartDefaultTitle');
             const recoEl = document.getElementById('smartDefaultRecommendation');
             const discEl = document.getElementById('smartDefaultDisclaimer');
+            const powerLineEl = document.getElementById('planPowerLine');
+            const powerEl = document.getElementById('planPower');
+            const methodTagEl = document.getElementById('planMethodTag');
+            const reserveTagEl = document.getElementById('planReserveTag');
             if (!banner || !titleEl || !recoEl || !discEl) return;
 
             if (!estimatedTimeMinutes) {
@@ -2395,7 +2459,34 @@
             }
 
             titleEl.textContent = `Estimated climb time: ~${formatMMSS(estimatedTimeMinutes)}`;
-            recoEl.innerHTML = '💡 ' + recoText;
+
+            // Planned-power line: shown for any method that has enough inputs to
+            // produce a number. Hidden when inputs are incomplete.
+            if (plannedPower != null && powerLineEl && powerEl && methodTagEl && reserveTagEl) {
+                powerEl.textContent = Math.round(plannedPower);
+                methodTagEl.textContent = '(' + methodLabel(state.powerMethod) + ')';
+                if ((state.powerMethod === 'cpw' || state.powerMethod === 'curve') &&
+                    state.reserveFraction > 0) {
+                    reserveTagEl.textContent =
+                        Math.round(state.reserveFraction * 100) + '% W\' reserve';
+                } else {
+                    reserveTagEl.textContent = '';
+                }
+                powerLineEl.style.display = '';
+            } else if (powerLineEl) {
+                powerLineEl.style.display = 'none';
+            }
+
+            // Only show the recommendation when the user is on a different method
+            // than the one we'd recommend — otherwise it just nags about the
+            // method they already picked.
+            if (state.powerMethod !== recoMethod) {
+                recoEl.innerHTML = '💡 ' + recoText;
+                recoEl.style.display = '';
+            } else {
+                recoEl.innerHTML = '';
+                recoEl.style.display = 'none';
+            }
 
             const step2Provided = isStep2PowerProvided();
             if (!step2Provided) {
@@ -2415,76 +2506,11 @@
             banner.dataset.recoMethod = recoMethod; // for any future "click to apply" behavior
         }
 
-        function calculateCPWPower(estimatedTimeMinutes) {
-            const cpw = getCPWInputs();
-            if (!cpw.cp || !cpw.wPrime) return;
-
-            const estimatedTimeSeconds = estimatedTimeMinutes * 60;
-            const wPrimeJoules = cpw.wPrime * 1000;
-            // Reserve in the tank: only spend (1 - R) fraction of W'.
-            const reserveR = state.reserveFraction;
-            const usableWPrime = wPrimeJoules * (1 - reserveR);
-
-            // Power = CP + (usable W' / time)
-            const sustainablePower = cpw.cp + (usableWPrime / estimatedTimeSeconds);
-
-            document.getElementById('cpwCalculatedPower').textContent = Math.round(sustainablePower);
-            document.getElementById('cpwDuration').textContent = formatMMSS(estimatedTimeMinutes);
-            document.getElementById('calculatedPowerCPW').style.display = 'block';
-            annotateMethodCalculatedValue('calculatedPowerCPW');
-        }
-
-        function calculateCurvePower(estimatedTimeMinutes) {
-            const power5 = parseFloat(document.getElementById('power5min').value);
-            const power20 = parseFloat(document.getElementById('power20min').value);
-            const power60 = parseFloat(document.getElementById('power60min').value);
-            const power120 = parseFloat(document.getElementById('power120min').value);
-
-            // Need at least 3 points
-            const points = [];
-            if (power5 > 0) points.push({time: 5, power: power5});
-            if (power20 > 0) points.push({time: 20, power: power20});
-            if (power60 > 0) points.push({time: 60, power: power60});
-            if (power120 > 0) points.push({time: 120, power: power120});
-
-            if (points.length >= 3) {
-                // Reserve in the tank: read off the curve at a longer duration so the
-                // returned power is what the rider could hold for `t / (1 - R)` minutes
-                // — i.e. they'd finish the climb with R fraction of W' still untouched.
-                const reserveR = state.reserveFraction;
-                const lookupMinutes = estimatedTimeMinutes / Math.max(1 - reserveR, 0.1);
-                const sustainablePower = interpolatePower(points, lookupMinutes);
-
-                document.getElementById('curveCalculatedPower').textContent = Math.round(sustainablePower);
-                document.getElementById('curveDuration').textContent = formatMMSS(estimatedTimeMinutes);
-                document.getElementById('calculatedPowerCurve').style.display = 'block';
-                annotateMethodCalculatedValue('calculatedPowerCurve');
-            }
-        }
-
-        // Append a "while keeping ~X% in reserve" line under the calculated power
-        // for CP/W' and Power Curve. Removed cleanly when reserve is 0%.
-        function annotateMethodCalculatedValue(containerId) {
-            const container = document.getElementById(containerId);
-            if (!container) return;
-            const inner = container.querySelector('.calculated-value');
-            if (!inner) return;
-
-            let note = inner.querySelector('.reserve-note');
-            const pct = reservePctText();
-            if (pct > 0) {
-                if (!note) {
-                    note = document.createElement('div');
-                    note.className = 'reserve-note';
-                    note.style.fontSize = '0.85rem';
-                    note.style.marginTop = '0.35rem';
-                    note.style.opacity = '0.9';
-                    inner.appendChild(note);
-                }
-                note.textContent = `while keeping ~${pct}% of W' in reserve`;
-            } else if (note) {
-                note.remove();
-            }
+        // Friendly method labels for the planned-power tag in the banner.
+        function methodLabel(method) {
+            if (method === 'cpw') return "CP/W' Model";
+            if (method === 'curve') return 'Power Curve';
+            return 'Expected avg. power';
         }
 
         function interpolatePower(points, targetTime) {
@@ -2671,18 +2697,9 @@
                 return;
             }
 
-            // Get power
-            let sustainablePower;
-            if (state.powerMethod === 'simple') {
-                sustainablePower = parseFloat(document.getElementById('simplePower').value);
-            } else if (state.powerMethod === 'cpw') {
-                const cpwPower = document.getElementById('cpwCalculatedPower').textContent;
-                sustainablePower = parseFloat(cpwPower);
-            } else if (state.powerMethod === 'curve') {
-                const curvePower = document.getElementById('curveCalculatedPower').textContent;
-                sustainablePower = parseFloat(curvePower);
-            }
-
+            // Pull the planned sustainable power from state — populated live by
+            // updatePowerCalculations whichever Step 3 method is active.
+            const sustainablePower = state.calculatedSustainablePower;
             if (!sustainablePower || sustainablePower <= 0) {
                 alert('Please enter your power capability');
                 return;
