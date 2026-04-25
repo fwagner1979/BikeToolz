@@ -201,6 +201,35 @@
         }
         .reserve-block.muted .reserve-controls { pointer-events: none; }
 
+        .from-step2-notice {
+            background: var(--bg-color);
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+            padding: 0.875rem 1rem;
+            margin-bottom: 0.75rem;
+        }
+        .from-step2-title {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            color: var(--primary-color);
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+        }
+        .from-step2-values {
+            display: flex;
+            gap: 1.25rem;
+            flex-wrap: wrap;
+            color: var(--text-color);
+            font-size: 0.95rem;
+            margin-bottom: 0.35rem;
+        }
+        .from-step2-values strong { color: var(--primary-color); }
+        .from-step2-hint {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
         .step-section {
             background: var(--card-bg);
             border-radius: 12px;
@@ -1424,10 +1453,25 @@
                         <strong data-i18n="climbPlanner.step3.cpw.title">CP/W' Model (Recommended for climbs &lt;40 min)</strong>
                         <small data-i18n="climbPlanner.step3.cpw.help">
                             Calculate sustainable power from Critical Power and W-prime.
-                            If you entered CP and W' in Step 2, they are pre-filled here.
+                            Uses your CP and W' from Step 2 when entered there. If the result feels
+                            higher than what you've actually held for similar durations, your CP
+                            and/or W' may be too generous — try Power Curve from real best efforts.
                         </small>
                         <div id="cpwInputs" class="sub-inputs" style="display: none;">
-                            <div class="input-grid">
+                            <div id="cpwFromStep2Notice" class="from-step2-notice" style="display: none;">
+                                <div class="from-step2-title">
+                                    <span>📌</span>
+                                    <span data-i18n="climbPlanner.step3.cpw.fromStep2.title">Using your CP and W' from Step 2</span>
+                                </div>
+                                <div class="from-step2-values">
+                                    <span>CP: <strong id="cpwStep2CP">--</strong> W</span>
+                                    <span>W': <strong id="cpwStep2WPrime">--</strong> kJ</span>
+                                </div>
+                                <div class="from-step2-hint" data-i18n="climbPlanner.step3.cpw.fromStep2.hint">
+                                    To change, edit Step 2 above.
+                                </div>
+                            </div>
+                            <div id="cpwManualFields" class="input-grid">
                                 <div class="input-group">
                                     <label data-i18n="climbPlanner.step3.cpw.cp">Critical Power (CP) - watts</label>
                                     <input type="number" id="cpValue" step="1" min="50" max="500" placeholder="e.g., 220">
@@ -1781,6 +1825,9 @@
             // Reserve only applies to CP/W' and Power Curve; mute the block otherwise.
             updateReserveBlockMuted();
 
+            // Sync the "from Step 2" notice / manual fields visibility for CP/W'.
+            if (method === 'cpw') updateCPWInputView();
+
             // Trigger recalculation if we have climb data
             if (state.selectedClimb || hasManualClimbData()) {
                 updatePowerCalculations();
@@ -1862,7 +1909,7 @@
             if (!el) return;
             el.addEventListener('input', function () {
                 if (id === 'step2CP' || id === 'step2WPrime') {
-                    mirrorStep2CPWToStep3();
+                    updateCPWInputView();
                 }
                 updatePowerCalculations();
             });
@@ -2112,7 +2159,7 @@
             });
             document.getElementById('step2FTPInputs').style.display = (mode === 'ftp') ? 'block' : 'none';
             document.getElementById('step2CPWInputs').style.display = (mode === 'cpw') ? 'block' : 'none';
-            mirrorStep2CPWToStep3();
+            updateCPWInputView();
             updatePowerCalculations();
         }
 
@@ -2128,16 +2175,39 @@
             return { mode: 'ftp', ftp: ftp || null };
         }
 
-        // If the user picked CP+W' in Step 2 and entered values, mirror them
-        // into Step 3's CP/W' fields so they don't have to re-type.
-        // Only fills blank Step 3 fields — never overwrites a user-entered Step 3 value.
-        function mirrorStep2CPWToStep3() {
-            const data = getStep2PowerData();
-            if (data.mode !== 'cpw') return;
-            const step3CP = document.getElementById('cpValue');
-            const step3W = document.getElementById('wPrimeValue');
-            if (data.cp && !step3CP.value) step3CP.value = data.cp;
-            if (data.wPrime && !step3W.value) step3W.value = data.wPrime;
+        // Returns the CP and W' to use for the CP/W' calculation. Step 2 is the
+        // single source of truth when it has values; Step 3 fields are only used
+        // as a standalone fallback when Step 2 is FTP-only or blank.
+        function getCPWInputs() {
+            const step2 = getStep2PowerData();
+            if (step2.mode === 'cpw' && step2.cp > 0 && step2.wPrime > 0) {
+                return { cp: step2.cp, wPrime: step2.wPrime, source: 'step2' };
+            }
+            const cp = parseFloat(document.getElementById('cpValue').value);
+            const wPrime = parseFloat(document.getElementById('wPrimeValue').value);
+            return {
+                cp: cp > 0 ? cp : null,
+                wPrime: wPrime > 0 ? wPrime : null,
+                source: 'step3'
+            };
+        }
+
+        // Show the "Using CP and W' from Step 2" notice in Step 3's CP/W' block
+        // when Step 2 supplies the values; otherwise show the Step 3 input fields.
+        function updateCPWInputView() {
+            const notice = document.getElementById('cpwFromStep2Notice');
+            const fields = document.getElementById('cpwManualFields');
+            if (!notice || !fields) return;
+            const cpw = getCPWInputs();
+            if (cpw.source === 'step2') {
+                document.getElementById('cpwStep2CP').textContent = Math.round(cpw.cp);
+                document.getElementById('cpwStep2WPrime').textContent = cpw.wPrime;
+                notice.style.display = 'block';
+                fields.style.display = 'none';
+            } else {
+                notice.style.display = 'none';
+                fields.style.display = 'grid';
+            }
         }
 
         // Returns a single watts number representing the rider's expected
@@ -2172,6 +2242,67 @@
             return minutes;
         }
 
+        function collectCurvePoints() {
+            const points = [];
+            const p5 = parseFloat(document.getElementById('power5min').value);
+            const p20 = parseFloat(document.getElementById('power20min').value);
+            const p60 = parseFloat(document.getElementById('power60min').value);
+            const p120 = parseFloat(document.getElementById('power120min').value);
+            if (p5 > 0) points.push({time: 5, power: p5});
+            if (p20 > 0) points.push({time: 20, power: p20});
+            if (p60 > 0) points.push({time: 60, power: p60});
+            if (p120 > 0) points.push({time: 120, power: p120});
+            return points;
+        }
+
+        // Iteratively refine the climb-duration estimate using the chosen Step 3
+        // method's actual planned power (with reserve applied). For 'simple', uses
+        // the user-entered sustainable power. For 'cpw', uses CP + W'(1-R)/t. For
+        // 'curve', reads off the curve at t/(1-R). Converges in 2-3 passes;
+        // changes the displayed time when reserve changes.
+        function refineEstimateForMethod(distance, grade, totalMassKg, initialMinutes) {
+            const method = state.powerMethod;
+
+            if (method === 'simple') {
+                const userPower = parseFloat(document.getElementById('simplePower').value);
+                if (!(userPower > 0)) return initialMinutes;
+                const refined = estimateClimbDurationMinutes(distance, grade, totalMassKg, userPower);
+                return refined ? Math.max(1, Math.round(refined)) : initialMinutes;
+            }
+
+            if (method === 'cpw') {
+                const cpw = getCPWInputs();
+                if (!cpw.cp || !cpw.wPrime) return initialMinutes;
+                let t = initialMinutes;
+                for (let i = 0; i < 4; i++) {
+                    const usableJ = cpw.wPrime * 1000 * (1 - state.reserveFraction);
+                    const power = cpw.cp + usableJ / (t * 60);
+                    const newT = estimateClimbDurationMinutes(distance, grade, totalMassKg, power);
+                    if (!newT) return initialMinutes;
+                    if (Math.abs(newT - t) < 0.05) { t = newT; break; }
+                    t = newT;
+                }
+                return Math.max(1, Math.round(t));
+            }
+
+            if (method === 'curve') {
+                const points = collectCurvePoints();
+                if (points.length < 3) return initialMinutes;
+                let t = initialMinutes;
+                for (let i = 0; i < 4; i++) {
+                    const lookup = t / Math.max(1 - state.reserveFraction, 0.1);
+                    const power = interpolatePower(points, lookup);
+                    const newT = estimateClimbDurationMinutes(distance, grade, totalMassKg, power);
+                    if (!newT) return initialMinutes;
+                    if (Math.abs(newT - t) < 0.05) { t = newT; break; }
+                    t = newT;
+                }
+                return Math.max(1, Math.round(t));
+            }
+
+            return initialMinutes;
+        }
+
         // Power calculations
         function updatePowerCalculations() {
             // Get climb parameters (always in metric for calculations)
@@ -2203,8 +2334,16 @@
 
             const estimatedTimeMinutesRaw =
                 estimateClimbDurationMinutes(distance, grade, totalMassKg, sustainablePowerW);
-            const estimatedTimeMinutes = estimatedTimeMinutesRaw
+            const initialEstimateMinutes = estimatedTimeMinutesRaw
                 ? Math.max(1, Math.round(estimatedTimeMinutesRaw))
+                : null;
+
+            // Refine the estimate using the actually-chosen Step 3 method + reserve.
+            // This makes the displayed time react to reserve changes, and keeps it
+            // honest when the user's CP/W' or Power Curve implies a different pace
+            // than the rough CP-based first pass.
+            const estimatedTimeMinutes = initialEstimateMinutes
+                ? refineEstimateForMethod(distance, grade, totalMassKg, initialEstimateMinutes)
                 : null;
 
             renderSmartDefaultBanner(estimatedTimeMinutes);
@@ -2269,24 +2408,22 @@
         }
 
         function calculateCPWPower(estimatedTimeMinutes) {
-            const cp = parseFloat(document.getElementById('cpValue').value);
-            const wPrime = parseFloat(document.getElementById('wPrimeValue').value);
+            const cpw = getCPWInputs();
+            if (!cpw.cp || !cpw.wPrime) return;
 
-            if (cp > 0 && wPrime > 0) {
-                const estimatedTimeSeconds = estimatedTimeMinutes * 60;
-                const wPrimeJoules = wPrime * 1000;
-                // Reserve in the tank: only spend (1 - R) fraction of W'.
-                const reserveR = state.reserveFraction;
-                const usableWPrime = wPrimeJoules * (1 - reserveR);
+            const estimatedTimeSeconds = estimatedTimeMinutes * 60;
+            const wPrimeJoules = cpw.wPrime * 1000;
+            // Reserve in the tank: only spend (1 - R) fraction of W'.
+            const reserveR = state.reserveFraction;
+            const usableWPrime = wPrimeJoules * (1 - reserveR);
 
-                // Power = CP + (usable W' / time)
-                const sustainablePower = cp + (usableWPrime / estimatedTimeSeconds);
+            // Power = CP + (usable W' / time)
+            const sustainablePower = cpw.cp + (usableWPrime / estimatedTimeSeconds);
 
-                document.getElementById('cpwCalculatedPower').textContent = Math.round(sustainablePower);
-                document.getElementById('cpwDuration').textContent = estimatedTimeMinutes;
-                document.getElementById('calculatedPowerCPW').style.display = 'block';
-                annotateMethodCalculatedValue('calculatedPowerCPW');
-            }
+            document.getElementById('cpwCalculatedPower').textContent = Math.round(sustainablePower);
+            document.getElementById('cpwDuration').textContent = estimatedTimeMinutes;
+            document.getElementById('calculatedPowerCPW').style.display = 'block';
+            annotateMethodCalculatedValue('calculatedPowerCPW');
         }
 
         function calculateCurvePower(estimatedTimeMinutes) {
@@ -2482,7 +2619,28 @@
         // Initialize gearing on page load
         document.addEventListener('DOMContentLoaded', function() {
             updateGearing();
+            updateCPWInputView();
         });
+
+        // Power Curve listeners — typing in any of the four points should refresh
+        // the calculation so the displayed power and refined time both update.
+        ['power5min', 'power20min', 'power60min', 'power120min'].forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.addEventListener('input', function () {
+                updatePowerCalculations();
+            });
+        });
+
+        // Simple Power listener — same: typing in your gut-feel power should
+        // refine the displayed estimated climb time.
+        (function () {
+            const el = document.getElementById('simplePower');
+            if (!el) return;
+            el.addEventListener('input', function () {
+                updatePowerCalculations();
+            });
+        })();
 
         // Main calculation
         function calculateClimb() {
