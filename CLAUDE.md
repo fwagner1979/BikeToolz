@@ -40,27 +40,36 @@ Post-MVP:
 
 ## Current state (as of 2026-04-25)
 
-**Status:** Phase 1 (foundation & cleanup) **complete**. Site now serves from `main`; orphans deleted; README rewritten. **Next:** Phase 2 — per-tool URLs / kill the iframe (see "MVP work plan" above).
+**Status:** Phase 2 (per-tool URLs / kill the iframe) **complete**. Each tool now has its own real URL with its own header / nav / footer / language switcher / theme toggle / unit toggle / ad slots. Iframe retired. Theme + unit choices now persist across page navigation via localStorage (new). **Next:** Phase 3 — Climb Planner fixes + draggable-cursor elevation chart (size L; the heaviest single MVP item).
 
-- Live site is now deployed from `main` (cutover 2026-04-25). The previous deploy branch `claude/work-on-project-011CUiuYZ74t5aLmZuvB5NKk` is left in place untouched as a backup.
-- Recovery tags on remote: `pre-mvp-cutover-deploy` (deploy branch HEAD pre-move) and `pre-mvp-cutover-main` (main HEAD pre-move). Use these as named rollback points.
-- Three older agent branches still exist on remote (`claude/continue-cycling-website-…`, `claude/continue-previous-project-…`, `claude/work-on-project-…`). Left alone for now; we can prune post-launch.
-- Branch `phase-1-cleanup` was merged to `main` via fast-forward and remains on remote for audit; safe to delete any time.
-- Tools live under `tools/`: `climb-planner.html` and `cp-analyzer.html`. The two predecessor calculators and a stray `test-climb-calculator.html` were deleted in Phase 1, along with the stale `ROLLBACK-GUIDE.md` (generic git cheat sheet).
-- `README.md` now has a real description (replaces the one-line stub).
+- Live site deployed from `main`. Live URLs:
+  - https://fwagner1979.github.io/BikeToolz/
+  - https://fwagner1979.github.io/BikeToolz/tools/climb-planner.html
+  - https://fwagner1979.github.io/BikeToolz/tools/cp-analyzer.html
+- Recovery tags on remote (Phase 1 era): `pre-mvp-cutover-deploy`, `pre-mvp-cutover-main`. The original deploy branch `claude/work-on-project-011CUiuYZ74t5aLmZuvB5NKk` is still untouched as a deeper backup.
+- Older agent branches (`claude/continue-cycling-website-…`, `claude/continue-previous-project-…`, `claude/work-on-project-…`) still on remote — leave alone, prune post-launch.
+- Phase-1 and Phase-2 feature branches (`phase-1-cleanup`, `phase-2-per-tool-urls`) are merged into `main` via fast-forward and remain on remote for audit; safe to delete.
+- Tools under `tools/`: `climb-planner.html`, `cp-analyzer.html`. Each is now a complete standalone HTML page with chrome duplicated from `index.html` (Option A — duplicate-and-discipline; if chrome design changes, edit on every page).
+- `README.md` has a real description (replaces the one-line stub from Phase 1).
 - No PRs in flight, no test suite.
-- Stack: vanilla HTML/CSS/JS, no framework. Architecture: `index.html` hosts an iframe; tool pages render inside it. i18n via `js/i18n.js` + `lang/{en,de,es,pt}.json`. Light/dark mode. AdSense scaffolding present (not yet active). **The iframe is what Phase 2 dismantles.**
+- Stack: vanilla HTML/CSS/JS, no framework, no build step. i18n via `js/i18n.js` (now derives `lang/` base path from its own URL via `document.currentScript`) + `lang/{en,de,es,pt}.json`. Light/dark mode.
+- **Persistence keys (localStorage):** `bikeToolz_theme` (`light`/`dark`), `bikeToolz_isMetric` (`'1'`/`'0'`), `bikeToolz_language` (`en`/`de`/`pt`/`es`).
+- **Custom DOM events** (chrome → tool):  `bikeToolz:themechange`, `bikeToolz:unitchange`, `bikeToolz:languagechange` — dispatched on `document`. Tool code listens to these instead of the old iframe `postMessage` mechanism.
+- **CSS class quirk:** `cp-analyzer.html`'s tool-internal max-width-1400 wrapper is `.analyzer-container` (renamed during Phase 2 to free up `.container` for the chrome 1200px layout). Climb Planner had no collision.
 - Local clone: `C:\Users\fwa\OneDrive - Eurowind Energy\AI\Cowork playground\Projects\BikeToolz`.
 - GitHub access via `gh` CLI (`C:\Program Files\GitHub CLI\gh.exe`), authenticated as `fwagner1979`.
 
 ## Next session — start here
 
-1. Read this file end to end (especially "MVP work plan" and "Current state").
+1. Read this file end to end (especially "MVP work plan", "Current state", and "Open issues / Climb Planner").
 2. Confirm with FWA that nothing has changed since the previous checkpoint.
-3. Phase 1 is **complete**. Phase 2 is **per-tool URLs / kill the iframe** — see "MVP work plan" above for the goal and what it covers.
-4. Before writing code, present FWA with a short choice between architectural approaches for sharing chrome across pages. GitHub Pages has no server-side includes, so the realistic options are: (a) duplicate the chrome in each tool page and keep them in sync by discipline, (b) inject the chrome at page load via a small JS partial-loader, or (c) introduce a build step that templates pages from a layout. Each has different trade-offs around SEO, page-load speed, and maintenance — explain in plain English and let FWA pick.
-5. Wait for FWA approval before any code changes.
-6. Phase 2 work happens on a feature branch off `main` (suggested name: `phase-2-per-tool-urls`). Do not push directly to `main` for code changes — only for trivial doc updates like checkpoint edits to this file.
+3. Phase 2 is **complete**. Phase 3 is **Climb Planner: fixes + draggable-cursor elevation chart** (size L — heaviest single MVP item). Scope is in "MVP work plan" above; details are under "Open issues / Climb Planner" and "Open design questions".
+4. Before writing code, plan with FWA:
+   - **Cursor chart UX:** chart library choice (Chart.js is already a dependency in `cp-analyzer.html` — same library would minimize tooling), interaction model (two draggable cursors over an elevation profile, "macro vs detailed" preset, accept / drag / override), and how the auto-suggested inflection points are computed.
+   - **Avg-grade-only fix:** does the steepest-section warning live alongside the avg-grade calculation (additive), or does the cursor chart also let users opt-in to a "use the steepest 500m as the planning grade" mode?
+   - **Step 2 power-input framing:** confirm the smart-default duration-based picker UI before coding it, and confirm the tooltip copy that explains why each method fits which climb length.
+5. **i18n hard rule kicks in hard for Phase 3.** `tools/climb-planner.html` is currently English-only (Open Issue #4). Every UI string introduced or migrated needs keys in all 4 `lang/*.json` files **in the same change**. Plan to do this in a single coordinated commit per Climb Planner sub-issue, not piecemeal.
+6. Phase 3 work happens on a feature branch off `main` (suggested name: `phase-3-climb-planner`). Wait for FWA approval before code lands. Do not push directly to `main` for code changes — only for trivial checkpoint edits to this file.
 
 ## MVP work plan
 
@@ -207,6 +216,10 @@ Route Planner (whole-route pacing), Fitness Analyzer expansion (FTP / durability
 - **2026-04-25** — When implementation begins, FWA wants high-level explanations in plain English, not diffs (FWA is not a programmer).
 - **2026-04-25** — **Phase 1 cutover complete.** GitHub Pages now serves from `main` (was `claude/work-on-project-011CUiuYZ74t5aLmZuvB5NKk`). Old deploy branch retained as backup. Recovery tags `pre-mvp-cutover-deploy` and `pre-mvp-cutover-main` pushed for rollback. Orphans deleted (`tools/climb-calculator.html`, `tools/climb-calculator-enhanced.html`, `test-climb-calculator.html`, and the stale generic git cheat sheet `ROLLBACK-GUIDE.md`). `README.md` rewritten from one-line stub to real description.
 - **2026-04-25** — Single-maintainer workflow agreed: feature branch → push → FWA reviews summary in plain English → fast-forward merge to `main`. No PR ceremony required; the audit trail lives in commit messages.
+- **2026-04-25** — **Phase 2 cutover complete.** Per-tool URLs live on the production site. Each tool page is now a complete standalone HTML file with chrome (header / nav / footer / ads / language / theme / units / mobile menu) duplicated from `index.html`. Iframe architecture retired. Theme + unit choices now persist across page navigation via localStorage (`bikeToolz_theme`, `bikeToolz_isMetric`); language was already persisted. Tool-side code that previously listened to `postMessage` from the parent frame now listens to `bikeToolz:themechange` / `bikeToolz:unitchange` / `bikeToolz:languagechange` custom DOM events on `document`.
+- **2026-04-25** — **Naming decision: keep `tools/cp-analyzer.html` URL** rather than renaming to e.g. `fitness-analyzer`. Reasoning: SEO authority is per-URL; future post-MVP analyzers (FTP estimator, HR drift, durability) get their own sibling URLs (`tools/ftp-estimator.html` etc.) so each can rank for its own keyword cluster. One growing mega-tool would have diluted SEO across mismatched search intents. Implication: when each new analyzer ships, it gets its own URL + its own page.
+- **2026-04-25** — **Chrome architecture: Option A (duplicate-and-discipline).** HTML chrome, chrome CSS, and chrome JS are all duplicated verbatim into each page (`index.html`, `tools/climb-planner.html`, `tools/cp-analyzer.html`). If chrome design changes, all three pages must be edited together. Picked over JS-injected partials (would hurt SEO — defeats the point of the URL refactor) and a build step (overkill at 3 pages, contradicts the project's "no build step" stack discipline). Revisit if pages reach ~6+.
+- **2026-04-25** — **Future-tools UX flag (post-MVP, not blocking):** when sibling analyzers ship (FTP estimator, HR drift, etc.), users will have to re-upload ride files for each tool. Solvable later with sessionStorage hand-off + a "see this same data in &lt;sibling&gt; →" link. Not in MVP scope; flagged so it's on the radar.
 
 ## For future Claude sessions
 
