@@ -468,13 +468,60 @@
             color: white;
         }
 
+        /* Zoom strip — thin overview bar above the chart. Two handles define
+           the chart's visible km range. The strip's coordinate system is
+           always 0..totalKm regardless of zoom, so the handles work even when
+           zoomed in. */
+        .zoom-strip {
+            position: relative;
+            height: 22px;
+            width: 100%;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+            overflow: visible; /* handles stick out top/bottom slightly */
+        }
+        .zoom-strip-fill {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            background: rgba(0, 102, 204, 0.18);
+            border-radius: 3px;
+            pointer-events: none;
+        }
+        [data-theme="dark"] .zoom-strip-fill {
+            background: rgba(51, 133, 214, 0.28);
+        }
+        .zoom-strip-cursor {
+            position: absolute;
+            top: -3px;
+            bottom: -3px;
+            width: 10px;
+            transform: translateX(-50%);
+            background: var(--primary-color);
+            border: 1px solid var(--bg-color);
+            border-radius: 3px;
+            cursor: ew-resize;
+            touch-action: none;
+            padding: 0;
+            box-shadow: 0 1px 3px rgba(0, 102, 204, 0.4);
+        }
+        .zoom-strip-cursor:focus { outline: 2px solid var(--accent-color); outline-offset: 1px; }
+        @media (pointer: coarse) {
+            .zoom-strip { height: 26px; }
+            .zoom-strip-cursor { width: 14px; }
+        }
+
         /* Chart canvas sits inside a relatively-positioned wrapper so the
            cursor overlay (absolutely positioned siblings) can use the same
-           coordinate space as Chart.js's pixel calculations. */
+           coordinate space as Chart.js's pixel calculations. overflow:hidden
+           clips bottom cursors and ticks that fall outside the zoomed range. */
         .chart-wrapper {
             position: relative;
             height: 240px;
             width: 100%;
+            overflow: hidden;
         }
         @media (max-width: 600px) {
             .chart-wrapper { height: 200px; }
@@ -1597,6 +1644,23 @@
                         </div>
                     </div>
 
+                    <!-- Zoom strip — drag the two grey handles to limit the
+                         chart's visible km range. Bottom cursors keep their
+                         km values; zooming in just gives them more pixels per
+                         km so they're easier to fine-tune. Double-click the
+                         strip to reset zoom to the full route. -->
+                    <div id="zoomStrip" class="zoom-strip" ondblclick="resetZoom()">
+                        <div id="zoomStripFill" class="zoom-strip-fill"></div>
+                        <button type="button" id="zoomStartCursor"
+                                class="zoom-strip-cursor"
+                                data-side="zoomStart"
+                                aria-label="Zoom range start"></button>
+                        <button type="button" id="zoomEndCursor"
+                                class="zoom-strip-cursor"
+                                data-side="zoomEnd"
+                                aria-label="Zoom range end"></button>
+                    </div>
+
                     <div id="chartWrapper" class="chart-wrapper">
                         <canvas id="elevationChart"></canvas>
                         <div id="cursorOverlay" class="cursor-overlay">
@@ -2246,6 +2310,12 @@
             cursorEndKm: null,
             detectorMode: 'macro',
             elevationChart: null,
+            // Zoom strip (top of chart). zoomStartKm/zoomEndKm define the
+            // chart's visible km range. Default is the full route (no zoom);
+            // dragging the zoom handles narrows the visible range so the
+            // bottom climb cursors get more pixels per km for fine-tuning.
+            zoomStartKm: null,
+            zoomEndKm: null,
             // Selected climb is kept as a derived value for back-compat with
             // any downstream code that still reads it. Updated whenever the
             // cursor segment changes.
@@ -2565,12 +2635,19 @@
                 state.cursorEndKm = points[points.length - 1].distance;
             }
 
+            // Reset zoom to the full route on every new GPX upload — the
+            // previous file's zoom range would be meaningless on a different
+            // route.
+            state.zoomStartKm = 0;
+            state.zoomEndKm = points[points.length - 1].distance;
+
             // Show the elevation panel and render everything.
             const panel = document.getElementById('elevationPanel');
             if (panel) panel.style.display = 'block';
             renderElevationChart();
             renderTicks();
             renderCursors();
+            renderZoomStrip();
             updateCursorNumericInputs();
             syncSelectedClimbFromCursors();
             updateClimbSummary();
@@ -2657,6 +2734,25 @@
                     raw.push({ startIdx: climbStartIdx, endIdx: climbEnd });
                 }
             }
+
+            // Snap each raw climb's endIdx to its peak elevation. The trailing-
+            // window detector closes a climb when grade drops below 3%, but
+            // that's already past the actual crest because the window is
+            // looking back 200 m. Without this snap, Macro mode (which inherits
+            // each merged climb's endIdx from the last sub-climb) would extend
+            // its tick well into the descent. After snapping, the merge step
+            // also benefits — the descent calculation uses the true peak.
+            raw.forEach(c => {
+                let peakIdx = c.startIdx;
+                let peakEle = points[c.startIdx].elevation;
+                for (let k = c.startIdx; k <= c.endIdx; k++) {
+                    if (points[k].elevation > peakEle) {
+                        peakEle = points[k].elevation;
+                        peakIdx = k;
+                    }
+                }
+                c.endIdx = peakIdx;
+            });
 
             // Merge adjacent raw climbs whose intervening descent is small
             // enough — this is the Macro/Detailed knob. Loop until the list
@@ -2964,6 +3060,7 @@
                         requestAnimationFrame(function () {
                             renderCursors();
                             renderTicks();
+                            renderZoomStrip();
                         });
                     }
                 }
@@ -2973,6 +3070,7 @@
             requestAnimationFrame(function () {
                 renderCursors();
                 renderTicks();
+                renderZoomStrip();
             });
         }
 
@@ -3165,6 +3263,118 @@
             updatePowerCalculations();
         }
 
+        // ---- Zoom strip ------------------------------------------------
+
+        function totalRouteKm() {
+            const points = state.gpxPoints;
+            if (!points || points.length === 0) return 0;
+            return points[points.length - 1].distance;
+        }
+
+        // The strip spans 0..totalRouteKm regardless of the chart's current
+        // visible range (the chart zooms; the strip is always overview).
+        function zoomStripPixelForKm(km) {
+            const strip = document.getElementById('zoomStrip');
+            const total = totalRouteKm();
+            if (!strip || total <= 0) return null;
+            const w = strip.clientWidth;
+            return (km / total) * w;
+        }
+
+        function zoomStripKmForPixel(px) {
+            const strip = document.getElementById('zoomStrip');
+            const total = totalRouteKm();
+            if (!strip || total <= 0) return null;
+            const w = strip.clientWidth;
+            const km = (px / w) * total;
+            return Math.max(0, Math.min(total, km));
+        }
+
+        function renderZoomStrip() {
+            const startCursor = document.getElementById('zoomStartCursor');
+            const endCursor = document.getElementById('zoomEndCursor');
+            const fill = document.getElementById('zoomStripFill');
+            if (!startCursor || !endCursor || !fill) return;
+            if (state.zoomStartKm == null || state.zoomEndKm == null) return;
+            const sx = zoomStripPixelForKm(state.zoomStartKm);
+            const ex = zoomStripPixelForKm(state.zoomEndKm);
+            if (sx == null || ex == null) return;
+            startCursor.style.left = sx + 'px';
+            endCursor.style.left = ex + 'px';
+            fill.style.left = sx + 'px';
+            fill.style.width = Math.max(0, ex - sx) + 'px';
+        }
+
+        // Apply the current zoom state to the chart and re-position everything
+        // that depends on the chart's pixel mapping.
+        function applyZoom() {
+            const chart = state.elevationChart;
+            if (!chart) return;
+            chart.options.scales.x.min = state.zoomStartKm;
+            chart.options.scales.x.max = state.zoomEndKm;
+            chart.update('none');
+            renderZoomStrip();
+            renderCursors();
+            renderTicks();
+        }
+
+        function resetZoom() {
+            const total = totalRouteKm();
+            if (total <= 0) return;
+            state.zoomStartKm = 0;
+            state.zoomEndKm = total;
+            applyZoom();
+        }
+
+        let zoomDragState = null;
+
+        function onZoomPointerDown(side, ev) {
+            ev.preventDefault();
+            const cursor = document.getElementById(side === 'zoomStart' ? 'zoomStartCursor' : 'zoomEndCursor');
+            if (!cursor) return;
+            zoomDragState = { side: side, pointerId: ev.pointerId };
+            cursor.setPointerCapture(ev.pointerId);
+        }
+
+        function onZoomPointerMove(ev) {
+            if (!zoomDragState) return;
+            const strip = document.getElementById('zoomStrip');
+            if (!strip) return;
+            const rect = strip.getBoundingClientRect();
+            const km = zoomStripKmForPixel(ev.clientX - rect.left);
+            if (km == null) return;
+
+            const total = totalRouteKm();
+            const minSpread = Math.max(0.2, total * 0.01); // never collapse below 1% of route or 200 m
+
+            if (zoomDragState.side === 'zoomStart') {
+                state.zoomStartKm = Math.min(km, state.zoomEndKm - minSpread);
+            } else {
+                state.zoomEndKm = Math.max(km, state.zoomStartKm + minSpread);
+            }
+            applyZoom();
+        }
+
+        function onZoomPointerUp(ev) {
+            if (!zoomDragState) return;
+            const cursor = document.getElementById(zoomDragState.side === 'zoomStart' ? 'zoomStartCursor' : 'zoomEndCursor');
+            if (cursor && cursor.hasPointerCapture(ev.pointerId)) {
+                cursor.releasePointerCapture(ev.pointerId);
+            }
+            zoomDragState = null;
+        }
+
+        function attachZoomStripDrag() {
+            ['zoomStart', 'zoomEnd'].forEach(side => {
+                const cursor = document.getElementById(side === 'zoomStart' ? 'zoomStartCursor' : 'zoomEndCursor');
+                if (!cursor) return;
+                cursor.addEventListener('pointerdown', function (ev) { onZoomPointerDown(side, ev); });
+            });
+            document.addEventListener('pointermove', onZoomPointerMove);
+            document.addEventListener('pointerup', onZoomPointerUp);
+            document.addEventListener('pointercancel', onZoomPointerUp);
+        }
+
         function attachCursorDrag() {
             ['start', 'end'].forEach(side => {
                 const handle = document.getElementById(side === 'start' ? 'cursorStart' : 'cursorEnd');
@@ -3237,6 +3447,13 @@
         document.addEventListener('DOMContentLoaded', function () {
             attachCursorDrag();
             attachCursorNumericInputs();
+            attachZoomStripDrag();
+        });
+
+        // Re-render the zoom strip on window resize so the handle pixel
+        // positions track the strip's new width.
+        window.addEventListener('resize', function () {
+            if (state.gpxPoints && state.gpxPoints.length) renderZoomStrip();
         });
 
         // Update km/mi labels and re-render when the user toggles units.
