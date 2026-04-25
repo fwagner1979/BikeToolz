@@ -40,27 +40,27 @@ Post-MVP:
 
 ## Current state (as of 2026-04-25)
 
-**Status:** Discovery and walkthrough complete. Issue list and design questions captured below. **Next: draft a phased MVP work plan** (deferred to a fresh session for token-budget reasons).
+**Status:** Phase 1 (foundation & cleanup) **complete**. Site now serves from `main`; orphans deleted; README rewritten. **Next:** Phase 2 — per-tool URLs / kill the iframe (see "MVP work plan" above).
 
-- Live site is deployed from branch `claude/work-on-project-011CUiuYZ74t5aLmZuvB5NKk` ⚠️ — needs to move to a stable branch. Agent-named branches risk being force-pushed.
-- `main` branch is empty/stale. Will receive `CLAUDE.md` only initially; full code promotion is part of MVP work.
-- Three remote branches exist (`claude/continue-cycling-website-…`, `claude/continue-previous-project-…`, `claude/work-on-project-…`). The third is the most recent and is the one currently published.
-- No PRs, no test suite, README.md is a stub.
-- Stack: vanilla HTML/CSS/JS, no framework. Architecture: `index.html` hosts an iframe; tool pages render inside it. i18n via `js/i18n.js` + `lang/{en,de,es,pt}.json`. Light/dark mode. AdSense scaffolding present (not yet active).
+- Live site is now deployed from `main` (cutover 2026-04-25). The previous deploy branch `claude/work-on-project-011CUiuYZ74t5aLmZuvB5NKk` is left in place untouched as a backup.
+- Recovery tags on remote: `pre-mvp-cutover-deploy` (deploy branch HEAD pre-move) and `pre-mvp-cutover-main` (main HEAD pre-move). Use these as named rollback points.
+- Three older agent branches still exist on remote (`claude/continue-cycling-website-…`, `claude/continue-previous-project-…`, `claude/work-on-project-…`). Left alone for now; we can prune post-launch.
+- Branch `phase-1-cleanup` was merged to `main` via fast-forward and remains on remote for audit; safe to delete any time.
+- Tools live under `tools/`: `climb-planner.html` and `cp-analyzer.html`. The two predecessor calculators and a stray `test-climb-calculator.html` were deleted in Phase 1, along with the stale `ROLLBACK-GUIDE.md` (generic git cheat sheet).
+- `README.md` now has a real description (replaces the one-line stub).
+- No PRs in flight, no test suite.
+- Stack: vanilla HTML/CSS/JS, no framework. Architecture: `index.html` hosts an iframe; tool pages render inside it. i18n via `js/i18n.js` + `lang/{en,de,es,pt}.json`. Light/dark mode. AdSense scaffolding present (not yet active). **The iframe is what Phase 2 dismantles.**
 - Local clone: `C:\Users\fwa\OneDrive - Eurowind Energy\AI\Cowork playground\Projects\BikeToolz`.
 - GitHub access via `gh` CLI (`C:\Program Files\GitHub CLI\gh.exe`), authenticated as `fwagner1979`.
 
 ## Next session — start here
 
-1. Read this file end to end.
-2. Confirm with FWA that nothing has changed since the previous session's checkpoint.
-3. **Draft a phased MVP work plan** (3–5 phases) covering everything in "MVP scope" + "Open issues." The plan should:
-   - Order work to avoid wasted effort (e.g. set up branch hygiene & per-tool URLs *before* the i18n pass, so we don't translate strings that are about to move pages).
-   - For each phase: a one-sentence goal, the issues it covers, and a rough size (S/M/L).
-   - Identify the **first phase** clearly so FWA can approve and we can start.
-4. Save the plan into this file under a new "## MVP work plan" heading.
-5. Wait for FWA's approval before doing any code changes.
-6. Branch hygiene comes first when implementation begins: tidy `main`, re-point GitHub Pages, create a feature branch off `main` for MVP work. Do not push to the current deploy branch directly.
+1. Read this file end to end (especially "MVP work plan" and "Current state").
+2. Confirm with FWA that nothing has changed since the previous checkpoint.
+3. Phase 1 is **complete**. Phase 2 is **per-tool URLs / kill the iframe** — see "MVP work plan" above for the goal and what it covers.
+4. Before writing code, present FWA with a short choice between architectural approaches for sharing chrome across pages. GitHub Pages has no server-side includes, so the realistic options are: (a) duplicate the chrome in each tool page and keep them in sync by discipline, (b) inject the chrome at page load via a small JS partial-loader, or (c) introduce a build step that templates pages from a layout. Each has different trade-offs around SEO, page-load speed, and maintenance — explain in plain English and let FWA pick.
+5. Wait for FWA approval before any code changes.
+6. Phase 2 work happens on a feature branch off `main` (suggested name: `phase-2-per-tool-urls`). Do not push directly to `main` for code changes — only for trivial doc updates like checkpoint edits to this file.
 
 ## MVP work plan
 
@@ -124,7 +124,7 @@ Drafted 2026-04-25. Five phases, ordered to avoid wasted effort: structural chan
 1. **Drop the `.FIT` claim.** Remove `.fit` from the file picker `accept` attribute; update help text to "Supports .TCX, .CSV, .GPX." Real FIT parsing remains post-MVP.
 2. **User-specified duration mode.** Small alternative input near the auto-detect button: "I know my effort duration." User enters e.g. `3:15`; tool finds the best window of that exact length in the uploaded file(s) and runs the same CV / threshold checks. The auto-detection algorithm itself is *not* touched — confirmed working well per FWA's test.
 3. **Responsive layout.** Add breakpoints between 769–1399 px and a sensible ultrawide cap. Wrap the charts so they reflow rather than sitting in a fixed-width-feeling window.
-4. **Full i18n on `tools/cp-w-analyzer.html`** (or whatever the file is named — confirm in phase). Same approach as Climb Planner — `data-i18n` keys + all 4 lang files in the same change.
+4. **Full i18n on `tools/cp-analyzer.html`.** Same approach as Climb Planner — `data-i18n` keys + all 4 lang files in the same change.
 
 ---
 
@@ -205,6 +205,8 @@ Route Planner (whole-route pacing), Fitness Analyzer expansion (FTP / durability
 - **2026-04-25** — Hide ad placeholders pre-launch (keep CSS classes/slots for later). Apply for AdSense only after launch + traffic.
 - **2026-04-25** — **Per-tool URLs moved into MVP scope.** Original plan was post-MVP. Reasoning: (a) SEO traffic depends on per-URL ranking — one URL can't rank for "climb calculator" AND "critical power calculator"; (b) ad revenue is per page view, and the iframe architecture caps a session at 1 page view regardless of tool usage. Launching with the wrong architecture means SEO authority builds on URLs that get abandoned later. Better to ship right.
 - **2026-04-25** — When implementation begins, FWA wants high-level explanations in plain English, not diffs (FWA is not a programmer).
+- **2026-04-25** — **Phase 1 cutover complete.** GitHub Pages now serves from `main` (was `claude/work-on-project-011CUiuYZ74t5aLmZuvB5NKk`). Old deploy branch retained as backup. Recovery tags `pre-mvp-cutover-deploy` and `pre-mvp-cutover-main` pushed for rollback. Orphans deleted (`tools/climb-calculator.html`, `tools/climb-calculator-enhanced.html`, `test-climb-calculator.html`, and the stale generic git cheat sheet `ROLLBACK-GUIDE.md`). `README.md` rewritten from one-line stub to real description.
+- **2026-04-25** — Single-maintainer workflow agreed: feature branch → push → FWA reviews summary in plain English → fast-forward merge to `main`. No PR ceremony required; the audit trail lives in commit messages.
 
 ## For future Claude sessions
 
