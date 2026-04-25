@@ -67,8 +67,9 @@ Step 2 — Rider Profile
   Bike weight (kg):   [____]
 
   Power capability (optional, but enables better recommendations & warnings)
+  CP and W' is the preferred input — it delivers the most accurate recommendations and steepest-section warnings.
     ○ I know my FTP only
-    ○ I know my CP and W'
+    ○ I know my CP and W'  (preferred)
 
     [field(s) appear based on the radio choice]
       FTP (W): [____]
@@ -77,6 +78,7 @@ Step 2 — Rider Profile
 ```
 
 - Default radio: "I know my FTP only" with the field blank → falls back to baseline (FTP 250 W) with a disclaimer in Step 3.
+- The "(preferred)" label and helper line on the CP+W' option are intentional: CP+W' is the only input that lets the steepest-section warning algorithm (Sub-commit 3) run in full mode for windows shorter than the climb's total duration. FTP/Simple Power degrade the warning to a coarser comparison.
 - CP + W' entered here flow to Step 3's CP/W' method (no re-entry) AND to the steepest-section warning algorithm.
 - FTP-only here: used for duration estimate. The warning algorithm runs in degraded or full mode depending on what Step 3's chosen method provides.
 

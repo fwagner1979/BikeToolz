@@ -74,8 +74,63 @@
         .planner-title {
             color: var(--primary-color);
             font-size: 2rem;
-            margin-bottom: 2rem;
+            margin-bottom: 1rem;
             text-align: center;
+        }
+
+        .tool-intro {
+            max-width: 720px;
+            margin: 0 auto 2rem auto;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .step-helper {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            line-height: 1.45;
+        }
+
+        .preferred-pill {
+            display: inline-block;
+            background: var(--success-color);
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            padding: 0.15rem 0.5rem;
+            border-radius: 999px;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+        }
+
+        .smart-default-banner {
+            background: var(--card-bg);
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.25rem;
+        }
+        .smart-default-banner.disclaimer {
+            border-color: var(--warning-color);
+        }
+        .smart-default-banner .smart-default-title {
+            color: var(--primary-color);
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        .smart-default-banner.disclaimer .smart-default-title {
+            color: var(--warning-color);
+        }
+        .smart-default-banner .smart-default-disclaimer {
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
         }
 
         .step-section {
@@ -984,6 +1039,11 @@
     <div class="planner-container">
         <h1 class="planner-title">🗻 Climb Planner</h1>
 
+        <p class="tool-intro" data-i18n="climbPlanner.intro">
+            This tool needs a power capability number (FTP, CP, or your historical best) to plan a climb.
+            HR-only and no-meter riders aren't supported yet.
+        </p>
+
         <!-- Step 1: Define Your Climb -->
         <div class="step-section">
             <div class="step-header">
@@ -1043,121 +1103,80 @@
             </div>
         </div>
 
-        <!-- Step 2: Your Power Capability -->
+        <!-- Step 2: Rider Profile -->
         <div class="step-section">
             <div class="step-header">
                 <div class="step-number">2</div>
-                <h2 class="step-title">Your Power Capability</h2>
-            </div>
-
-            <div id="estimatedTimeInfo" class="info-box" style="display: none;">
-                <span style="font-size: 1.5rem;">⏱️</span>
-                <div>
-                    <strong id="estimatedTimeText">Estimated climb time: ~X minutes</strong>
-                    <p id="powerMethodRecommendation" style="margin-top: 0.25rem;"></p>
-                </div>
-            </div>
-
-            <div class="radio-group">
-                <label class="radio-option selected" onclick="selectPowerMethod('simple')">
-                    <input type="radio" name="powerMethod" value="simple" checked>
-                    <div class="radio-label">
-                        <strong>Simple Power</strong>
-                        <small>I know the average power I can sustain for this climb</small>
-                        <div id="simplePowerInputs" class="sub-inputs">
-                            <div class="input-group">
-                                <label>Sustainable Power (watts)</label>
-                                <input type="number" id="simplePower" step="1" min="50" max="1000" placeholder="e.g., 250">
-                            </div>
-                        </div>
-                    </div>
-                </label>
-
-                <label class="radio-option" onclick="selectPowerMethod('cpw')">
-                    <input type="radio" name="powerMethod" value="cpw">
-                    <div class="radio-label">
-                        <strong>CP/W' Model (Recommended for climbs &lt;40 min)</strong>
-                        <small>Calculate sustainable power from Critical Power and W-prime</small>
-                        <div id="cpwInputs" class="sub-inputs" style="display: none;">
-                            <div class="input-grid">
-                                <div class="input-group">
-                                    <label>Critical Power (CP) - watts</label>
-                                    <input type="number" id="cpValue" step="1" min="50" max="500" placeholder="e.g., 220">
-                                </div>
-                                <div class="input-group">
-                                    <label>W-prime (W') - kJ</label>
-                                    <input type="number" id="wPrimeValue" step="0.1" min="5" max="50" placeholder="e.g., 18.5">
-                                </div>
-                            </div>
-                            <div id="calculatedPowerCPW" style="display: none;">
-                                <div class="calculated-value">
-                                    <span>Calculated Sustainable Power: </span>
-                                    <span id="cpwCalculatedPower">--</span> W
-                                    <div style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.9;">
-                                        for <span id="cpwDuration">--</span> minutes
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </label>
-
-                <label class="radio-option" onclick="selectPowerMethod('curve')">
-                    <input type="radio" name="powerMethod" value="curve">
-                    <div class="radio-label">
-                        <strong>Power Curve (For climbs &gt;40 min)</strong>
-                        <small>Calculate from multiple power-duration points</small>
-                        <div id="curveInputs" class="sub-inputs" style="display: none;">
-                            <div class="input-grid">
-                                <div class="input-group">
-                                    <label>5-minute power (watts)</label>
-                                    <input type="number" id="power5min" step="1" placeholder="e.g., 280">
-                                </div>
-                                <div class="input-group">
-                                    <label>20-minute power (watts)</label>
-                                    <input type="number" id="power20min" step="1" placeholder="e.g., 250">
-                                </div>
-                                <div class="input-group">
-                                    <label>60-minute power (watts)</label>
-                                    <input type="number" id="power60min" step="1" placeholder="e.g., 230">
-                                </div>
-                                <div class="input-group">
-                                    <label>120-minute power (watts) - optional</label>
-                                    <input type="number" id="power120min" step="1" placeholder="e.g., 210">
-                                </div>
-                            </div>
-                            <div id="calculatedPowerCurve" style="display: none;">
-                                <div class="calculated-value">
-                                    <span>Calculated Sustainable Power: </span>
-                                    <span id="curveCalculatedPower">--</span> W
-                                    <div style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.9;">
-                                        for <span id="curveDuration">--</span> minutes
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </label>
-            </div>
-        </div>
-
-        <!-- Step 3: Rider & Equipment -->
-        <div class="step-section">
-            <div class="step-header">
-                <div class="step-number">3</div>
-                <h2 class="step-title">Rider & Equipment</h2>
+                <h2 class="step-title" data-i18n="climbPlanner.step2.title">Rider Profile</h2>
             </div>
 
             <div class="input-grid">
                 <div class="input-group">
-                    <label>Rider Weight (kg)</label>
+                    <label data-i18n="climbPlanner.step2.riderWeight">Rider Weight (kg)</label>
                     <input type="number" id="riderWeight" step="0.1" min="30" max="150" placeholder="e.g., 75">
                 </div>
                 <div class="input-group">
-                    <label>Bike + Equipment Weight (kg)</label>
+                    <label data-i18n="climbPlanner.step2.bikeWeight">Bike + Equipment Weight (kg)</label>
                     <input type="number" id="bikeWeight" step="0.1" min="5" max="30" placeholder="e.g., 8.5">
                 </div>
             </div>
+
+            <h3 style="color: var(--primary-color); margin-top: 1.5rem; margin-bottom: 0.5rem; font-size: 1.05rem;"
+                data-i18n="climbPlanner.step2.powerCapability.title">
+                Power capability (optional)
+            </h3>
+            <p class="step-helper" data-i18n="climbPlanner.step2.powerCapability.helper">
+                Entering this enables better recommendations and (later) steepest-section warnings.
+                <strong>CP and W' is the preferred input</strong> — it delivers the most accurate results.
+            </p>
+
+            <div class="radio-group">
+                <label class="radio-option selected" onclick="selectStep2PowerKnown('ftp')">
+                    <input type="radio" name="step2PowerKnown" value="ftp" checked>
+                    <div class="radio-label">
+                        <strong data-i18n="climbPlanner.step2.knowFTP">I know my FTP only</strong>
+                        <small data-i18n="climbPlanner.step2.knowFTP.help">
+                            One number for sustained effort. OK for the recommendation, but less accurate than CP+W'.
+                        </small>
+                        <div id="step2FTPInputs" class="sub-inputs">
+                            <div class="input-group">
+                                <label data-i18n="climbPlanner.step2.ftp">FTP (watts)</label>
+                                <input type="number" id="step2FTP" step="1" min="50" max="600" placeholder="e.g., 250">
+                            </div>
+                        </div>
+                    </div>
+                </label>
+
+                <label class="radio-option" onclick="selectStep2PowerKnown('cpw')">
+                    <input type="radio" name="step2PowerKnown" value="cpw">
+                    <div class="radio-label">
+                        <strong>
+                            <span data-i18n="climbPlanner.step2.knowCPW">I know my CP and W'</span>
+                            <span class="preferred-pill" data-i18n="climbPlanner.step2.preferred">Preferred</span>
+                        </strong>
+                        <small data-i18n="climbPlanner.step2.knowCPW.help">
+                            Two numbers describing your power-vs-duration relationship. Most accurate input.
+                        </small>
+                        <div id="step2CPWInputs" class="sub-inputs" style="display: none;">
+                            <div class="input-grid">
+                                <div class="input-group">
+                                    <label data-i18n="climbPlanner.step2.cp">Critical Power (CP) — watts</label>
+                                    <input type="number" id="step2CP" step="1" min="50" max="500" placeholder="e.g., 220">
+                                </div>
+                                <div class="input-group">
+                                    <label data-i18n="climbPlanner.step2.wPrime">W-prime (W') — kJ</label>
+                                    <input type="number" id="step2WPrime" step="0.1" min="5" max="50" placeholder="e.g., 18.5">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </label>
+            </div>
+
+            <h3 style="color: var(--primary-color); margin-top: 1.75rem; margin-bottom: 1rem; font-size: 1.05rem;"
+                data-i18n="climbPlanner.step2.equipment.title">
+                Equipment
+            </h3>
 
             <div class="gearing-section">
                 <div class="gearing-group">
@@ -1265,6 +1284,109 @@
                     Average: Standard maintenance, fresh oil-based lube (95%)<br>
                     Poor: Dirty chain, worn components, inadequate lubrication (93%)
                 </small>
+            </div>
+        </div>
+
+        <!-- Step 3: Power for this climb -->
+        <div class="step-section">
+            <div class="step-header">
+                <div class="step-number">3</div>
+                <h2 class="step-title" data-i18n="climbPlanner.step3.title">Power for this climb</h2>
+            </div>
+
+            <div id="smartDefaultBanner" class="smart-default-banner" style="display: none;">
+                <div class="smart-default-title" id="smartDefaultTitle">
+                    Estimated climb time: ~— min
+                </div>
+                <div id="smartDefaultRecommendation"></div>
+                <div class="smart-default-disclaimer" id="smartDefaultDisclaimer" style="display: none;"></div>
+            </div>
+
+            <div class="radio-group">
+                <label class="radio-option selected" onclick="selectPowerMethod('simple')">
+                    <input type="radio" name="powerMethod" value="simple" checked>
+                    <div class="radio-label">
+                        <strong data-i18n="climbPlanner.step3.simple.title">Expected avg. power for this climb</strong>
+                        <small data-i18n="climbPlanner.step3.simple.help">
+                            What you can hold for this climb's duration — your gut feel.
+                        </small>
+                        <div id="simplePowerInputs" class="sub-inputs">
+                            <div class="input-group">
+                                <label data-i18n="climbPlanner.step3.simple.label">Expected average power (watts)</label>
+                                <input type="number" id="simplePower" step="1" min="50" max="1000" placeholder="e.g., 250">
+                            </div>
+                        </div>
+                    </div>
+                </label>
+
+                <label class="radio-option" onclick="selectPowerMethod('cpw')">
+                    <input type="radio" name="powerMethod" value="cpw">
+                    <div class="radio-label">
+                        <strong data-i18n="climbPlanner.step3.cpw.title">CP/W' Model (Recommended for climbs &lt;40 min)</strong>
+                        <small data-i18n="climbPlanner.step3.cpw.help">
+                            Calculate sustainable power from Critical Power and W-prime.
+                            If you entered CP and W' in Step 2, they are pre-filled here.
+                        </small>
+                        <div id="cpwInputs" class="sub-inputs" style="display: none;">
+                            <div class="input-grid">
+                                <div class="input-group">
+                                    <label data-i18n="climbPlanner.step3.cpw.cp">Critical Power (CP) - watts</label>
+                                    <input type="number" id="cpValue" step="1" min="50" max="500" placeholder="e.g., 220">
+                                </div>
+                                <div class="input-group">
+                                    <label data-i18n="climbPlanner.step3.cpw.wPrime">W-prime (W') - kJ</label>
+                                    <input type="number" id="wPrimeValue" step="0.1" min="5" max="50" placeholder="e.g., 18.5">
+                                </div>
+                            </div>
+                            <div id="calculatedPowerCPW" style="display: none;">
+                                <div class="calculated-value">
+                                    <span>Calculated Sustainable Power: </span>
+                                    <span id="cpwCalculatedPower">--</span> W
+                                    <div style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.9;">
+                                        for <span id="cpwDuration">--</span> minutes
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </label>
+
+                <label class="radio-option" onclick="selectPowerMethod('curve')">
+                    <input type="radio" name="powerMethod" value="curve">
+                    <div class="radio-label">
+                        <strong data-i18n="climbPlanner.step3.curve.title">Power Curve (For climbs &gt;40 min)</strong>
+                        <small data-i18n="climbPlanner.step3.curve.help">Calculate from multiple power-duration points.</small>
+                        <div id="curveInputs" class="sub-inputs" style="display: none;">
+                            <div class="input-grid">
+                                <div class="input-group">
+                                    <label>5-minute power (watts)</label>
+                                    <input type="number" id="power5min" step="1" placeholder="e.g., 280">
+                                </div>
+                                <div class="input-group">
+                                    <label>20-minute power (watts)</label>
+                                    <input type="number" id="power20min" step="1" placeholder="e.g., 250">
+                                </div>
+                                <div class="input-group">
+                                    <label>60-minute power (watts)</label>
+                                    <input type="number" id="power60min" step="1" placeholder="e.g., 230">
+                                </div>
+                                <div class="input-group">
+                                    <label>120-minute power (watts) - optional</label>
+                                    <input type="number" id="power120min" step="1" placeholder="e.g., 210">
+                                </div>
+                            </div>
+                            <div id="calculatedPowerCurve" style="display: none;">
+                                <div class="calculated-value">
+                                    <span>Calculated Sustainable Power: </span>
+                                    <span id="curveCalculatedPower">--</span> W
+                                    <div style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.9;">
+                                        for <span id="curveDuration">--</span> minutes
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </label>
             </div>
         </div>
 
@@ -1575,6 +1697,19 @@
             updatePowerCalculations();
         });
 
+        // Step 2 listeners — any change here re-evaluates the duration estimate
+        // and the smart-default recommendation in Step 3.
+        ['riderWeight', 'bikeWeight', 'step2FTP', 'step2CP', 'step2WPrime'].forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.addEventListener('input', function () {
+                if (id === 'step2CP' || id === 'step2WPrime') {
+                    mirrorStep2CPWToStep3();
+                }
+                updatePowerCalculations();
+            });
+        });
+
         function calculateGrade() {
             const distanceInput = parseFloat(document.getElementById('manualDistance').value);
             const elevationInput = parseFloat(document.getElementById('manualElevation').value);
@@ -1798,6 +1933,87 @@
             updatePowerCalculations();
         }
 
+        // ---- Step 2 helpers: power-capability radio + duration estimate ----
+
+        // Default rider/bike masses used for the duration estimate when Step 2 is blank.
+        const BASELINE_FTP_W = 250;
+        const BASELINE_RIDER_KG = 75;
+        const BASELINE_BIKE_KG = 9;
+        // Flat aero + rolling allowance subtracted from sustainable power before
+        // computing climb speed. Keeps the estimate from being wildly optimistic
+        // on shallow grades without needing a full physics model here.
+        const NON_CLIMBING_POWER_W = 15;
+
+        function selectStep2PowerKnown(mode) {
+            // mode: 'ftp' | 'cpw'
+            document.querySelectorAll('input[name="step2PowerKnown"]').forEach(r => {
+                r.checked = (r.value === mode);
+            });
+            document.querySelectorAll('label.radio-option input[name="step2PowerKnown"]').forEach(r => {
+                r.closest('.radio-option').classList.toggle('selected', r.checked);
+            });
+            document.getElementById('step2FTPInputs').style.display = (mode === 'ftp') ? 'block' : 'none';
+            document.getElementById('step2CPWInputs').style.display = (mode === 'cpw') ? 'block' : 'none';
+            mirrorStep2CPWToStep3();
+            updatePowerCalculations();
+        }
+
+        function getStep2PowerData() {
+            const checked = document.querySelector('input[name="step2PowerKnown"]:checked');
+            const mode = checked ? checked.value : 'ftp';
+            if (mode === 'cpw') {
+                const cp = parseFloat(document.getElementById('step2CP').value);
+                const wPrime = parseFloat(document.getElementById('step2WPrime').value);
+                return { mode: 'cpw', cp: cp || null, wPrime: wPrime || null };
+            }
+            const ftp = parseFloat(document.getElementById('step2FTP').value);
+            return { mode: 'ftp', ftp: ftp || null };
+        }
+
+        // If the user picked CP+W' in Step 2 and entered values, mirror them
+        // into Step 3's CP/W' fields so they don't have to re-type.
+        // Only fills blank Step 3 fields — never overwrites a user-entered Step 3 value.
+        function mirrorStep2CPWToStep3() {
+            const data = getStep2PowerData();
+            if (data.mode !== 'cpw') return;
+            const step3CP = document.getElementById('cpValue');
+            const step3W = document.getElementById('wPrimeValue');
+            if (data.cp && !step3CP.value) step3CP.value = data.cp;
+            if (data.wPrime && !step3W.value) step3W.value = data.wPrime;
+        }
+
+        // Returns a single watts number representing the rider's expected
+        // sustainable power for the duration estimate. Falls back to the
+        // baseline FTP if Step 2 is blank.
+        function getEffectivePowerForEstimateW() {
+            const data = getStep2PowerData();
+            if (data.mode === 'cpw' && data.cp && data.cp > 0) return data.cp;
+            if (data.mode === 'ftp' && data.ftp && data.ftp > 0) return data.ftp;
+            return BASELINE_FTP_W;
+        }
+
+        function isStep2PowerProvided() {
+            const data = getStep2PowerData();
+            if (data.mode === 'cpw') return !!(data.cp && data.cp > 0);
+            return !!(data.ftp && data.ftp > 0);
+        }
+
+        // Physics-light climb-duration estimate.
+        // gradePct is in percent (e.g. 7 for a 7% grade). Distance in km.
+        function estimateClimbDurationMinutes(distanceKm, gradePct, totalMassKg, sustainablePowerW) {
+            if (!(distanceKm > 0) || !(gradePct > 0) || !(totalMassKg > 0) || !(sustainablePowerW > 0)) {
+                return null;
+            }
+            const slope = gradePct / 100;
+            const climbingPower = Math.max(sustainablePowerW - NON_CLIMBING_POWER_W, 30);
+            // P_climb ≈ M * g * v * slope  (small-angle approximation)
+            const speedMs = climbingPower / (totalMassKg * 9.81 * slope);
+            const speedFloorMs = 1.0; // ~3.6 km/h walking pace floor for absurd inputs
+            const speedKmh = Math.max(speedMs, speedFloorMs) * 3.6;
+            const minutes = (distanceKm / speedKmh) * 60;
+            return minutes;
+        }
+
         // Power calculations
         function updatePowerCalculations() {
             // Get climb parameters (always in metric for calculations)
@@ -1815,37 +2031,83 @@
                 elevation = state.selectedClimb.elevation;
                 grade = state.selectedClimb.avgGrade;
             } else {
+                hideSmartDefaultBanner();
                 return; // No climb data
             }
 
-            // Estimate initial climb time (assuming ~15 km/h average)
-            const estimatedSpeed = 15; // km/h
-            const estimatedTimeHours = distance / estimatedSpeed;
-            const estimatedTimeMinutes = Math.round(estimatedTimeHours * 60);
+            // Pull rider/bike weights from Step 2; fall back to baseline when blank.
+            const riderW = parseFloat(document.getElementById('riderWeight').value);
+            const bikeW = parseFloat(document.getElementById('bikeWeight').value);
+            const totalMassKg =
+                ((riderW > 0) ? riderW : BASELINE_RIDER_KG) +
+                ((bikeW > 0) ? bikeW : BASELINE_BIKE_KG);
+            const sustainablePowerW = getEffectivePowerForEstimateW();
 
-            // Update info box
-            const infoBox = document.getElementById('estimatedTimeInfo');
-            const timeText = document.getElementById('estimatedTimeText');
-            const recommendation = document.getElementById('powerMethodRecommendation');
+            const estimatedTimeMinutesRaw =
+                estimateClimbDurationMinutes(distance, grade, totalMassKg, sustainablePowerW);
+            const estimatedTimeMinutes = estimatedTimeMinutesRaw
+                ? Math.max(1, Math.round(estimatedTimeMinutesRaw))
+                : null;
 
-            timeText.textContent = `Estimated climb time: ~${estimatedTimeMinutes} minutes`;
-
-            if (estimatedTimeMinutes < 40) {
-                recommendation.innerHTML = '💡 Recommendation: Use <strong>CP/W\' Model</strong> for accurate power calculation';
-                infoBox.className = 'info-box';
-            } else {
-                recommendation.innerHTML = '💡 Recommendation: Use <strong>Power Curve</strong> for climbs over 40 minutes';
-                infoBox.className = 'info-box warning';
-            }
-
-            infoBox.style.display = 'block';
+            renderSmartDefaultBanner(estimatedTimeMinutes);
 
             // Calculate power based on method
-            if (state.powerMethod === 'cpw') {
+            if (estimatedTimeMinutes && state.powerMethod === 'cpw') {
                 calculateCPWPower(estimatedTimeMinutes);
-            } else if (state.powerMethod === 'curve') {
+            } else if (estimatedTimeMinutes && state.powerMethod === 'curve') {
                 calculateCurvePower(estimatedTimeMinutes);
             }
+        }
+
+        function hideSmartDefaultBanner() {
+            const banner = document.getElementById('smartDefaultBanner');
+            if (banner) banner.style.display = 'none';
+        }
+
+        function renderSmartDefaultBanner(estimatedTimeMinutes) {
+            const banner = document.getElementById('smartDefaultBanner');
+            const titleEl = document.getElementById('smartDefaultTitle');
+            const recoEl = document.getElementById('smartDefaultRecommendation');
+            const discEl = document.getElementById('smartDefaultDisclaimer');
+            if (!banner || !titleEl || !recoEl || !discEl) return;
+
+            if (!estimatedTimeMinutes) {
+                hideSmartDefaultBanner();
+                return;
+            }
+
+            // Recommendation bands match phase-3-plan.md decision 2.
+            let recoMethod, recoText;
+            if (estimatedTimeMinutes < 40) {
+                recoMethod = 'cpw';
+                recoText = '<strong>CP/W\' Model</strong> recommended (best for climbs under ~40 min).';
+            } else if (estimatedTimeMinutes <= 60) {
+                recoMethod = 'curve';
+                recoText = '<strong>Power Curve</strong> recommended (CP/W\' is also OK for 40–60 min).';
+            } else {
+                recoMethod = 'curve';
+                recoText = '<strong>Power Curve</strong> recommended (best for climbs over ~60 min).';
+            }
+
+            titleEl.textContent = `Estimated climb time: ~${estimatedTimeMinutes} min`;
+            recoEl.innerHTML = '💡 ' + recoText;
+
+            const step2Provided = isStep2PowerProvided();
+            if (!step2Provided) {
+                banner.classList.add('disclaimer');
+                discEl.style.display = 'block';
+                discEl.innerHTML =
+                    '⚠️ Estimate assumes a baseline rider (FTP ' + BASELINE_FTP_W + ' W, ' +
+                    BASELINE_RIDER_KG + ' kg + ' + BASELINE_BIKE_KG +
+                    ' kg bike). Enter your own numbers in Step 2 for a tailored recommendation.';
+            } else {
+                banner.classList.remove('disclaimer');
+                discEl.style.display = 'none';
+                discEl.innerHTML = '';
+            }
+
+            banner.style.display = 'block';
+            banner.dataset.recoMethod = recoMethod; // for any future "click to apply" behavior
         }
 
         function calculateCPWPower(estimatedTimeMinutes) {
