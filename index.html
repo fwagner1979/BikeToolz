@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en" id="htmlRoot">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="site.title">BikeToolz.info - Cycling Tools Hub</title>
+    <!-- Inter Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Performance Cycling Palette */
+            --primary-color: #0066CC;
+            --primary-hover: #0052A3;
+            --primary-light: #3385D6;
+            --accent-color: #00BFFF;
+            --accent-secondary: #FF6B35;
+            --text-color: #1a1a1a;
+            --text-secondary: #666666;
+            --bg-color: #ffffff;
+            --card-bg: #ffffff;
+            --border-color: #e0e0e0;
+            --ad-bg: #f3f4f6;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+        }
+
+        [data-theme="dark"] {
+            --primary-color: #3385D6;
+            --primary-hover: #4D94DB;
+            --primary-light: #5FA3E0;
+            --accent-color: #00D9FF;
+            --accent-secondary: #FF8A5B;
+            --text-color: #f9fafb;
+            --text-secondary: #9ca3af;
+            --bg-color: #0f1419;
+            --card-bg: #1a1f2e;
+            --border-color: #2d3748;
+            --ad-bg: #374151;
+            --success-color: #34d399;
+            --warning-color: #fbbf24;
+            --danger-color: #f87171;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            transition: all 0.3s ease;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .header-banner {
+            background: linear-gradient(135deg, #0066CC 0%, #004A99 50%, #003366 100%);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            position: relative;
+            min-height: 100px;
+            overflow: hidden;
+            border-bottom: 3px solid var(--accent-color);
+        }
+
+        .header-banner::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(0, 191, 255, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            position: relative;
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: 700;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            letter-spacing: -0.02em;
+        }
+
+        .logo-icon {
+            font-size: 2.5rem;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+        }
+
+        .logo-text {
+            letter-spacing: -0.02em;
+        }
+
+        .logo-tld {
+            font-weight: 400;
+            opacity: 0.9;
+            font-size: 0.85em;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .language-selector {
+            background: rgba(34, 197, 94, 0.2);
+            border: 2px solid #22c55e;
+            border-radius: 8px;
+            color: white;
+            padding: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .theme-toggle, .unit-toggle {
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
+            color: white;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .theme-toggle:hover, .unit-toggle:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .tools-navigation {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        [data-theme="dark"] .tools-navigation {
+            background: rgba(26, 31, 46, 0.95);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        /* Hamburger Menu */
+        .hamburger-menu {
+            display: none; /* Hidden on desktop */
+            flex-direction: column;
+            gap: 5px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1001;
+        }
+
+        .hamburger-line {
+            width: 25px;
+            height: 3px;
+            background: var(--primary-color);
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .hamburger-menu.active .hamburger-line:nth-child(1) {
+            transform: rotate(45deg) translate(7px, 7px);
+        }
+
+        .hamburger-menu.active .hamburger-line:nth-child(2) {
+            opacity: 0;
+        }
+
+        .hamburger-menu.active .hamburger-line:nth-child(3) {
+            transform: rotate(-45deg) translate(7px, -7px);
+        }
+
+        .mobile-menu-backdrop {
+            display: none; /* Hidden by default */
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .mobile-menu-backdrop.active {
+            display: block;
+            opacity: 1;
+        }
+
+        .tools-nav-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .tool-nav-btn {
+            padding: 0.625rem 1.25rem;
+            background: rgba(0, 102, 204, 0.08);
+            color: var(--primary-color);
+            border: 2px solid transparent;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+        }
+
+        .tool-nav-btn:hover {
+            background: rgba(0, 102, 204, 0.15);
+            border-color: rgba(0, 102, 204, 0.3);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 102, 204, 0.2);
+        }
+
+        .tool-nav-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--accent-color);
+            box-shadow: 0 4px 16px rgba(0, 191, 255, 0.3);
+        }
+
+        .tool-nav-btn.active::before {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 3px;
+            background: var(--accent-color);
+            border-radius: 2px;
+        }
+
+        [data-theme="dark"] .tool-nav-btn {
+            background: rgba(51, 133, 214, 0.1);
+        }
+
+        [data-theme="dark"] .tool-nav-btn:hover {
+            background: rgba(51, 133, 214, 0.2);
+        }
+
+        .tool-icon {
+            font-size: 1.2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        .ad-leaderboard {
+            background: var(--ad-bg);
+            border: 2px dashed var(--border-color);
+            height: 90px;
+            margin: 1rem 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            border-radius: 8px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 2rem;
+            margin: 2rem 0;
+            min-height: 600px;
+        }
+
+        .tool-frame-container {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .tool-frame {
+            width: 100%;
+            height: 100%;
+            min-height: 800px;
+            border: none;
+            background: var(--bg-color);
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--card-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            transition: opacity 0.3s ease;
+        }
+
+        .loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            height: fit-content;
+            position: sticky;
+            top: 100px;
+        }
+
+        .ad-medium-rect, .ad-square, .ad-small-rect {
+            background: var(--ad-bg);
+            border: 2px dashed var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            border-radius: 8px;
+        }
+
+        .ad-medium-rect {
+            height: 250px;
+        }
+
+        .ad-square {
+            height: 300px;
+        }
+
+        .ad-small-rect {
+            height: 150px;
+        }
+
+        .welcome-section {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        .welcome-title {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            font-weight: bold;
+        }
+
+        .welcome-subtitle {
+            font-size: 1.25rem;
+            color: var(--text-color);
+            margin-bottom: 2rem;
+            opacity: 0.8;
+        }
+
+        .tool-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .tool-card {
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Gradient accent bar on top */
+        .tool-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .tool-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .tool-card:hover {
+            border-color: var(--accent-color);
+            transform: translateY(-4px);
+            box-shadow:
+                0 12px 24px rgba(0, 102, 204, 0.15),
+                0 0 0 1px rgba(0, 191, 255, 0.1);
+        }
+
+        .tool-card-icon {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            filter: drop-shadow(0 4px 8px rgba(0, 102, 204, 0.2));
+            transition: transform 0.3s ease;
+        }
+
+        .tool-card:hover .tool-card-icon {
+            transform: scale(1.1) rotate(-5deg);
+        }
+
+        .tool-card-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 0.75rem;
+        }
+
+        .tool-card-description {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        [data-theme="dark"] .tool-card:hover {
+            box-shadow:
+                0 12px 24px rgba(0, 217, 255, 0.2),
+                0 0 0 1px rgba(0, 217, 255, 0.2);
+        }
+
+        .footer {
+            background: var(--card-bg);
+            border-top: 1px solid var(--border-color);
+            padding: 2rem 0;
+            margin-top: 3rem;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none; /* Hide ads on mobile */
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .logo {
+                font-size: 1.5rem;
+            }
+
+            .logo-icon {
+                font-size: 2rem;
+            }
+
+            /* Show hamburger menu on mobile */
+            .hamburger-menu {
+                display: flex;
+            }
+
+            /* Mobile slide-out menu */
+            .tools-nav-content {
+                position: fixed;
+                top: 0;
+                right: -100%; /* Hidden off-screen by default */
+                width: 280px;
+                height: 100vh;
+                background: var(--card-bg);
+                box-shadow: -2px 0 10px rgba(0,0,0,0.2);
+                flex-direction: column;
+                align-items: stretch;
+                padding: 5rem 1.5rem 2rem;
+                gap: 0.5rem;
+                z-index: 1000;
+                transition: right 0.3s ease;
+                overflow-y: auto;
+            }
+
+            .tools-nav-content.active {
+                right: 0; /* Slide in when active */
+            }
+
+            .tool-nav-btn {
+                width: 100%;
+                justify-content: flex-start;
+                padding: 1rem 1.5rem;
+                border-radius: 12px;
+            }
+
+            .welcome-title {
+                font-size: 2rem;
+            }
+
+            .tool-cards {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .tool-card {
+                padding: 1.5rem;
+            }
+
+            /* Hide leaderboard ads on mobile for better UX */
+            .ad-leaderboard {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header-banner">
+        <div class="header-content">
+            <h1 class="logo">
+                <span class="logo-icon">🚴</span>
+                <span class="logo-text">BikeToolz<span class="logo-tld">.info</span></span>
+            </h1>
+
+            <div class="header-controls">
+                <select class="language-selector" id="languageSelector" onchange="changeLanguage(this.value)">
+                    <option value="en">🇬🇧 English</option>
+                    <option value="de">🇩🇪 Deutsch</option>
+                    <option value="pt">🇧🇷 Português</option>
+                    <option value="es">🇪🇸 Español</option>
+                </select>
+
+                <button class="theme-toggle" onclick="toggleTheme()" id="themeToggle">
+                    <span data-i18n="navigation.darkMode">🌙 Dark Mode</span>
+                </button>
+
+                <button class="unit-toggle" onclick="toggleUnitSystem()" id="unitToggle">
+                    <span data-i18n="navigation.unitsMetric">⚙️ Units: Metric</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <nav class="tools-navigation">
+        <button class="hamburger-menu" id="hamburgerBtn" onclick="toggleMobileMenu()" aria-label="Toggle navigation menu">
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+        </button>
+
+        <div class="tools-nav-content" id="toolsNavContent">
+            <button class="tool-nav-btn" onclick="showTool('welcome'); closeMobileMenu()" id="navWelcome">
+                <span class="tool-icon">🏠</span>
+                <span data-i18n="navigation.home">Home</span>
+            </button>
+            <button class="tool-nav-btn" onclick="showTool('climb-planner'); closeMobileMenu()" id="navClimbPlanner">
+                <span class="tool-icon">🗻</span>
+                <span data-i18n="navigation.climbPlanner">Climb Planner</span>
+            </button>
+            <button class="tool-nav-btn" onclick="showTool('cp-analyzer'); closeMobileMenu()" id="navCP">
+                <span class="tool-icon">📊</span>
+                <span data-i18n="navigation.cpAnalyzer">CP/W' Analyzer</span>
+            </button>
+        </div>
+
+        <div class="mobile-menu-backdrop" id="mobileBackdrop" onclick="closeMobileMenu()"></div>
+    </nav>
+
+    <div class="container">
+        <!-- Top Leaderboard Ad (728x90) -->
+        <!-- To add Google AdSense: Paste your AdSense code inside this div -->
+        <div class="ad-leaderboard">
+            <!-- AdSense code goes here -->
+        </div>
+
+        <div class="main-content">
+            <main class="tool-frame-container">
+                <div class="loading-overlay hidden" id="loadingOverlay">
+                    <div class="loading-spinner"></div>
+                </div>
+
+                <!-- Welcome content (shown by default) -->
+                <div id="welcomeContent" class="welcome-section">
+                    <h2 class="welcome-title" data-i18n="welcome.title">Professional Cycling Tools</h2>
+                    <p class="welcome-subtitle" data-i18n="welcome.subtitle">Choose a tool to get started with your cycling calculations and analysis</p>
+
+                    <div class="tool-cards">
+                        <div class="tool-card" onclick="showTool('climb-planner')">
+                            <div class="tool-card-icon">🗻</div>
+                            <h3 class="tool-card-title" data-i18n="tools.climbPlanner.title">Climb Planner</h3>
+                            <p class="tool-card-description" data-i18n="tools.climbPlanner.description">Plan your climb with manual entry or GPX upload. Calculate sustainable power from CP/W' or power curve, optimize gearing, and get detailed time and power analysis.</p>
+                        </div>
+
+                        <div class="tool-card" onclick="showTool('cp-analyzer')">
+                            <div class="tool-card-icon">📊</div>
+                            <h3 class="tool-card-title" data-i18n="tools.cpAnalyzer.title">CP/W' Analyzer</h3>
+                            <p class="tool-card-description" data-i18n="tools.cpAnalyzer.description">Analyze your cycling power data to determine Critical Power (CP) and W' values. Upload workout files and automatically find your best 3-minute efforts.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tool iframe (hidden by default) -->
+                <iframe id="toolFrame" class="tool-frame" style="display: none;"></iframe>
+            </main>
+
+            <aside class="sidebar">
+                <!-- Sidebar Ad 1: Medium Rectangle (300x250) -->
+                <!-- To add Google AdSense: Paste your AdSense code inside this div -->
+                <div class="ad-medium-rect">
+                    <!-- AdSense code goes here -->
+                </div>
+
+                <!-- Sidebar Ad 2: Square (300x300) -->
+                <!-- To add Google AdSense: Paste your AdSense code inside this div -->
+                <div class="ad-square">
+                    <!-- AdSense code goes here -->
+                </div>
+
+                <!-- Sidebar Ad 3: Small Rectangle (300x150) -->
+                <!-- To add Google AdSense: Paste your AdSense code inside this div -->
+                <div class="ad-small-rect">
+                    <!-- AdSense code goes here -->
+                </div>
+            </aside>
+        </div>
+
+        <!-- Bottom Leaderboard Ad (728x90) -->
+        <!-- To add Google AdSense: Paste your AdSense code inside this div -->
+        <div class="ad-leaderboard">
+            <!-- AdSense code goes here -->
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p data-i18n="footer.copyright">&copy; 2025 BikeToolz.info - Professional cycling tools for climb planning and power analysis</p>
+        </div>
+    </footer>
+
+    <script src="js/i18n.js"></script>
+    <script>
+        let currentTool = 'welcome';
+        let isMetric = true;
+
+        // Tool management
+        function showTool(toolName) {
+            const welcomeContent = document.getElementById('welcomeContent');
+            const toolFrame = document.getElementById('toolFrame');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+
+            // Update navigation
+            document.querySelectorAll('.tool-nav-btn').forEach(btn => btn.classList.remove('active'));
+
+            if (toolName === 'welcome') {
+                loadingOverlay.classList.add('hidden');
+                welcomeContent.style.display = 'block';
+                toolFrame.style.display = 'none';
+                document.getElementById('navWelcome').classList.add('active');
+                currentTool = 'welcome';
+            } else {
+                // Show loading
+                loadingOverlay.classList.remove('hidden');
+                welcomeContent.style.display = 'none';
+                toolFrame.style.display = 'block';
+
+                // Load tool
+                const toolPath = `tools/${toolName}.html`;
+                toolFrame.src = toolPath;
+
+                // Update navigation
+                if (toolName === 'climb-planner') {
+                    document.getElementById('navClimbPlanner').classList.add('active');
+                } else if (toolName === 'cp-analyzer') {
+                    document.getElementById('navCP').classList.add('active');
+                }
+
+                currentTool = toolName;
+
+                // Hide loading after iframe loads
+                toolFrame.onload = function() {
+                    setTimeout(() => {
+                        loadingOverlay.classList.add('hidden');
+                    }, 500);
+                };
+            }
+        }
+
+        // Mobile menu management
+        function toggleMobileMenu() {
+            const navContent = document.getElementById('toolsNavContent');
+            const backdrop = document.getElementById('mobileBackdrop');
+            const hamburger = document.getElementById('hamburgerBtn');
+
+            navContent.classList.toggle('active');
+            backdrop.classList.toggle('active');
+            hamburger.classList.toggle('active');
+
+            // Prevent body scroll when menu is open
+            if (navContent.classList.contains('active')) {
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.body.style.overflow = '';
+            }
+        }
+
+        function closeMobileMenu() {
+            const navContent = document.getElementById('toolsNavContent');
+            const backdrop = document.getElementById('mobileBackdrop');
+            const hamburger = document.getElementById('hamburgerBtn');
+
+            navContent.classList.remove('active');
+            backdrop.classList.remove('active');
+            hamburger.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        // Theme management
+        function toggleTheme() {
+            const body = document.body;
+            const themeToggle = document.getElementById('themeToggle');
+
+            if (body.hasAttribute('data-theme')) {
+                body.removeAttribute('data-theme');
+                if (window.i18n) {
+                    themeToggle.querySelector('span').textContent = window.i18n.t('navigation.darkMode');
+                } else {
+                    themeToggle.querySelector('span').innerHTML = '🌙 Dark Mode';
+                }
+            } else {
+                body.setAttribute('data-theme', 'dark');
+                if (window.i18n) {
+                    themeToggle.querySelector('span').textContent = window.i18n.t('navigation.lightMode');
+                } else {
+                    themeToggle.querySelector('span').innerHTML = '☀️ Light Mode';
+                }
+            }
+
+            // Pass theme to iframe if tool is loaded
+            if (currentTool !== 'welcome') {
+                postMessageToTool({ type: 'themeChange', theme: body.hasAttribute('data-theme') ? 'dark' : 'light' });
+            }
+        }
+
+        // Unit system management
+        function toggleUnitSystem() {
+            isMetric = !isMetric;
+            const unitToggle = document.getElementById('unitToggle');
+
+            if (window.i18n) {
+                unitToggle.querySelector('span').textContent = isMetric ?
+                    window.i18n.t('navigation.unitsMetric') :
+                    window.i18n.t('navigation.unitsImperial');
+            } else {
+                unitToggle.querySelector('span').innerHTML = isMetric ?
+                    '⚙️ Units: Metric' : '⚙️ Units: Imperial';
+            }
+
+            // Pass unit system to iframe if tool is loaded
+            if (currentTool !== 'welcome') {
+                postMessageToTool({ type: 'unitSystemChange', isMetric: isMetric });
+            }
+        }
+
+        // Language management
+        function changeLanguage(languageCode) {
+            if (window.i18n) {
+                window.i18n.changeLanguage(languageCode);
+                document.getElementById('htmlRoot').lang = languageCode;
+
+                // Pass language to iframe if tool is loaded
+                if (currentTool !== 'welcome') {
+                    postMessageToTool({ type: 'languageChange', language: languageCode });
+                }
+            }
+        }
+
+        // Communication with tools
+        function postMessageToTool(message) {
+            const toolFrame = document.getElementById('toolFrame');
+            if (toolFrame && toolFrame.contentWindow) {
+                try {
+                    toolFrame.contentWindow.postMessage(message, '*');
+                } catch (error) {
+                    console.log('Could not send message to tool:', error);
+                }
+            }
+        }
+
+        // Listen for messages from tools
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type) {
+                switch (event.data.type) {
+                    case 'toolReady':
+                        // Send current settings to newly loaded tool
+                        postMessageToTool({
+                            type: 'initialize',
+                            theme: document.body.hasAttribute('data-theme') ? 'dark' : 'light',
+                            isMetric: isMetric,
+                            language: window.i18n ? window.i18n.getCurrentLanguage() : 'en'
+                        });
+                        break;
+                    case 'requestUnitSystem':
+                        postMessageToTool({ type: 'unitSystemChange', isMetric: isMetric });
+                        break;
+                }
+            }
+        });
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set initial navigation state
+            document.getElementById('navWelcome').classList.add('active');
+
+            // Wait for i18n to load
+            function waitForI18n() {
+                if (window.i18n && window.i18n.translations && Object.keys(window.i18n.translations).length > 0) {
+                    const currentLang = window.i18n.getCurrentLanguage();
+                    document.getElementById('htmlRoot').lang = currentLang;
+                    document.getElementById('languageSelector').value = currentLang;
+                    if (window.i18n.updatePage) window.i18n.updatePage();
+                } else {
+                    setTimeout(waitForI18n, 100);
+                }
+            }
+            waitForI18n();
+        });
+    </script>
+</body>
+</html>

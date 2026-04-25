@@ -1,0 +1,207 @@
+{
+  "site": {
+    "title": "BikeToolz.info - Calculadora de Subidas y Planificador de Rutas",
+    "logo": "BikeToolz.info",
+    "description": "Calculadora profesional de subidas de ciclismo y planificador de rutas"
+  },
+  "navigation": {
+    "home": "Home",
+    "climbPlanner": "Planificador de Subidas",
+    "cpAnalyzer": "CP/W' Analyzer",
+    "donate": "Donar",
+    "darkMode": "🌙 Modo Oscuro",
+    "lightMode": "☀️ Modo Claro",
+    "unitsMetric": "⚙️ Unidades: Métricas",
+    "unitsImperial": "⚙️ Unidades: Imperiales"
+  },
+  "welcome": {
+    "title": "Herramientas Profesionales de Ciclismo",
+    "subtitle": "Elija una herramienta para comenzar con sus cálculos y análisis de ciclismo"
+  },
+  "tools": {
+    "climbPlanner": {
+      "title": "Planificador de Subidas",
+      "description": "Planifique su subida con entrada manual o carga de GPX. Calcule potencia sostenible desde CP/W' o curva de potencia, optimice cambios y obtenga análisis detallado de tiempo y potencia."
+    },
+    "cpAnalyzer": {
+      "title": "Analizador CP/W'",
+      "description": "Analice sus datos de potencia de ciclismo para determinar Critical Power (CP) y valores W'. Cargue archivos de entrenamiento y encuentre automáticamente sus mejores esfuerzos de 3 minutos."
+    }
+  },
+  "ads": {
+    "leaderboard": "Publicidad (728x90)",
+    "mediumRect": "Publicidad (300x250)",
+    "square": "Publicidad (300x300)",
+    "smallRect": "Publicidad (300x150)",
+    "afterResults": "Publicidad (Después de Resultados)",
+    "afterFaq": "Publicidad (Después de FAQ)"
+  },
+  "cpAnalyzer": {
+    "title": "Analizador CP/W'",
+    "subtitle": "Analice su Test All-Out de 3 Minutos",
+    "description": "Cargue su archivo de entrenamiento y encontraremos y analizaremos automáticamente su mejor esfuerzo de 3 minutos",
+    "upload": {
+      "title": "Suelte su archivo de entrenamiento aquí",
+      "subtitle": "O haga clic para buscar",
+      "formats": "Soporta archivos .FIT, .TCX, .CSV y .GPX (.CSV y .GPX totalmente soportados)",
+      "analyzing": "Analizando su entrenamiento...",
+      "findingSegment": "Encontrando mejor segmento de 3 minutos y calculando CP/W'"
+    },
+    "results": {
+      "title": "Resultados del Análisis",
+      "file": "Archivo:",
+      "newFile": "Analizar Nuevo Archivo",
+      "interval": {
+        "title": "Intervalo de 3 Minutos Seleccionado",
+        "startTime": "Hora de Inicio:",
+        "endTime": "Hora de Fin:",
+        "avgPower": "Potencia Promedio:"
+      },
+      "validation": {
+        "valid": "Esfuerzo All-Out Válido Detectado",
+        "warning": "Advertencia de Validación de Esfuerzo",
+        "decay": "Caída de potencia: {percent}% (de {start}W a {end}W)"
+      },
+      "metrics": {
+        "cp": {
+          "title": "Critical Power (CP)",
+          "description": "Promedio de los últimos 30 segundos"
+        },
+        "wPrime": {
+          "title": "W' (W-prime)",
+          "description": "Capacidad de trabajo sobre CP"
+        }
+      },
+      "charts": {
+        "powerCurve": "Análisis de Curva de Potencia",
+        "wPrimeDepletion": "Patrón de Agotamiento W'",
+        "wPrimeDescription": "El área sombreada representa el agotamiento de W' durante el esfuerzo"
+      }
+    },
+    "columnDetection": {
+      "title": "Detección de Columnas",
+      "subtitle": "Por favor confirme las columnas detectadas de su archivo CSV",
+      "timeColumn": "Columna de Tiempo",
+      "powerColumn": "Columna de Potencia",
+      "confidence": "Confianza:",
+      "format": "Formato:",
+      "validRange": "Rango válido:",
+      "sampleData": "Vista Previa de Datos de Muestra",
+      "analyzeData": "Analizar Datos",
+      "cancel": "Cancelar"
+    },
+    "gpxAnalysis": {
+      "title": "Análisis de Archivo GPX",
+      "subtitle": "Archivo GPX procesado exitosamente. Listo para analizar datos de potencia.",
+      "summary": "Resumen de Análisis de Archivo",
+      "dataPoints": "Puntos de Datos",
+      "powerReadings": "Lecturas de potencia encontradas",
+      "duration": "Duración",
+      "totalTime": "Tiempo total del entrenamiento",
+      "format": "Formato",
+      "extensions": "Extensiones de potencia detectadas",
+      "ready": "Listo para Análisis",
+      "description": "La aplicación encontrará automáticamente su mejor segmento de potencia de 3 minutos y calculará valores CP/W'.",
+      "warning": "⚠️ Advertencia: El archivo contiene menos de 180 puntos de datos (3 minutos). El análisis puede no ser preciso.",
+      "analyzePower": "Analizar Datos de Potencia"
+    },
+    "errors": {
+      "upload": "Error de Carga",
+      "emptyFile": "El archivo parece estar vacío",
+      "invalidFormat": "Formato de archivo inválido",
+      "noData": "No se encontraron datos de potencia válidos en el archivo",
+      "processing": "Error al procesar archivo: {message}"
+    }
+  },
+  "calculator": {
+    "title": "Calculadora de Subidas de Ciclismo",
+    "calculationMode": {
+      "title": "Modo de Cálculo",
+      "cadenceFirst": "Cadencia-primero:",
+      "cadenceFirstDesc": "Verificar si mi cadencia/relación preferida funciona",
+      "powerFirst": "Potencia-primero:",
+      "powerFirstDesc": "Encontrar cadencia óptima para mi potencia"
+    },
+    "riderParams": {
+      "title": "Parámetros del Ciclista",
+      "power": "Potencia (watts):",
+      "cadence": "Cadencia (RPM):",
+      "riderWeight": "Peso del Ciclista:"
+    },
+    "equipmentParams": {
+      "title": "Parámetros del Equipamiento",
+      "equipmentWeight": "Peso del Equipamiento\n(bici + equipos):",
+      "wheelSize": "Tamaño de Rueda:",
+      "wheelCircumference": "Circunferencia\nde la Rueda:",
+      "chainring": "Dientes del Plato\n(cambio delantero):",
+      "cog": "Dientes del Piñón\n(cambio trasero):",
+      "gearRatio": "Relación de Cambios:"
+    },
+    "climbParams": {
+      "title": "Parámetros de Subida (Selecciona exactamente 2 de 3)",
+      "tooltip": "Si no tienes los parámetros de subida, puedes elegir una de las herramientas de rutas de ciclismo listadas abajo para obtener esa información.",
+      "distance": "Distancia",
+      "elevation": "Ganancia de Elevación",
+      "grade": "Pendiente Promedio (%):"
+    },
+    "wheelSizes": {
+      "road700c": "700c Ruta",
+      "mtb26": "26\" MTB",
+      "mtb275": "27.5\" MTB",
+      "mtb29": "29\" MTB",
+      "custom": "Personalizado"
+    }
+  },
+  "results": {
+    "warning": "⚠️ Resultados desactualizados debido a entrada inválida.",
+    "calculatedParam": "Parámetro Calculado:",
+    "velocity": "Velocidad de Subida:",
+    "cadence": "Cadencia:",
+    "requiredCadence": "Cadencia Requerida:",
+    "selectedCadence": "Cadencia Seleccionada:",
+    "climbTime": "Tiempo Total de Subida:",
+    "systemWeight": "Peso del Sistema:",
+    "powerAnalysis": "Análisis de Potencia",
+    "powerUsage": "Uso de Potencia",
+    "availablePower": "Potencia Disponible:",
+    "requiredPower": "Potencia Requerida:",
+    "powerBalance": "Balance de Potencia:",
+    "gravity": "├ Gravedad:",
+    "rolling": "├ Rodadura:",
+    "wind": "└ Viento:",
+    "surplus": "exceso",
+    "deficit": "déficit",
+    "explanation": "ℹ️ <strong>Análisis de Potencia:</strong> La potencia disponible es tu potencia ({power}W) menos las pérdidas del sistema de transmisión (5%). La potencia requerida es lo que se necesita para superar gravedad, resistencia de rodadura y resistencia del viento a tu velocidad actual. Un exceso significa que puedes mantener este ritmo; un déficit significa que necesitarás reducir la velocidad."
+  },
+  "errors": {
+    "powerRange": "La potencia debe estar entre 50-1000 watts",
+    "cadenceRange": "La cadencia debe estar entre 40-120 RPM",
+    "riderWeightRange": {
+      "metric": "El peso del ciclista debe estar entre 30-150 kg",
+      "imperial": "El peso del ciclista debe estar entre 66-330 lbs"
+    },
+    "equipmentWeightRange": {
+      "metric": "El peso del equipamiento debe estar entre 5-30 kg",
+      "imperial": "El peso del equipamiento debe estar entre 11-66 lbs"
+    },
+    "chainringRange": "El plato debe tener entre 20-60 dientes",
+    "cogRange": "El piñón debe tener entre 8-50 dientes",
+    "circumferenceRange": {
+      "metric": "La circunferencia debe estar entre 1.5-3.0 metros",
+      "imperial": "La circunferencia debe estar entre 4.9-9.8 pies"
+    }
+  },
+  "footer": {
+    "copyright": "© 2025 BikeToolz.info - Calculadora profesional de subidas de ciclismo y planificador de rutas"
+  },
+  "units": {
+    "kg": "kg",
+    "lbs": "lbs",
+    "km": "km",
+    "mi": "mi",
+    "m": "m",
+    "ft": "ft",
+    "meters": "metros",
+    "feet": "pies"
+  }
+}

@@ -1,0 +1,207 @@
+{
+  "site": {
+    "title": "BikeToolz.info - Professional Cycling Tools Hub",
+    "logo": "BikeToolz.info",
+    "description": "Professional cycling tools for climb planning and power analysis"
+  },
+  "navigation": {
+    "home": "Home",
+    "climbPlanner": "Climb Planner",
+    "cpAnalyzer": "CP/W' Analyzer",
+    "donate": "Donate",
+    "darkMode": "🌙 Dark Mode",
+    "lightMode": "☀️ Light Mode",
+    "unitsMetric": "⚙️ Units: Metric",
+    "unitsImperial": "⚙️ Units: Imperial"
+  },
+  "welcome": {
+    "title": "Professional Cycling Tools",
+    "subtitle": "Choose a tool to get started with your cycling calculations and analysis"
+  },
+  "tools": {
+    "climbPlanner": {
+      "title": "Climb Planner",
+      "description": "Plan your climb with manual entry or GPX upload. Calculate sustainable power from CP/W' or power curve, optimize gearing, and get detailed time and power analysis."
+    },
+    "cpAnalyzer": {
+      "title": "CP/W' Analyzer",
+      "description": "Analyze your cycling power data to determine Critical Power (CP) and W' values. Upload workout files and automatically find your best 3-minute efforts."
+    }
+  },
+  "ads": {
+    "leaderboard": "Advertisement (728x90)",
+    "mediumRect": "Advertisement (300x250)",
+    "square": "Advertisement (300x300)",
+    "smallRect": "Advertisement (300x150)",
+    "afterResults": "Advertisement (After Results)",
+    "afterFaq": "Advertisement (After FAQ)"
+  },
+  "cpAnalyzer": {
+    "title": "CP/W' Analyzer",
+    "subtitle": "Analyze Your 3-Minute All-Out Test",
+    "description": "Upload your workout file and we'll automatically find and analyze your best 3-minute effort",
+    "upload": {
+      "title": "Drop your workout file here",
+      "subtitle": "Or click to browse",
+      "formats": "Supports .FIT, .TCX, .CSV, and .GPX files (.CSV and .GPX fully supported)",
+      "analyzing": "Analyzing your workout...",
+      "findingSegment": "Finding best 3-minute segment and calculating CP/W'"
+    },
+    "results": {
+      "title": "Analysis Results",
+      "file": "File:",
+      "newFile": "Analyze New File",
+      "interval": {
+        "title": "Selected 3-Minute Interval",
+        "startTime": "Start Time:",
+        "endTime": "End Time:",
+        "avgPower": "Average Power:"
+      },
+      "validation": {
+        "valid": "Valid All-Out Effort Detected",
+        "warning": "Effort Validation Warning",
+        "decay": "Power decay: {percent}% (from {start}W to {end}W)"
+      },
+      "metrics": {
+        "cp": {
+          "title": "Critical Power (CP)",
+          "description": "Average of final 30 seconds"
+        },
+        "wPrime": {
+          "title": "W' (W-prime)",
+          "description": "Work capacity above CP"
+        }
+      },
+      "charts": {
+        "powerCurve": "Power Curve Analysis",
+        "wPrimeDepletion": "W' Depletion Pattern",
+        "wPrimeDescription": "The shaded area represents W' being depleted throughout the effort"
+      }
+    },
+    "columnDetection": {
+      "title": "Column Detection",
+      "subtitle": "Please confirm the detected columns from your CSV file",
+      "timeColumn": "Time Column",
+      "powerColumn": "Power Column",
+      "confidence": "Confidence:",
+      "format": "Format:",
+      "validRange": "Valid range:",
+      "sampleData": "Sample Data Preview",
+      "analyzeData": "Analyze Data",
+      "cancel": "Cancel"
+    },
+    "gpxAnalysis": {
+      "title": "GPX File Analysis",
+      "subtitle": "GPX file processed successfully. Ready to analyze power data.",
+      "summary": "File Analysis Summary",
+      "dataPoints": "Data Points",
+      "powerReadings": "Power readings found",
+      "duration": "Duration",
+      "totalTime": "Total workout time",
+      "format": "Format",
+      "extensions": "Power extensions detected",
+      "ready": "Ready for Analysis",
+      "description": "The app will automatically find your best 3-minute power segment and calculate CP/W' values.",
+      "warning": "⚠️ Warning: File contains fewer than 180 data points (3 minutes). Analysis may not be accurate.",
+      "analyzePower": "Analyze Power Data"
+    },
+    "errors": {
+      "upload": "Upload Error",
+      "emptyFile": "File appears to be empty",
+      "invalidFormat": "Invalid file format",
+      "noData": "No valid power data found in file",
+      "processing": "Error processing file: {message}"
+    }
+  },
+  "calculator": {
+    "title": "Cycling Climb Calculator",
+    "calculationMode": {
+      "title": "Calculation Mode",
+      "cadenceFirst": "Cadence-First:",
+      "cadenceFirstDesc": "Check if my preferred cadence/gearing works",
+      "powerFirst": "Power-First:",
+      "powerFirstDesc": "Find optimal cadence for my power output"
+    },
+    "riderParams": {
+      "title": "Rider Parameters",
+      "power": "Power (watts):",
+      "cadence": "Cadence (RPM):",
+      "riderWeight": "Rider Weight:"
+    },
+    "equipmentParams": {
+      "title": "Equipment Parameters",
+      "equipmentWeight": "Equipment Weight\n(bike + gear):",
+      "wheelSize": "Wheel Size:",
+      "wheelCircumference": "Wheel\nCircumference:",
+      "chainring": "Chainring Teeth\n(front gear):",
+      "cog": "Cog Teeth\n(rear gear):",
+      "gearRatio": "Gear Ratio:"
+    },
+    "climbParams": {
+      "title": "Climb Parameters (Select exactly 2 of 3)",
+      "tooltip": "If you don't have the climb parameters, you can choose one of the cycling route tools listed below to gather that information.",
+      "distance": "Distance",
+      "elevation": "Elevation Gain",
+      "grade": "Average Grade (%):"
+    },
+    "wheelSizes": {
+      "road700c": "700c Road",
+      "mtb26": "26\" MTB",
+      "mtb275": "27.5\" MTB",
+      "mtb29": "29\" MTB",
+      "custom": "Custom"
+    }
+  },
+  "results": {
+    "warning": "⚠️ Results are outdated due to invalid input.",
+    "calculatedParam": "Calculated Parameter:",
+    "velocity": "Climbing Velocity:",
+    "cadence": "Cadence:",
+    "requiredCadence": "Required Cadence:",
+    "selectedCadence": "Selected Cadence:",
+    "climbTime": "Total Climb Time:",
+    "systemWeight": "System Weight:",
+    "powerAnalysis": "Power Analysis",
+    "powerUsage": "Power Usage",
+    "availablePower": "Available Power:",
+    "requiredPower": "Required Power:",
+    "powerBalance": "Power Balance:",
+    "gravity": "├ Gravity:",
+    "rolling": "├ Rolling:",
+    "wind": "└ Wind:",
+    "surplus": "surplus",
+    "deficit": "deficit",
+    "explanation": "ℹ️ <strong>Power Analysis:</strong> Available power is your output ({power}W) minus drivetrain losses (5%). Required power is what's needed to overcome gravity, rolling resistance, and wind resistance at your current speed. A surplus means you can maintain this pace; a deficit means you'll need to slow down."
+  },
+  "errors": {
+    "powerRange": "Power must be between 50-1000 watts",
+    "cadenceRange": "Cadence must be between 40-120 RPM",
+    "riderWeightRange": {
+      "metric": "Rider weight must be between 30-150 kg",
+      "imperial": "Rider weight must be between 66-330 lbs"
+    },
+    "equipmentWeightRange": {
+      "metric": "Equipment weight must be between 5-30 kg",
+      "imperial": "Equipment weight must be between 11-66 lbs"
+    },
+    "chainringRange": "Chainring must be between 20-60 teeth",
+    "cogRange": "Cog must be between 8-50 teeth",
+    "circumferenceRange": {
+      "metric": "Circumference must be between 1.5-3.0 meters",
+      "imperial": "Circumference must be between 4.9-9.8 feet"
+    }
+  },
+  "footer": {
+    "copyright": "© 2025 BikeToolz.info - Professional cycling tools for climb planning and power analysis"
+  },
+  "units": {
+    "kg": "kg",
+    "lbs": "lbs", 
+    "km": "km",
+    "mi": "mi",
+    "m": "m",
+    "ft": "ft",
+    "meters": "meters",
+    "feet": "feet"
+  }
+}

@@ -1,0 +1,1812 @@
+<!DOCTYPE html>
+<html lang="en" id="htmlRoot">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Climb Planner - BikeToolz</title>
+    <!-- Inter Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Performance Cycling Palette */
+            --primary-color: #0066CC;
+            --primary-hover: #0052A3;
+            --primary-light: #3385D6;
+            --accent-color: #00BFFF;
+            --accent-secondary: #FF6B35;
+            --text-color: #1a1a1a;
+            --text-secondary: #666666;
+            --bg-color: #ffffff;
+            --card-bg: #ffffff;
+            --border-color: #e0e0e0;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --info-color: #0066CC;
+        }
+
+        [data-theme="dark"] {
+            --primary-color: #3385D6;
+            --primary-hover: #4D94DB;
+            --primary-light: #5FA3E0;
+            --accent-color: #00D9FF;
+            --accent-secondary: #FF8A5B;
+            --text-color: #f9fafb;
+            --text-secondary: #9ca3af;
+            --bg-color: #0f1419;
+            --card-bg: #1a1f2e;
+            --border-color: #2d3748;
+            --success-color: #34d399;
+            --warning-color: #fbbf24;
+            --danger-color: #f87171;
+            --info-color: #3385D6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            transition: all 0.3s ease;
+            padding: 1rem;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .planner-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .planner-title {
+            color: var(--primary-color);
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .step-section {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            border: 2px solid var(--border-color);
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .step-number {
+            background: var(--primary-color);
+            color: white;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .step-title {
+            color: var(--primary-color);
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 0.75rem 1.5rem;
+            background: var(--bg-color);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            color: var(--text-color);
+        }
+
+        .tab-button:hover {
+            border-color: var(--primary-color);
+        }
+
+        .tab-button.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .input-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .input-group {
+            margin-bottom: 1rem;
+        }
+
+        .input-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-color);
+            font-size: 0.9rem;
+        }
+
+        .input-group small {
+            display: block;
+            margin-top: 0.375rem;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+
+        .input-group input, .input-group select, .input-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .input-group input::placeholder {
+            color: #999999;
+            opacity: 1;
+        }
+
+        .input-group input:focus, .input-group select:focus, .input-group textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow:
+                0 0 0 3px rgba(0, 191, 255, 0.1),
+                0 2px 8px rgba(0, 102, 204, 0.15);
+            background-color: var(--bg-color);
+        }
+
+        /* Force dark mode colors for inputs */
+        [data-theme="dark"] .input-group input,
+        [data-theme="dark"] .input-group select,
+        [data-theme="dark"] .input-group textarea {
+            background-color: #1a1f2e;
+            color: #f9fafb;
+            border-color: #374151;
+        }
+
+        [data-theme="dark"] .input-group input::placeholder {
+            color: #6b7280;
+        }
+
+        [data-theme="dark"] .input-group input:focus,
+        [data-theme="dark"] .input-group select:focus,
+        [data-theme="dark"] .input-group textarea:focus {
+            background-color: #1a1f2e;
+            border-color: var(--accent-color);
+            box-shadow:
+                0 0 0 3px rgba(0, 217, 255, 0.15),
+                0 2px 8px rgba(0, 217, 255, 0.2);
+        }
+
+        /* Handle autofill in dark mode */
+        [data-theme="dark"] .input-group input:-webkit-autofill,
+        [data-theme="dark"] .input-group input:-webkit-autofill:hover,
+        [data-theme="dark"] .input-group input:-webkit-autofill:focus {
+            -webkit-text-fill-color: #f9fafb;
+            -webkit-box-shadow: 0 0 0 1000px #1a1f2e inset;
+            box-shadow:
+                0 0 0 1000px #1a1f2e inset,
+                0 0 0 3px rgba(0, 217, 255, 0.15);
+            transition: background-color 5000s ease-in-out 0s;
+        }
+
+        .input-group input.error {
+            border-color: var(--danger-color);
+        }
+
+        .error-message {
+            color: var(--danger-color);
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        .upload-zone {
+            border: 3px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 3rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--bg-color);
+        }
+
+        .upload-zone:hover {
+            border-color: var(--primary-color);
+            background: var(--card-bg);
+        }
+
+        .upload-zone.dragover {
+            border-color: var(--primary-color);
+            background: var(--card-bg);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .climb-list {
+            margin-top: 1.5rem;
+        }
+
+        .climb-item {
+            background: var(--bg-color);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .climb-item:hover {
+            border-color: var(--primary-color);
+        }
+
+        .climb-item.selected {
+            border-color: var(--primary-color);
+            background: var(--card-bg);
+        }
+
+        .climb-item input[type="radio"] {
+            accent-color: var(--primary-color);
+        }
+
+        .climb-details {
+            flex: 1;
+        }
+
+        .climb-name {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 0.25rem;
+        }
+
+        .climb-stats {
+            font-size: 0.9rem;
+            color: var(--text-color);
+            opacity: 0.8;
+        }
+
+        .info-box {
+            background: var(--info-color);
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+
+        .info-box.warning {
+            background: var(--warning-color);
+        }
+
+        .info-box.success {
+            background: var(--success-color);
+        }
+
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 1rem;
+            background: var(--bg-color);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .radio-option:hover {
+            border-color: var(--primary-color);
+        }
+
+        .radio-option.selected {
+            border-color: var(--primary-color);
+            background: var(--card-bg);
+        }
+
+        .radio-option input[type="radio"] {
+            margin-top: 0.2rem;
+            accent-color: var(--primary-color);
+        }
+
+        .radio-label {
+            flex: 1;
+        }
+
+        .radio-label strong {
+            display: block;
+            color: var(--primary-color);
+            margin-bottom: 0.25rem;
+        }
+
+        .radio-label small {
+            color: var(--text-color);
+            opacity: 0.8;
+        }
+
+        .sub-inputs {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--card-bg);
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        .calculated-value {
+            background: var(--success-color);
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            font-weight: 600;
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+
+        .gearing-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .gearing-group h4 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .preset-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .preset-button {
+            padding: 0.5rem;
+            background: var(--bg-color);
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .preset-button:hover {
+            border-color: var(--primary-color);
+        }
+
+        .preset-button.selected {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        /* Unified Button System */
+        .btn-primary, .calculate-button {
+            width: 100%;
+            padding: 1rem 2rem;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 2rem 0;
+            box-shadow: 0 2px 4px rgba(0, 102, 204, 0.2);
+        }
+
+        .btn-primary:hover, .calculate-button:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
+        }
+
+        .btn-primary:active, .calculate-button:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled, .calculate-button:disabled {
+            background: var(--border-color);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-accent {
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 191, 255, 0.3);
+        }
+
+        .btn-accent:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 191, 255, 0.4);
+        }
+
+        .toggle-switch-button {
+            padding: 0.75rem 1.5rem;
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-color);
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-switch-button:hover {
+            border-color: var(--primary-color);
+            background: var(--bg-color);
+        }
+
+        .toggle-switch-button.active {
+            border-color: var(--primary-color);
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .results-section {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 2rem;
+            border: 2px solid var(--success-color);
+        }
+
+        .results-section.hidden {
+            display: none;
+        }
+
+        .results-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .results-header h2 {
+            color: var(--success-color);
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .result-card {
+            background: var(--bg-color);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .result-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .result-label {
+            font-size: 0.9rem;
+            color: var(--text-color);
+            opacity: 0.8;
+            margin-bottom: 0.5rem;
+        }
+
+        .result-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .power-breakdown {
+            background: var(--bg-color);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .power-breakdown h3 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .power-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .power-row:last-child {
+            border-bottom: none;
+        }
+
+        .power-row.total {
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-top: 0.5rem;
+            padding-top: 1rem;
+            border-top: 2px solid var(--border-color);
+        }
+
+        .power-row.surplus {
+            color: var(--success-color);
+        }
+
+        .power-row.deficit {
+            color: var(--danger-color);
+        }
+
+        @media (max-width: 768px) {
+            .input-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .gearing-section {
+                grid-template-columns: 1fr;
+            }
+
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="planner-container">
+        <h1 class="planner-title">🗻 Climb Planner</h1>
+
+        <!-- Step 1: Define Your Climb -->
+        <div class="step-section">
+            <div class="step-header">
+                <div class="step-number">1</div>
+                <h2 class="step-title">Define Your Climb</h2>
+            </div>
+
+            <div class="tab-buttons">
+                <button class="tab-button active" onclick="switchClimbInputTab('manual')">📝 Manual Entry</button>
+                <button class="tab-button" onclick="switchClimbInputTab('gpx')">🗺️ Upload GPX Route</button>
+            </div>
+
+            <!-- Manual Entry Tab -->
+            <div id="manualTab" class="tab-content active">
+                <div class="input-grid">
+                    <div class="input-group">
+                        <label>Distance (<span id="distanceUnit">km</span>)</label>
+                        <input type="number" id="manualDistance" step="0.1" min="0" placeholder="e.g., 10.5">
+                        <span class="error-message" id="distanceError"></span>
+                    </div>
+                    <div class="input-group">
+                        <label>Elevation Gain (<span id="elevationUnit">m</span>)</label>
+                        <input type="number" id="manualElevation" step="1" min="0" placeholder="e.g., 800">
+                        <span class="error-message" id="elevationError"></span>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Average Grade (%)</label>
+                    <input type="number" id="manualGrade" step="0.1" min="0" max="30" placeholder="Calculated automatically">
+                    <span class="error-message" id="gradeError"></span>
+                </div>
+            </div>
+
+            <!-- GPX Upload Tab -->
+            <div id="gpxTab" class="tab-content">
+                <div class="upload-zone" id="uploadZone" onclick="document.getElementById('gpxFileInput').click()">
+                    <div class="upload-icon">📁</div>
+                    <h3>Drop your GPX file here</h3>
+                    <p>Or click to browse</p>
+                    <input type="file" id="gpxFileInput" accept=".gpx" style="display: none;" onchange="handleGPXUpload(event)">
+                </div>
+
+                <div id="climbList" class="climb-list" style="display: none;">
+                    <h3 style="color: var(--primary-color); margin-bottom: 1rem;">Detected Climbs</h3>
+                    <div id="climbItems"></div>
+                </div>
+            </div>
+
+            <div id="climbSummary" style="margin-top: 1rem; display: none;">
+                <div class="info-box success">
+                    <span style="font-size: 1.5rem;">✓</span>
+                    <div>
+                        <strong>Climb Selected</strong>
+                        <p id="climbSummaryText" style="margin-top: 0.25rem;"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Your Power Capability -->
+        <div class="step-section">
+            <div class="step-header">
+                <div class="step-number">2</div>
+                <h2 class="step-title">Your Power Capability</h2>
+            </div>
+
+            <div id="estimatedTimeInfo" class="info-box" style="display: none;">
+                <span style="font-size: 1.5rem;">⏱️</span>
+                <div>
+                    <strong id="estimatedTimeText">Estimated climb time: ~X minutes</strong>
+                    <p id="powerMethodRecommendation" style="margin-top: 0.25rem;"></p>
+                </div>
+            </div>
+
+            <div class="radio-group">
+                <label class="radio-option selected" onclick="selectPowerMethod('simple')">
+                    <input type="radio" name="powerMethod" value="simple" checked>
+                    <div class="radio-label">
+                        <strong>Simple Power</strong>
+                        <small>I know the average power I can sustain for this climb</small>
+                        <div id="simplePowerInputs" class="sub-inputs">
+                            <div class="input-group">
+                                <label>Sustainable Power (watts)</label>
+                                <input type="number" id="simplePower" step="1" min="50" max="1000" placeholder="e.g., 250">
+                            </div>
+                        </div>
+                    </div>
+                </label>
+
+                <label class="radio-option" onclick="selectPowerMethod('cpw')">
+                    <input type="radio" name="powerMethod" value="cpw">
+                    <div class="radio-label">
+                        <strong>CP/W' Model (Recommended for climbs &lt;40 min)</strong>
+                        <small>Calculate sustainable power from Critical Power and W-prime</small>
+                        <div id="cpwInputs" class="sub-inputs" style="display: none;">
+                            <div class="input-grid">
+                                <div class="input-group">
+                                    <label>Critical Power (CP) - watts</label>
+                                    <input type="number" id="cpValue" step="1" min="50" max="500" placeholder="e.g., 220">
+                                </div>
+                                <div class="input-group">
+                                    <label>W-prime (W') - kJ</label>
+                                    <input type="number" id="wPrimeValue" step="0.1" min="5" max="50" placeholder="e.g., 18.5">
+                                </div>
+                            </div>
+                            <div id="calculatedPowerCPW" style="display: none;">
+                                <div class="calculated-value">
+                                    <span>Calculated Sustainable Power: </span>
+                                    <span id="cpwCalculatedPower">--</span> W
+                                    <div style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.9;">
+                                        for <span id="cpwDuration">--</span> minutes
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </label>
+
+                <label class="radio-option" onclick="selectPowerMethod('curve')">
+                    <input type="radio" name="powerMethod" value="curve">
+                    <div class="radio-label">
+                        <strong>Power Curve (For climbs &gt;40 min)</strong>
+                        <small>Calculate from multiple power-duration points</small>
+                        <div id="curveInputs" class="sub-inputs" style="display: none;">
+                            <div class="input-grid">
+                                <div class="input-group">
+                                    <label>5-minute power (watts)</label>
+                                    <input type="number" id="power5min" step="1" placeholder="e.g., 280">
+                                </div>
+                                <div class="input-group">
+                                    <label>20-minute power (watts)</label>
+                                    <input type="number" id="power20min" step="1" placeholder="e.g., 250">
+                                </div>
+                                <div class="input-group">
+                                    <label>60-minute power (watts)</label>
+                                    <input type="number" id="power60min" step="1" placeholder="e.g., 230">
+                                </div>
+                                <div class="input-group">
+                                    <label>120-minute power (watts) - optional</label>
+                                    <input type="number" id="power120min" step="1" placeholder="e.g., 210">
+                                </div>
+                            </div>
+                            <div id="calculatedPowerCurve" style="display: none;">
+                                <div class="calculated-value">
+                                    <span>Calculated Sustainable Power: </span>
+                                    <span id="curveCalculatedPower">--</span> W
+                                    <div style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.9;">
+                                        for <span id="curveDuration">--</span> minutes
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <!-- Step 3: Rider & Equipment -->
+        <div class="step-section">
+            <div class="step-header">
+                <div class="step-number">3</div>
+                <h2 class="step-title">Rider & Equipment</h2>
+            </div>
+
+            <div class="input-grid">
+                <div class="input-group">
+                    <label>Rider Weight (kg)</label>
+                    <input type="number" id="riderWeight" step="0.1" min="30" max="150" placeholder="e.g., 75">
+                </div>
+                <div class="input-group">
+                    <label>Bike + Equipment Weight (kg)</label>
+                    <input type="number" id="bikeWeight" step="0.1" min="5" max="30" placeholder="e.g., 8.5">
+                </div>
+            </div>
+
+            <div class="gearing-section">
+                <div class="gearing-group">
+                    <h4>Chainrings</h4>
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label>Configuration</label>
+                            <div style="display: flex; gap: 1rem;">
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                    <input type="radio" name="chainringConfig" value="1x" onchange="updateChainringConfig()">
+                                    <span>1x</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                    <input type="radio" name="chainringConfig" value="2x" checked onchange="updateChainringConfig()">
+                                    <span>2x</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label>Smallest (teeth)</label>
+                            <input type="number" id="chainringSmall" step="1" min="20" max="60" value="34" oninput="updateGearing()">
+                        </div>
+                        <div class="input-group" id="chainringLargeGroup">
+                            <label>Largest (teeth)</label>
+                            <input type="number" id="chainringLarge" step="1" min="20" max="60" value="50" oninput="updateGearing()">
+                        </div>
+                    </div>
+                    <div class="input-group" id="chainringManualGroup" style="display: none;">
+                        <label>Manual Entry (comma-separated)</label>
+                        <input type="text" id="chainringsManual" placeholder="e.g., 34,50" oninput="updateGearing()">
+                    </div>
+                    <div id="chainringsDisplay" style="margin-top: 0.5rem; padding: 0.5rem; background: var(--card-bg); border-radius: 6px; font-size: 0.9rem;">
+                        <strong>Chainrings:</strong> <span id="chainringsValue">34, 50</span>
+                    </div>
+                </div>
+
+                <div class="gearing-group">
+                    <h4>Cassette</h4>
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label>Number of Cogs</label>
+                            <select id="cassetteNumCogs" onchange="updateGearing()">
+                                <option value="1">1 (Single speed)</option>
+                                <option value="5">5 (Vintage)</option>
+                                <option value="6">6 (Vintage)</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                                <option value="11" selected>11</option>
+                                <option value="12">12</option>
+                                <option value="13">13</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label>Smallest (teeth)</label>
+                            <input type="number" id="cassetteSmall" step="1" min="8" max="50" value="11" oninput="updateGearing()">
+                        </div>
+                        <div class="input-group">
+                            <label>Largest (teeth)</label>
+                            <input type="number" id="cassetteLarge" step="1" min="8" max="60" value="32" oninput="updateGearing()">
+                        </div>
+                    </div>
+                    <div class="input-group" id="cassetteManualGroup" style="display: none;">
+                        <label>Manual Entry (comma-separated)</label>
+                        <input type="text" id="cassetteManual" placeholder="e.g., 11,12,13,15,17,19,21,24,28,32" oninput="updateGearing()">
+                    </div>
+                    <div id="cassetteDisplay" style="margin-top: 0.5rem; padding: 0.5rem; background: var(--card-bg); border-radius: 6px; font-size: 0.9rem;">
+                        <strong>Cassette:</strong> <span id="cassetteValue">11, 12, 13, 15, 17, 19, 21, 24, 28, 32</span>
+                    </div>
+                </div>
+
+                <div style="margin-top: 1rem; text-align: center;">
+                    <button class="toggle-switch-button" id="manualOverrideToggle" onclick="toggleManualOverride()">
+                        <span>🔧 Manual Override</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>Preferred Cadence (RPM)</label>
+                <input type="number" id="preferredCadence" step="1" min="40" max="120" value="85" placeholder="e.g., 85">
+            </div>
+
+            <div class="input-group">
+                <label>Wheel Circumference (meters)</label>
+                <input type="number" id="wheelCircumference" step="0.01" min="1.5" max="3.0" value="2.096" placeholder="2.096 for 700c">
+            </div>
+
+            <div class="input-group">
+                <label>Drivetrain Maintenance</label>
+                <select id="maintenanceLevel">
+                    <option value="race">🏆 Race-Ready (Hot wax, fresh chain)</option>
+                    <option value="good">✅ Well-Maintained (Clean, quality lube)</option>
+                    <option value="average" selected>🔧 Average (Normal use)</option>
+                    <option value="poor">⚠️ Poor (Dirty/worn chain)</option>
+                </select>
+                <small style="color: var(--text-color); opacity: 0.8; margin-top: 0.5rem; display: block; line-height: 1.4;">
+                    Race-Ready: Hot wax immersion or Silca Secret Chain (98% efficiency)<br>
+                    Well-Maintained: Clean chain with drip wax or quality wet lube (96.5%)<br>
+                    Average: Standard maintenance, fresh oil-based lube (95%)<br>
+                    Poor: Dirty chain, worn components, inadequate lubrication (93%)
+                </small>
+            </div>
+        </div>
+
+        <button class="calculate-button" onclick="calculateClimb()">
+            ⚡ Calculate Climb Plan
+        </button>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="results-section hidden">
+            <div class="results-header">
+                <h2>🎯 Your Climb Plan</h2>
+                <p>Based on your parameters and power capability</p>
+            </div>
+
+            <div class="results-grid">
+                <div class="result-card">
+                    <div class="result-icon">🚴</div>
+                    <div class="result-label">Climbing Speed</div>
+                    <div class="result-value" id="resultSpeed">--</div>
+                </div>
+
+                <div class="result-card">
+                    <div class="result-icon">⏱️</div>
+                    <div class="result-label">Climb Time</div>
+                    <div class="result-value" id="resultTime">--</div>
+                </div>
+
+                <div class="result-card">
+                    <div class="result-icon">⚙️</div>
+                    <div class="result-label">Optimal Gear</div>
+                    <div class="result-value" id="resultGear">--</div>
+                </div>
+
+                <div class="result-card">
+                    <div class="result-icon">🔄</div>
+                    <div class="result-label">Actual Cadence</div>
+                    <div class="result-value" id="resultCadence">--</div>
+                </div>
+            </div>
+
+            <div class="power-breakdown">
+                <h3>💪 Power Analysis</h3>
+                <div class="power-row">
+                    <span>Available Power:</span>
+                    <span id="powerAvailable" style="font-weight: 600;">-- W</span>
+                </div>
+                <div class="power-row" style="font-size: 0.9rem; opacity: 0.85;">
+                    <span style="padding-left: 1rem; font-style: italic;">Drivetrain:</span>
+                    <span id="drivetrainInfo" style="font-style: italic;">--</span>
+                </div>
+                <div class="power-row">
+                    <span>Required Power:</span>
+                    <span id="powerRequired" style="font-weight: 600;">-- W</span>
+                </div>
+                <div class="power-row">
+                    <span style="padding-left: 1rem;">├ Gravity:</span>
+                    <span id="powerGravity">-- W</span>
+                </div>
+                <div class="power-row">
+                    <span style="padding-left: 1rem;">├ Rolling Resistance:</span>
+                    <span id="powerRolling">-- W</span>
+                </div>
+                <div class="power-row">
+                    <span style="padding-left: 1rem;">└ Aerodynamic Drag:</span>
+                    <span id="powerAero">-- W</span>
+                </div>
+                <div class="power-row total" id="powerBalance">
+                    <span>Power Balance:</span>
+                    <span id="powerBalanceValue">-- W</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State management
+        let state = {
+            climbInputMode: 'manual',
+            powerMethod: 'simple',
+            detectedClimbs: [],
+            selectedClimb: null,
+            isMetric: true
+        };
+
+        // Listen for messages from parent
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type) {
+                switch (event.data.type) {
+                    case 'initialize':
+                        if (event.data.theme) {
+                            document.body.setAttribute('data-theme', event.data.theme);
+                        }
+                        if (typeof event.data.isMetric !== 'undefined') {
+                            state.isMetric = event.data.isMetric;
+                        }
+                        break;
+                    case 'themeChange':
+                        document.body.setAttribute('data-theme', event.data.theme);
+                        break;
+                    case 'unitSystemChange':
+                        state.isMetric = event.data.isMetric;
+                        updateUnitLabels();
+                        break;
+                }
+            }
+        });
+
+        // Signal that tool is ready
+        window.parent.postMessage({ type: 'toolReady' }, '*');
+
+        // Update unit labels based on current unit system
+        function updateUnitLabels() {
+            if (state.isMetric) {
+                document.getElementById('distanceUnit').textContent = 'km';
+                document.getElementById('elevationUnit').textContent = 'm';
+            } else {
+                document.getElementById('distanceUnit').textContent = 'miles';
+                document.getElementById('elevationUnit').textContent = 'feet';
+            }
+        }
+
+        // Unit conversion helpers
+        function getDistanceInKm(value) {
+            // Input is already in the current unit system, convert to km if needed
+            return state.isMetric ? value : value * 1.60934; // miles to km
+        }
+
+        function getElevationInMeters(value) {
+            // Input is already in the current unit system, convert to m if needed
+            return state.isMetric ? value : value * 0.3048; // feet to meters
+        }
+
+        // Tab switching
+        function switchClimbInputTab(tab) {
+            state.climbInputMode = tab;
+
+            // Update tab buttons
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update tab content
+            document.getElementById('manualTab').classList.remove('active');
+            document.getElementById('gpxTab').classList.remove('active');
+
+            if (tab === 'manual') {
+                document.getElementById('manualTab').classList.add('active');
+            } else {
+                document.getElementById('gpxTab').classList.add('active');
+            }
+
+            updateClimbSummary();
+        }
+
+        // Power method selection
+        function selectPowerMethod(method) {
+            state.powerMethod = method;
+
+            // Update radio options visual state
+            document.querySelectorAll('.radio-option').forEach(opt => opt.classList.remove('selected'));
+            event.currentTarget.classList.add('selected');
+
+            // Show/hide sub-inputs
+            document.getElementById('simplePowerInputs').style.display = method === 'simple' ? 'block' : 'none';
+            document.getElementById('cpwInputs').style.display = method === 'cpw' ? 'block' : 'none';
+            document.getElementById('curveInputs').style.display = method === 'curve' ? 'block' : 'none';
+
+            // Trigger recalculation if we have climb data
+            if (state.selectedClimb || hasManualClimbData()) {
+                updatePowerCalculations();
+            }
+        }
+
+        // Manual climb inputs
+        document.getElementById('manualDistance').addEventListener('input', function() {
+            calculateGrade();
+            updateClimbSummary();
+            updatePowerCalculations();
+        });
+
+        document.getElementById('manualElevation').addEventListener('input', function() {
+            calculateGrade();
+            updateClimbSummary();
+            updatePowerCalculations();
+        });
+
+        document.getElementById('manualGrade').addEventListener('input', function() {
+            updateClimbSummary();
+            updatePowerCalculations();
+        });
+
+        function calculateGrade() {
+            const distanceInput = parseFloat(document.getElementById('manualDistance').value);
+            const elevationInput = parseFloat(document.getElementById('manualElevation').value);
+
+            if (distanceInput > 0 && elevationInput > 0) {
+                // Convert to metric for calculation
+                const distanceKm = getDistanceInKm(distanceInput);
+                const elevationM = getElevationInMeters(elevationInput);
+                const grade = (elevationM / (distanceKm * 1000)) * 100;
+                document.getElementById('manualGrade').value = grade.toFixed(1);
+            }
+        }
+
+        function hasManualClimbData() {
+            const distance = parseFloat(document.getElementById('manualDistance').value);
+            const elevation = parseFloat(document.getElementById('manualElevation').value);
+            return distance > 0 && elevation > 0;
+        }
+
+        function updateClimbSummary() {
+            const summaryDiv = document.getElementById('climbSummary');
+            const summaryText = document.getElementById('climbSummaryText');
+
+            if (state.climbInputMode === 'manual' && hasManualClimbData()) {
+                const distance = parseFloat(document.getElementById('manualDistance').value);
+                const elevation = parseFloat(document.getElementById('manualElevation').value);
+                const grade = parseFloat(document.getElementById('manualGrade').value);
+
+                const distanceUnit = state.isMetric ? 'km' : 'miles';
+                const elevationUnit = state.isMetric ? 'm' : 'feet';
+                summaryText.textContent = `${distance} ${distanceUnit}, ${elevation} ${elevationUnit} elevation gain, ${grade.toFixed(1)}% average grade`;
+                summaryDiv.style.display = 'block';
+            } else if (state.climbInputMode === 'gpx' && state.selectedClimb) {
+                const climb = state.selectedClimb;
+                summaryText.textContent = `${climb.length.toFixed(1)} km, ${Math.round(climb.elevation)} m elevation gain, ${climb.avgGrade.toFixed(1)}% average grade`;
+                summaryDiv.style.display = 'block';
+            } else {
+                summaryDiv.style.display = 'none';
+            }
+        }
+
+        // GPX Upload handling
+        const uploadZone = document.getElementById('uploadZone');
+
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+
+            const file = e.dataTransfer.files[0];
+            if (file && file.name.endsWith('.gpx')) {
+                handleGPXFile(file);
+            }
+        });
+
+        function handleGPXUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                handleGPXFile(file);
+            }
+        }
+
+        function handleGPXFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                parseGPX(e.target.result);
+            };
+            reader.readAsText(file);
+        }
+
+        function parseGPX(xmlString) {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
+
+            const trackpoints = xmlDoc.querySelectorAll('trkpt');
+            if (trackpoints.length === 0) {
+                alert('No trackpoints found in GPX file');
+                return;
+            }
+
+            // Extract points with elevation and distance
+            const points = [];
+            let totalDistance = 0;
+
+            trackpoints.forEach((trkpt, index) => {
+                const lat = parseFloat(trkpt.getAttribute('lat'));
+                const lon = parseFloat(trkpt.getAttribute('lon'));
+                const eleElement = trkpt.querySelector('ele');
+                const elevation = eleElement ? parseFloat(eleElement.textContent) : 0;
+
+                if (index > 0) {
+                    const prevPoint = points[index - 1];
+                    const distance = haversineDistance(
+                        prevPoint.lat, prevPoint.lon,
+                        lat, lon
+                    );
+                    totalDistance += distance;
+                }
+
+                points.push({
+                    lat, lon, elevation,
+                    distance: totalDistance
+                });
+            });
+
+            // Detect climbs
+            detectClimbs(points);
+        }
+
+        function haversineDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Earth's radius in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        function detectClimbs(points) {
+            const climbs = [];
+            let climbStart = null;
+            let inClimb = false;
+            const minClimbLength = 0.5; // 500m
+            const minGrade = 3; // 3%
+            const windowSize = 10; // Look at 10-point windows
+
+            for (let i = windowSize; i < points.length; i++) {
+                const startIdx = i - windowSize;
+                const elevGain = points[i].elevation - points[startIdx].elevation;
+                const distance = points[i].distance - points[startIdx].distance;
+                const grade = distance > 0 ? (elevGain / (distance * 1000)) * 100 : 0;
+
+                if (grade >= minGrade && !inClimb) {
+                    // Start of a climb
+                    climbStart = startIdx;
+                    inClimb = true;
+                } else if (grade < minGrade && inClimb) {
+                    // End of a climb
+                    const climbEnd = i - windowSize;
+                    const climbDistance = points[climbEnd].distance - points[climbStart].distance;
+                    const climbElevation = points[climbEnd].elevation - points[climbStart].elevation;
+
+                    if (climbDistance >= minClimbLength && climbElevation > 0) {
+                        const avgGrade = (climbElevation / (climbDistance * 1000)) * 100;
+
+                        // Find max grade in segments
+                        let maxGrade = 0;
+                        for (let j = climbStart; j < climbEnd - 5; j += 5) {
+                            const segElevGain = points[j + 5].elevation - points[j].elevation;
+                            const segDistance = points[j + 5].distance - points[j].distance;
+                            const segGrade = (segElevGain / (segDistance * 1000)) * 100;
+                            maxGrade = Math.max(maxGrade, segGrade);
+                        }
+
+                        climbs.push({
+                            startIdx: climbStart,
+                            endIdx: climbEnd,
+                            length: climbDistance,
+                            elevation: climbElevation,
+                            avgGrade: avgGrade,
+                            maxGrade: maxGrade
+                        });
+                    }
+
+                    inClimb = false;
+                    climbStart = null;
+                }
+            }
+
+            state.detectedClimbs = climbs;
+            displayClimbs(climbs);
+        }
+
+        function displayClimbs(climbs) {
+            const climbList = document.getElementById('climbList');
+            const climbItems = document.getElementById('climbItems');
+
+            if (climbs.length === 0) {
+                climbItems.innerHTML = '<p>No significant climbs detected (minimum 3% grade, 500m length)</p>';
+                climbList.style.display = 'block';
+                return;
+            }
+
+            climbItems.innerHTML = climbs.map((climb, index) => `
+                <div class="climb-item" onclick="selectClimb(${index})">
+                    <input type="radio" name="selectedClimb" id="climb${index}">
+                    <div class="climb-details">
+                        <div class="climb-name">Climb ${index + 1}</div>
+                        <div class="climb-stats">
+                            ${climb.length.toFixed(1)} km •
+                            ${Math.round(climb.elevation)} m gain •
+                            ${climb.avgGrade.toFixed(1)}% avg grade •
+                            ${climb.maxGrade.toFixed(1)}% max
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            climbList.style.display = 'block';
+        }
+
+        function selectClimb(index) {
+            state.selectedClimb = state.detectedClimbs[index];
+
+            // Update visual selection
+            document.querySelectorAll('.climb-item').forEach(item => item.classList.remove('selected'));
+            event.currentTarget.classList.add('selected');
+            document.getElementById(`climb${index}`).checked = true;
+
+            updateClimbSummary();
+            updatePowerCalculations();
+        }
+
+        // Power calculations
+        function updatePowerCalculations() {
+            // Get climb parameters (always in metric for calculations)
+            let distance, elevation, grade;
+
+            if (state.climbInputMode === 'manual' && hasManualClimbData()) {
+                const distanceInput = parseFloat(document.getElementById('manualDistance').value);
+                const elevationInput = parseFloat(document.getElementById('manualElevation').value);
+                // Convert to metric for calculations
+                distance = getDistanceInKm(distanceInput);
+                elevation = getElevationInMeters(elevationInput);
+                grade = parseFloat(document.getElementById('manualGrade').value);
+            } else if (state.climbInputMode === 'gpx' && state.selectedClimb) {
+                distance = state.selectedClimb.length;
+                elevation = state.selectedClimb.elevation;
+                grade = state.selectedClimb.avgGrade;
+            } else {
+                return; // No climb data
+            }
+
+            // Estimate initial climb time (assuming ~15 km/h average)
+            const estimatedSpeed = 15; // km/h
+            const estimatedTimeHours = distance / estimatedSpeed;
+            const estimatedTimeMinutes = Math.round(estimatedTimeHours * 60);
+
+            // Update info box
+            const infoBox = document.getElementById('estimatedTimeInfo');
+            const timeText = document.getElementById('estimatedTimeText');
+            const recommendation = document.getElementById('powerMethodRecommendation');
+
+            timeText.textContent = `Estimated climb time: ~${estimatedTimeMinutes} minutes`;
+
+            if (estimatedTimeMinutes < 40) {
+                recommendation.innerHTML = '💡 Recommendation: Use <strong>CP/W\' Model</strong> for accurate power calculation';
+                infoBox.className = 'info-box';
+            } else {
+                recommendation.innerHTML = '💡 Recommendation: Use <strong>Power Curve</strong> for climbs over 40 minutes';
+                infoBox.className = 'info-box warning';
+            }
+
+            infoBox.style.display = 'block';
+
+            // Calculate power based on method
+            if (state.powerMethod === 'cpw') {
+                calculateCPWPower(estimatedTimeMinutes);
+            } else if (state.powerMethod === 'curve') {
+                calculateCurvePower(estimatedTimeMinutes);
+            }
+        }
+
+        function calculateCPWPower(estimatedTimeMinutes) {
+            const cp = parseFloat(document.getElementById('cpValue').value);
+            const wPrime = parseFloat(document.getElementById('wPrimeValue').value);
+
+            if (cp > 0 && wPrime > 0) {
+                const estimatedTimeSeconds = estimatedTimeMinutes * 60;
+                const wPrimeJoules = wPrime * 1000;
+
+                // Power = CP + (W' / time)
+                const sustainablePower = cp + (wPrimeJoules / estimatedTimeSeconds);
+
+                document.getElementById('cpwCalculatedPower').textContent = Math.round(sustainablePower);
+                document.getElementById('cpwDuration').textContent = estimatedTimeMinutes;
+                document.getElementById('calculatedPowerCPW').style.display = 'block';
+            }
+        }
+
+        function calculateCurvePower(estimatedTimeMinutes) {
+            const power5 = parseFloat(document.getElementById('power5min').value);
+            const power20 = parseFloat(document.getElementById('power20min').value);
+            const power60 = parseFloat(document.getElementById('power60min').value);
+            const power120 = parseFloat(document.getElementById('power120min').value);
+
+            // Need at least 3 points
+            const points = [];
+            if (power5 > 0) points.push({time: 5, power: power5});
+            if (power20 > 0) points.push({time: 20, power: power20});
+            if (power60 > 0) points.push({time: 60, power: power60});
+            if (power120 > 0) points.push({time: 120, power: power120});
+
+            if (points.length >= 3) {
+                // Fit exponential curve: Power = a * time^b + c
+                // For simplicity, use linear interpolation/extrapolation
+                const sustainablePower = interpolatePower(points, estimatedTimeMinutes);
+
+                document.getElementById('curveCalculatedPower').textContent = Math.round(sustainablePower);
+                document.getElementById('curveDuration').textContent = estimatedTimeMinutes;
+                document.getElementById('calculatedPowerCurve').style.display = 'block';
+            }
+        }
+
+        function interpolatePower(points, targetTime) {
+            // Sort points by time
+            points.sort((a, b) => a.time - b.time);
+
+            // If target is before first point, extrapolate
+            if (targetTime <= points[0].time) {
+                return points[0].power;
+            }
+
+            // If target is after last point, extrapolate
+            if (targetTime >= points[points.length - 1].time) {
+                const p1 = points[points.length - 2];
+                const p2 = points[points.length - 1];
+                const slope = (p2.power - p1.power) / (p2.time - p1.time);
+                return p2.power + slope * (targetTime - p2.time);
+            }
+
+            // Find bracketing points and interpolate
+            for (let i = 0; i < points.length - 1; i++) {
+                if (targetTime >= points[i].time && targetTime <= points[i + 1].time) {
+                    const p1 = points[i];
+                    const p2 = points[i + 1];
+                    const ratio = (targetTime - p1.time) / (p2.time - p1.time);
+                    return p1.power + ratio * (p2.power - p1.power);
+                }
+            }
+
+            return points[points.length - 1].power;
+        }
+
+        // Gearing configuration
+        let manualOverrideMode = false;
+
+        function updateChainringConfig() {
+            const is1x = document.querySelector('input[name="chainringConfig"]:checked').value === '1x';
+            const largeGroup = document.getElementById('chainringLargeGroup');
+
+            if (is1x) {
+                largeGroup.style.display = 'none';
+            } else {
+                largeGroup.style.display = 'block';
+            }
+
+            updateGearing();
+        }
+
+        function toggleManualOverride() {
+            manualOverrideMode = !manualOverrideMode;
+            const toggleButton = document.getElementById('manualOverrideToggle');
+            const chainringManualGroup = document.getElementById('chainringManualGroup');
+            const cassetteManualGroup = document.getElementById('cassetteManualGroup');
+
+            if (manualOverrideMode) {
+                toggleButton.classList.add('active');
+                chainringManualGroup.style.display = 'block';
+                cassetteManualGroup.style.display = 'block';
+            } else {
+                toggleButton.classList.remove('active');
+                chainringManualGroup.style.display = 'none';
+                cassetteManualGroup.style.display = 'none';
+            }
+
+            updateGearing();
+        }
+
+        function updateGearing() {
+            // Update chainrings
+            if (manualOverrideMode) {
+                const manualChainrings = document.getElementById('chainringsManual').value;
+                document.getElementById('chainringsValue').textContent = manualChainrings || '(enter values)';
+            } else {
+                const is1x = document.querySelector('input[name="chainringConfig"]:checked').value === '1x';
+                const small = document.getElementById('chainringSmall').value;
+                const large = document.getElementById('chainringLarge').value;
+
+                if (is1x) {
+                    document.getElementById('chainringsValue').textContent = small;
+                } else {
+                    document.getElementById('chainringsValue').textContent = `${small}, ${large}`;
+                }
+            }
+
+            // Update cassette
+            if (manualOverrideMode) {
+                const manualCassette = document.getElementById('cassetteManual').value;
+                document.getElementById('cassetteValue').textContent = manualCassette || '(enter values)';
+            } else {
+                const numCogs = parseInt(document.getElementById('cassetteNumCogs').value);
+                const small = parseInt(document.getElementById('cassetteSmall').value);
+                const large = parseInt(document.getElementById('cassetteLarge').value);
+
+                const cogs = calculateCassetteCogs(numCogs, small, large);
+                document.getElementById('cassetteValue').textContent = cogs.join(', ');
+            }
+        }
+
+        function calculateCassetteCogs(numCogs, smallest, largest) {
+            if (numCogs === 1) {
+                return [smallest];
+            }
+
+            const cogs = [];
+
+            // Use standard cassette patterns based on common Shimano/SRAM ratios
+            if (numCogs === 11 && smallest === 11 && largest <= 34) {
+                // Standard 11-speed road patterns
+                if (largest === 28) return [11, 12, 13, 14, 15, 16, 17, 19, 21, 24, 28];
+                if (largest === 30) return [11, 12, 13, 14, 15, 17, 19, 21, 24, 27, 30];
+                if (largest === 32) return [11, 12, 13, 14, 15, 17, 19, 21, 24, 28, 32];
+                if (largest === 34) return [11, 12, 13, 14, 15, 17, 19, 21, 24, 28, 34];
+            }
+
+            if (numCogs === 12 && smallest === 10 && largest >= 45) {
+                // Standard 12-speed 1x patterns
+                if (largest === 50) return [10, 12, 14, 16, 18, 21, 24, 28, 33, 39, 45, 50];
+                if (largest === 52) return [10, 12, 14, 16, 18, 21, 24, 28, 33, 39, 46, 52];
+            }
+
+            // Fallback: geometric progression for smooth shifting
+            // This creates smaller jumps at small cogs, larger jumps at big cogs
+            const ratio = Math.pow(largest / smallest, 1 / (numCogs - 1));
+
+            for (let i = 0; i < numCogs; i++) {
+                const cog = Math.round(smallest * Math.pow(ratio, i));
+                cogs.push(cog);
+            }
+
+            // Ensure first and last match exactly
+            cogs[0] = smallest;
+            cogs[numCogs - 1] = largest;
+
+            // Remove duplicates and sort
+            const uniqueCogs = [...new Set(cogs)].sort((a, b) => a - b);
+
+            return uniqueCogs;
+        }
+
+        // Initialize gearing on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateGearing();
+        });
+
+        // Main calculation
+        function calculateClimb() {
+            // Get climb parameters (always in metric for calculations)
+            let distance, elevation, grade;
+
+            if (state.climbInputMode === 'manual' && hasManualClimbData()) {
+                const distanceInput = parseFloat(document.getElementById('manualDistance').value);
+                const elevationInput = parseFloat(document.getElementById('manualElevation').value);
+                // Convert to metric for calculations
+                distance = getDistanceInKm(distanceInput);
+                elevation = getElevationInMeters(elevationInput);
+                grade = parseFloat(document.getElementById('manualGrade').value);
+            } else if (state.climbInputMode === 'gpx' && state.selectedClimb) {
+                distance = state.selectedClimb.length;
+                elevation = state.selectedClimb.elevation;
+                grade = state.selectedClimb.avgGrade;
+            } else {
+                alert('Please define your climb first');
+                return;
+            }
+
+            // Get power
+            let sustainablePower;
+            if (state.powerMethod === 'simple') {
+                sustainablePower = parseFloat(document.getElementById('simplePower').value);
+            } else if (state.powerMethod === 'cpw') {
+                const cpwPower = document.getElementById('cpwCalculatedPower').textContent;
+                sustainablePower = parseFloat(cpwPower);
+            } else if (state.powerMethod === 'curve') {
+                const curvePower = document.getElementById('curveCalculatedPower').textContent;
+                sustainablePower = parseFloat(curvePower);
+            }
+
+            if (!sustainablePower || sustainablePower <= 0) {
+                alert('Please enter your power capability');
+                return;
+            }
+
+            // Get rider & equipment
+            const riderWeight = parseFloat(document.getElementById('riderWeight').value);
+            const bikeWeight = parseFloat(document.getElementById('bikeWeight').value);
+            const preferredCadence = parseFloat(document.getElementById('preferredCadence').value);
+            const wheelCircumference = parseFloat(document.getElementById('wheelCircumference').value);
+
+            if (!riderWeight || !bikeWeight || !preferredCadence || !wheelCircumference) {
+                alert('Please fill in all rider & equipment parameters');
+                return;
+            }
+
+            const totalWeight = riderWeight + bikeWeight;
+
+            // Get gearing
+            const chainrings = getCurrentChainrings();
+            const cassette = getCurrentCassette();
+
+            if (!chainrings || chainrings.length === 0 || !cassette || cassette.length === 0) {
+                alert('Please configure your gearing');
+                return;
+            }
+
+            // Calculate drivetrain efficiency
+            const maintenanceLevel = document.getElementById('maintenanceLevel').value;
+            const is1x = chainrings.length === 1;
+
+            const maintenanceEfficiency = {
+                'race': 0.98,
+                'good': 0.965,
+                'average': 0.95,
+                'poor': 0.93
+            }[maintenanceLevel];
+
+            const drivetrainEfficiency = is1x ? maintenanceEfficiency - 0.011 : maintenanceEfficiency;
+
+            // Physics calculations
+            const gradeRadians = Math.atan(grade / 100);
+            const availablePower = sustainablePower * drivetrainEfficiency;
+
+            // Find optimal speed iteratively
+            let speed = findOptimalSpeed(availablePower, totalWeight, gradeRadians);
+
+            // Calculate power breakdown
+            const gravitationalPower = totalWeight * 9.81 * Math.sin(gradeRadians) * speed;
+            const rollingPower = totalWeight * 9.81 * Math.cos(gradeRadians) * 0.005 * speed;
+            const aeroPower = 0.5 * 1.2 * 0.3 * Math.pow(speed, 3);
+            const requiredPower = gravitationalPower + rollingPower + aeroPower;
+
+            // Calculate time
+            const timeHours = distance / (speed * 3.6); // speed in m/s, convert to km/h
+            const timeMinutes = Math.floor(timeHours * 60);
+            const timeSeconds = Math.round((timeHours * 60 - timeMinutes) * 60);
+
+            // Find optimal gear
+            const wheelRpm = (speed * 60) / wheelCircumference;
+            const optimalGear = findOptimalGear(wheelRpm, preferredCadence, chainrings, cassette);
+
+            // Display results
+            document.getElementById('resultSpeed').textContent = (speed * 3.6).toFixed(1) + ' km/h';
+            document.getElementById('resultTime').textContent = `${timeMinutes}:${timeSeconds.toString().padStart(2, '0')}`;
+            document.getElementById('resultGear').textContent = `${optimalGear.chainring}×${optimalGear.cog}`;
+            document.getElementById('resultCadence').textContent = Math.round(optimalGear.cadence) + ' RPM';
+
+            document.getElementById('powerAvailable').textContent = Math.round(availablePower) + ' W';
+
+            // Display drivetrain efficiency info
+            const drivetrainType = is1x ? '1x' : '2x';
+            const efficiencyPercent = (drivetrainEfficiency * 100).toFixed(1);
+            const powerLoss = Math.round(sustainablePower - availablePower);
+            document.getElementById('drivetrainInfo').textContent =
+                `${sustainablePower}W × ${efficiencyPercent}% (${drivetrainType}, -${powerLoss}W loss)`;
+
+            document.getElementById('powerRequired').textContent = Math.round(requiredPower) + ' W';
+            document.getElementById('powerGravity').textContent = Math.round(gravitationalPower) + ' W';
+            document.getElementById('powerRolling').textContent = Math.round(rollingPower) + ' W';
+            document.getElementById('powerAero').textContent = Math.round(aeroPower) + ' W';
+
+            const powerBalance = availablePower - requiredPower;
+            const balanceRow = document.getElementById('powerBalance');
+            const balanceValue = document.getElementById('powerBalanceValue');
+
+            balanceValue.textContent = (powerBalance >= 0 ? '+' : '') + Math.round(powerBalance) + ' W ' +
+                                       (powerBalance >= 0 ? 'surplus' : 'deficit');
+
+            balanceRow.className = 'power-row total ' + (powerBalance >= 0 ? 'surplus' : 'deficit');
+
+            // Show results
+            document.getElementById('resultsSection').classList.remove('hidden');
+            document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function findOptimalSpeed(availablePower, totalWeightKg, gradeRadians) {
+            let speed = 3.0; // Start with 3 m/s
+
+            for (let iteration = 0; iteration < 50; iteration++) {
+                const gravitationalPower = totalWeightKg * 9.81 * Math.sin(gradeRadians) * speed;
+                const rollingPower = totalWeightKg * 9.81 * Math.cos(gradeRadians) * 0.005 * speed;
+                const aeroPower = 0.5 * 1.2 * 0.3 * Math.pow(speed, 3);
+                const requiredPower = gravitationalPower + rollingPower + aeroPower;
+
+                const powerDifference = availablePower - requiredPower;
+
+                if (Math.abs(powerDifference) < 0.1) {
+                    break;
+                }
+
+                // Adjust speed
+                const adjustment = powerDifference / (totalWeightKg * 9.81 * Math.sin(gradeRadians) +
+                                                     totalWeightKg * 9.81 * Math.cos(gradeRadians) * 0.005 +
+                                                     3 * 0.5 * 1.2 * 0.3 * Math.pow(speed, 2));
+                speed += adjustment * 0.5; // Dampen adjustment
+
+                if (speed < 0.5) speed = 0.5;
+                if (speed > 15) speed = 15;
+            }
+
+            return speed;
+        }
+
+        function findOptimalGear(wheelRpm, preferredCadence, chainrings, cassette) {
+            let bestGear = null;
+            let minCadenceDiff = Infinity;
+
+            chainrings.forEach(chainring => {
+                cassette.forEach(cog => {
+                    const gearRatio = chainring / cog;
+                    const cadence = wheelRpm / gearRatio;
+                    const cadenceDiff = Math.abs(cadence - preferredCadence);
+
+                    if (cadenceDiff < minCadenceDiff) {
+                        minCadenceDiff = cadenceDiff;
+                        bestGear = {
+                            chainring: chainring,
+                            cog: cog,
+                            ratio: gearRatio.toFixed(2),
+                            cadence: cadence
+                        };
+                    }
+                });
+            });
+
+            return bestGear;
+        }
+
+        function getCurrentChainrings() {
+            if (manualOverrideMode) {
+                const manualInput = document.getElementById('chainringsManual').value;
+                return parseChainrings(manualInput);
+            } else {
+                const is1x = document.querySelector('input[name="chainringConfig"]:checked').value === '1x';
+                const small = parseInt(document.getElementById('chainringSmall').value);
+
+                if (is1x) {
+                    return [small];
+                } else {
+                    const large = parseInt(document.getElementById('chainringLarge').value);
+                    return [small, large];
+                }
+            }
+        }
+
+        function getCurrentCassette() {
+            if (manualOverrideMode) {
+                const manualInput = document.getElementById('cassetteManual').value;
+                return parseCassette(manualInput);
+            } else {
+                const numCogs = parseInt(document.getElementById('cassetteNumCogs').value);
+                const small = parseInt(document.getElementById('cassetteSmall').value);
+                const large = parseInt(document.getElementById('cassetteLarge').value);
+                return calculateCassetteCogs(numCogs, small, large);
+            }
+        }
+
+        function parseChainrings(str) {
+            return str.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+        }
+
+        function parseCassette(str) {
+            // Handle range format (e.g., "11-36")
+            if (str.includes('-')) {
+                const [min, max] = str.split('-').map(s => parseInt(s.trim()));
+                return generateCassette(min, max);
+            }
+
+            // Handle comma-separated format
+            return str.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+        }
+
+        function generateCassette(min, max) {
+            // Generate realistic cassette distribution
+            const range = max - min;
+
+            if (range <= 17) { // Road cassettes (11-28, etc.)
+                return [min, min+1, min+2, min+3, min+4, min+5, min+6, min+7, min+8, min+9, max];
+            } else if (range <= 26) { // Wide range road (11-34, 11-36)
+                return [min, min+1, min+2, min+4, min+6, min+8, min+11, min+14, min+18, min+22, max];
+            } else { // MTB/Gravel (10-50, etc.)
+                return [min, min+2, min+4, min+6, min+8, min+11, min+15, min+20, min+26, min+33, max];
+            }
+        }
+    </script>
+</body>
+</html>

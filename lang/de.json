@@ -1,0 +1,207 @@
+{
+  "site": {
+    "title": "BikeToolz.info - Radsport Anstiegs-Rechner & Routenplaner",
+    "logo": "BikeToolz.info",
+    "description": "Professioneller Radsport Anstiegs-Rechner und Routenplaner"
+  },
+  "navigation": {
+    "home": "Home",
+    "climbPlanner": "Anstiegsplaner",
+    "cpAnalyzer": "CP/W' Analyzer",
+    "donate": "Spenden",
+    "darkMode": "🌙 Dunkler Modus",
+    "lightMode": "☀️ Heller Modus",
+    "unitsMetric": "⚙️ Einheiten: Metrisch",
+    "unitsImperial": "⚙️ Einheiten: Imperial"
+  },
+  "welcome": {
+    "title": "Professionelle Radsport-Tools",
+    "subtitle": "Wählen Sie ein Tool, um mit Ihren Radsport-Berechnungen und Analysen zu beginnen"
+  },
+  "tools": {
+    "climbPlanner": {
+      "title": "Anstiegsplaner",
+      "description": "Planen Sie Ihren Anstieg mit manueller Eingabe oder GPX-Upload. Berechnen Sie nachhaltige Leistung aus CP/W' oder Leistungskurve, optimieren Sie die Übersetzung und erhalten Sie detaillierte Zeit- und Leistungsanalysen."
+    },
+    "cpAnalyzer": {
+      "title": "CP/W' Analyzer",
+      "description": "Analysieren Sie Ihre Radsport-Leistungsdaten zur Bestimmung von Critical Power (CP) und W'-Werten. Laden Sie Trainingsdateien hoch und finden Sie automatisch Ihre besten 3-Minuten-Anstrengungen."
+    }
+  },
+  "ads": {
+    "leaderboard": "Werbung (728x90)",
+    "mediumRect": "Werbung (300x250)",
+    "square": "Werbung (300x300)",
+    "smallRect": "Werbung (300x150)",
+    "afterResults": "Werbung (Nach Ergebnissen)",
+    "afterFaq": "Werbung (Nach FAQ)"
+  },
+  "cpAnalyzer": {
+    "title": "CP/W' Analyzer",
+    "subtitle": "Analysieren Sie Ihren 3-Minuten-All-Out-Test",
+    "description": "Laden Sie Ihre Trainingsdatei hoch und wir finden und analysieren automatisch Ihre beste 3-Minuten-Anstrengung",
+    "upload": {
+      "title": "Trainingsdatei hier ablegen",
+      "subtitle": "Oder klicken zum Durchsuchen",
+      "formats": "Unterstützt .FIT, .TCX, .CSV und .GPX Dateien (.CSV und .GPX vollständig unterstützt)",
+      "analyzing": "Analysiere Ihr Training...",
+      "findingSegment": "Finde bestes 3-Minuten-Segment und berechne CP/W'"
+    },
+    "results": {
+      "title": "Analyseergebnisse",
+      "file": "Datei:",
+      "newFile": "Neue Datei analysieren",
+      "interval": {
+        "title": "Ausgewähltes 3-Minuten-Intervall",
+        "startTime": "Startzeit:",
+        "endTime": "Endzeit:",
+        "avgPower": "Durchschnittsleistung:"
+      },
+      "validation": {
+        "valid": "Gültige All-Out-Anstrengung erkannt",
+        "warning": "Warnung zur Anstrengungsvalidierung",
+        "decay": "Leistungsabfall: {percent}% (von {start}W bis {end}W)"
+      },
+      "metrics": {
+        "cp": {
+          "title": "Critical Power (CP)",
+          "description": "Durchschnitt der letzten 30 Sekunden"
+        },
+        "wPrime": {
+          "title": "W' (W-prime)",
+          "description": "Arbeitskapazität über CP"
+        }
+      },
+      "charts": {
+        "powerCurve": "Leistungskurven-Analyse",
+        "wPrimeDepletion": "W'-Erschöpfungsmuster",
+        "wPrimeDescription": "Der schattierte Bereich zeigt die W'-Erschöpfung während der Anstrengung"
+      }
+    },
+    "columnDetection": {
+      "title": "Spaltenerkennung",
+      "subtitle": "Bitte bestätigen Sie die erkannten Spalten aus Ihrer CSV-Datei",
+      "timeColumn": "Zeitspalte",
+      "powerColumn": "Leistungsspalte",
+      "confidence": "Konfidenz:",
+      "format": "Format:",
+      "validRange": "Gültiger Bereich:",
+      "sampleData": "Beispieldaten-Vorschau",
+      "analyzeData": "Daten analysieren",
+      "cancel": "Abbrechen"
+    },
+    "gpxAnalysis": {
+      "title": "GPX-Datei-Analyse",
+      "subtitle": "GPX-Datei erfolgreich verarbeitet. Bereit zur Leistungsdatenanalyse.",
+      "summary": "Dateianalyse-Zusammenfassung",
+      "dataPoints": "Datenpunkte",
+      "powerReadings": "Leistungsmessungen gefunden",
+      "duration": "Dauer",
+      "totalTime": "Gesamte Trainingszeit",
+      "format": "Format",
+      "extensions": "Leistungserweiterungen erkannt",
+      "ready": "Bereit zur Analyse",
+      "description": "Die App findet automatisch Ihr bestes 3-Minuten-Leistungssegment und berechnet CP/W'-Werte.",
+      "warning": "⚠️ Warnung: Datei enthält weniger als 180 Datenpunkte (3 Minuten). Die Analyse ist möglicherweise nicht genau.",
+      "analyzePower": "Leistungsdaten analysieren"
+    },
+    "errors": {
+      "upload": "Upload-Fehler",
+      "emptyFile": "Datei scheint leer zu sein",
+      "invalidFormat": "Ungültiges Dateiformat",
+      "noData": "Keine gültigen Leistungsdaten in der Datei gefunden",
+      "processing": "Fehler beim Verarbeiten der Datei: {message}"
+    }
+  },
+  "calculator": {
+    "title": "Radsport Anstiegs-Rechner",
+    "calculationMode": {
+      "title": "Berechnungsmodus",
+      "cadenceFirst": "Trittfrequenz-zuerst:",
+      "cadenceFirstDesc": "Prüfen, ob meine bevorzugte Trittfrequenz/Übersetzung funktioniert",
+      "powerFirst": "Leistung-zuerst:",
+      "powerFirstDesc": "Optimale Trittfrequenz für meine Leistung finden"
+    },
+    "riderParams": {
+      "title": "Fahrerparameter",
+      "power": "Leistung (Watt):",
+      "cadence": "Trittfrequenz (U/min):",
+      "riderWeight": "Fahrergewicht:"
+    },
+    "equipmentParams": {
+      "title": "Ausrüstungsparameter",
+      "equipmentWeight": "Ausrüstungsgewicht\n(Rad + Ausrüstung):",
+      "wheelSize": "Radgröße:",
+      "wheelCircumference": "Rad-\nUmfang:",
+      "chainring": "Kettenblatt Zähne\n(vorne):",
+      "cog": "Ritzel Zähne\n(hinten):",
+      "gearRatio": "Übersetzung:"
+    },
+    "climbParams": {
+      "title": "Anstiegsparameter (Wähle genau 2 von 3)",
+      "tooltip": "Falls du die Anstiegsparameter nicht hast, kannst du eines der unten aufgeführten Routenplanungstools verwenden.",
+      "distance": "Distanz",
+      "elevation": "Höhenmeter",
+      "grade": "Durchschnittliche Steigung (%):"
+    },
+    "wheelSizes": {
+      "road700c": "700c Rennrad",
+      "mtb26": "26\" MTB",
+      "mtb275": "27,5\" MTB",
+      "mtb29": "29\" MTB",
+      "custom": "Benutzerdefiniert"
+    }
+  },
+  "results": {
+    "warning": "⚠️ Ergebnisse sind aufgrund ungültiger Eingaben veraltet.",
+    "calculatedParam": "Berechneter Parameter:",
+    "velocity": "Kletter-Geschwindigkeit:",
+    "cadence": "Trittfrequenz:",
+    "requiredCadence": "Benötigte Trittfrequenz:",
+    "selectedCadence": "Gewählte Trittfrequenz:",
+    "climbTime": "Gesamte Kletterdauer:",
+    "systemWeight": "Systemgewicht:",
+    "powerAnalysis": "Leistungsanalyse",
+    "powerUsage": "Leistungsverbrauch",
+    "availablePower": "Verfügbare Leistung:",
+    "requiredPower": "Benötigte Leistung:",
+    "powerBalance": "Leistungsbilanz:",
+    "gravity": "├ Schwerkraft:",
+    "rolling": "├ Rollen:",
+    "wind": "└ Wind:",
+    "surplus": "Überschuss",
+    "deficit": "Defizit",
+    "explanation": "ℹ️ <strong>Leistungsanalyse:</strong> Verfügbare Leistung ist deine Leistung ({power}W) minus Antriebsverluste (5%). Benötigte Leistung ist das, was zur Überwindung von Schwerkraft, Rollwiderstand und Luftwiderstand bei deiner aktuellen Geschwindigkeit nötig ist. Ein Überschuss bedeutet, du kannst dieses Tempo halten; ein Defizit bedeutet, du musst langsamer werden."
+  },
+  "errors": {
+    "powerRange": "Leistung muss zwischen 50-1000 Watt liegen",
+    "cadenceRange": "Trittfrequenz muss zwischen 40-120 U/min liegen",
+    "riderWeightRange": {
+      "metric": "Fahrergewicht muss zwischen 30-150 kg liegen",
+      "imperial": "Fahrergewicht muss zwischen 66-330 lbs liegen"
+    },
+    "equipmentWeightRange": {
+      "metric": "Ausrüstungsgewicht muss zwischen 5-30 kg liegen",
+      "imperial": "Ausrüstungsgewicht muss zwischen 11-66 lbs liegen"
+    },
+    "chainringRange": "Kettenblatt muss zwischen 20-60 Zähne haben",
+    "cogRange": "Ritzel muss zwischen 8-50 Zähne haben",
+    "circumferenceRange": {
+      "metric": "Umfang muss zwischen 1,5-3,0 Meter liegen",
+      "imperial": "Umfang muss zwischen 4,9-9,8 Fuß liegen"
+    }
+  },
+  "footer": {
+    "copyright": "© 2025 BikeToolz.info - Professioneller Radsport Anstiegs-Rechner und Routenplaner"
+  },
+  "units": {
+    "kg": "kg",
+    "lbs": "lbs",
+    "km": "km", 
+    "mi": "mi",
+    "m": "m",
+    "ft": "ft",
+    "meters": "Meter",
+    "feet": "Fuß"
+  }
+}
