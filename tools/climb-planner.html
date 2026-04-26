@@ -2386,7 +2386,13 @@
                 <div id="sectorBreakdownFooter" class="sector-breakdown-footer"></div>
             </div>
 
-            <div class="results-grid">
+            <!-- Legacy single-block result row + gear/cadence card. Shown when
+                 the sector breakdown can't run (Simple Power mode or manual
+                 climb input) so the user always has a result to read. Hidden
+                 when the breakdown panel is up — the Total row + per-sector
+                 gear column already cover Climbing Speed / Climb Time / Gear
+                 & Cadence and the cards would just be duplicate noise. -->
+            <div class="results-grid" id="resultsCardsRow">
                 <div class="result-card">
                     <div class="result-icon">🚴</div>
                     <div class="result-label">Climbing Speed</div>
@@ -5450,13 +5456,32 @@
         // Top-level entry. Mirrors runSteepestSectionWarning's signature so it
         // can sit on the same calculateClimb tail and use the same
         // already-computed numbers.
+        // When the per-sector breakdown can run (full mode + GPX + has hard
+        // sectors), the legacy single-block cards (Climbing Speed, Climb
+        // Time, Gear & Cadence) are pure duplication — the Total row + the
+        // per-sector Gear · cadence column already cover the same ground.
+        // Toggle them off in that case so the result section reads as one
+        // coherent thing. In Simple Power mode, manual climb mode, or when
+        // no hard sectors exist, the cards stay as the only result the
+        // user has.
+        function setLegacyResultCardsVisible(visible) {
+            const grid = document.getElementById('resultsCardsRow');
+            const gear = document.getElementById('gearCadenceCard');
+            const display = visible ? '' : 'none';
+            if (grid) grid.style.display = display;
+            if (gear) gear.style.display = display;
+        }
+
         function runSectorBreakdown(speedMs, drivetrainEff, totalMassKg, plannedPowerW) {
             const panel = document.getElementById('sectorBreakdown');
             const warnEl = document.getElementById('steepestSectionWarning');
             const okEl = document.getElementById('steepestSectionOk');
             if (!panel) return;
 
-            const hide = function () { panel.style.display = 'none'; };
+            const hide = function () {
+                panel.style.display = 'none';
+                setLegacyResultCardsVisible(true);
+            };
 
             // Manual mode: no per-point profile to scan, no breakdown possible.
             if (state.climbInputMode !== 'gpx') { hide(); return; }
@@ -5496,6 +5521,7 @@
 
             renderSectorBreakdown(sectors, wbal, physiology, plannedPowerW, totalMassKg, drivetrainEff);
             panel.style.display = 'block';
+            setLegacyResultCardsVisible(false);
         }
 
         // ----- Rendering ----------------------------------------------------
