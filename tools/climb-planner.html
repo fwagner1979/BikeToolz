@@ -497,6 +497,19 @@
             background: var(--success-color);
             color: white;
         }
+        .sector-kind-tag.total {
+            background: var(--text-secondary, #6b7280);
+            color: white;
+        }
+        .sector-breakdown-table tbody tr.sector-total td {
+            background: var(--card-bg);
+            font-weight: 600;
+            border-top: 2px solid var(--border-color);
+            border-bottom: none;
+        }
+        .sector-breakdown-table tbody tr.sector-total td:first-child {
+            border-left: none;
+        }
         .sector-wbal-arrow {
             opacity: 0.6;
             margin: 0 0.25rem;
@@ -2176,6 +2189,42 @@
                 <p>Based on your parameters and power capability</p>
             </div>
 
+            <!-- Reserve in the tank — placed at the top of the result section
+                 so the user immediately sees the dial that drives the per-
+                 sector breakdown below it. Sweep the value and the whole
+                 results panel (climbing speed, time, gear+cadence, power
+                 analysis, sector breakdown) re-paces live. -->
+            <div id="reserveBlock" class="reserve-block">
+                <div class="reserve-header">
+                    <strong data-i18n="climbPlanner.step3.reserve.title">Reserve in the tank</strong>
+                    <span class="reserve-not-applied" id="reserveNotApplied"
+                          data-i18n="climbPlanner.step3.reserve.notApplied">(not applied to this method)</span>
+                </div>
+                <p class="step-helper reserve-helper" data-i18n="climbPlanner.step3.reserve.helper">
+                    How much of your W' (your "matches") to keep in reserve for the rest of the ride.
+                    Used by CP/W' and Power Curve only. Higher reserve = lower planned power = slower pace.
+                </p>
+                <div class="reserve-controls">
+                    <button type="button" class="preset-button reserve-preset selected"
+                            data-reserve="0" onclick="selectReservePreset(0)">
+                        <span data-i18n="climbPlanner.step3.reserve.preset.race">0% — Race</span>
+                    </button>
+                    <button type="button" class="preset-button reserve-preset"
+                            data-reserve="25" onclick="selectReservePreset(25)">
+                        <span data-i18n="climbPlanner.step3.reserve.preset.hard">25% — Hard</span>
+                    </button>
+                    <button type="button" class="preset-button reserve-preset"
+                            data-reserve="50" onclick="selectReservePreset(50)">
+                        <span data-i18n="climbPlanner.step3.reserve.preset.cruise">50% — Cruise</span>
+                    </button>
+                    <div class="reserve-custom">
+                        <label for="reserveCustom" data-i18n="climbPlanner.step3.reserve.custom">or custom</label>
+                        <input type="number" id="reserveCustom" min="0" max="90" step="1" placeholder="0" value="0">
+                        <span>%</span>
+                    </div>
+                </div>
+            </div>
+
             <!-- Speed-too-low warning. Fires when computed climbing speed
                  drops below ~5 km/h — at that point the climb is essentially
                  walking pace and not realistically rideable without lower
@@ -2246,7 +2295,13 @@
                             <tr>
                                 <th data-i18n="climbPlanner.results.sectors.col.kind">Sector</th>
                                 <th data-i18n="climbPlanner.results.sectors.col.length">Length</th>
-                                <th data-i18n="climbPlanner.results.sectors.col.grade">Grade</th>
+                                <th data-i18n="climbPlanner.results.sectors.col.avgGrade">Avg. Grade</th>
+                                <!-- Two debug columns showing the steepest local grade
+                                     across a 50 m and 100 m sliding window inside the
+                                     sector. Temporary — once we've eyeballed real
+                                     values across a few climbs, the loser drops out. -->
+                                <th data-i18n="climbPlanner.results.sectors.col.max50m">Max 50 m</th>
+                                <th data-i18n="climbPlanner.results.sectors.col.max100m">Max 100 m</th>
                                 <th data-i18n="climbPlanner.results.sectors.col.power">Power</th>
                                 <th data-i18n="climbPlanner.results.sectors.col.speed">Speed</th>
                                 <th data-i18n="climbPlanner.results.sectors.col.time">Time</th>
@@ -2310,40 +2365,6 @@
                 </div>
                 <!-- Hidden carriers for back-compat with existing code that may reference these IDs. -->
                 <span id="resultGear" hidden>--</span>
-            </div>
-
-            <!-- Reserve in the tank — moved from Step 3 to here so the user can
-                 sweep through reserve values and watch climbing speed, time,
-                 cadence, and the power analysis update live, all in one place. -->
-            <div id="reserveBlock" class="reserve-block">
-                <div class="reserve-header">
-                    <strong data-i18n="climbPlanner.step3.reserve.title">Reserve in the tank</strong>
-                    <span class="reserve-not-applied" id="reserveNotApplied"
-                          data-i18n="climbPlanner.step3.reserve.notApplied">(not applied to this method)</span>
-                </div>
-                <p class="step-helper reserve-helper" data-i18n="climbPlanner.step3.reserve.helper">
-                    How much of your W' (your "matches") to keep in reserve for the rest of the ride.
-                    Used by CP/W' and Power Curve only. Higher reserve = lower planned power = slower pace.
-                </p>
-                <div class="reserve-controls">
-                    <button type="button" class="preset-button reserve-preset selected"
-                            data-reserve="0" onclick="selectReservePreset(0)">
-                        <span data-i18n="climbPlanner.step3.reserve.preset.race">0% — Race</span>
-                    </button>
-                    <button type="button" class="preset-button reserve-preset"
-                            data-reserve="25" onclick="selectReservePreset(25)">
-                        <span data-i18n="climbPlanner.step3.reserve.preset.hard">25% — Hard</span>
-                    </button>
-                    <button type="button" class="preset-button reserve-preset"
-                            data-reserve="50" onclick="selectReservePreset(50)">
-                        <span data-i18n="climbPlanner.step3.reserve.preset.cruise">50% — Cruise</span>
-                    </button>
-                    <div class="reserve-custom">
-                        <label for="reserveCustom" data-i18n="climbPlanner.step3.reserve.custom">or custom</label>
-                        <input type="number" id="reserveCustom" min="0" max="90" step="1" placeholder="0" value="0">
-                        <span>%</span>
-                    </div>
-                </div>
             </div>
 
             <div class="power-breakdown">
@@ -3047,19 +3068,16 @@
         // max grade is guaranteed monotonic when the user expands the cursor
         // segment — moving a cursor outward from a high-grade section can
         // never make max grade *decrease*, only stay the same or grow.
-        function climbStatsFromIdx(points, startIdx, endIdx) {
-            const startKm = points[startIdx].distance;
-            const endKm = points[endIdx].distance;
-            const length = endKm - startKm;
-            const elevation = points[endIdx].elevation - points[startIdx].elevation;
-            const avgGrade = length > 0 ? (elevation / (length * 1000)) * 100 : 0;
-
-            const WINDOW_KM = 0.1; // 100 m sliding window
+        // Highest grade (%) across any sliding sub-window of `windowKm` length
+        // inside [startIdx, endIdx]. Returns 0 if the segment is shorter than
+        // the window. Used both as the canonical maxGrade (100 m) and as a
+        // tuning aid for the sector breakdown table (50 m + 100 m side by
+        // side).
+        function maxGradeOverWindow(points, startIdx, endIdx, windowKm) {
             let maxGrade = 0;
             let j = startIdx + 1;
             for (let i = startIdx; i < endIdx; i++) {
-                // Advance j to the first point at least WINDOW_KM ahead of i.
-                while (j < endIdx && (points[j].distance - points[i].distance) < WINDOW_KM) {
+                while (j < endIdx && (points[j].distance - points[i].distance) < windowKm) {
                     j++;
                 }
                 if (j > i && j <= endIdx) {
@@ -3071,6 +3089,15 @@
                     }
                 }
             }
+            return maxGrade;
+        }
+
+        function climbStatsFromIdx(points, startIdx, endIdx) {
+            const startKm = points[startIdx].distance;
+            const endKm = points[endIdx].distance;
+            const length = endKm - startKm;
+            const elevation = points[endIdx].elevation - points[startIdx].elevation;
+            const avgGrade = length > 0 ? (elevation / (length * 1000)) * 100 : 0;
 
             return {
                 startIdx: startIdx,
@@ -3080,7 +3107,11 @@
                 length: length,
                 elevation: elevation,
                 avgGrade: avgGrade,
-                maxGrade: maxGrade
+                // Canonical "max grade" for the segment summary stays the
+                // 100 m window. The 50 m variant is sector-table-only.
+                maxGrade: maxGradeOverWindow(points, startIdx, endIdx, 0.1),
+                maxGrade50m: maxGradeOverWindow(points, startIdx, endIdx, 0.05),
+                maxGrade100m: maxGradeOverWindow(points, startIdx, endIdx, 0.1)
             };
         }
 
@@ -5223,14 +5254,30 @@
             const wheelCircumference = parseFloat(document.getElementById('wheelCircumference').value) || 2.096;
             const preferredCadence = parseFloat(document.getElementById('preferredCadence').value) || 85;
 
+            // Helper used both per-row and for the climb-total row.
+            const formatLength = function (km) {
+                if (!(km > 0)) return '--';
+                return km < 1
+                    ? Math.round(km * 1000) + ' m'
+                    : km.toFixed(2) + ' km';
+            };
+
             let totalDistanceKm = 0;
             let totalSeconds = 0;
+            let totalElevation = 0;
+            let totalEnergyJ = 0;
+            let max50mClimb = 0;
+            let max100mClimb = 0;
             const rows = [];
             for (let i = 0; i < sectors.length; i++) {
                 const s = sectors[i];
                 const trace = wbal.trace[i];
                 totalDistanceKm += s.length;
                 totalSeconds += s.pacing.timeSec;
+                totalElevation += s.elevation;
+                totalEnergyJ += s.pacing.power * s.pacing.timeSec;
+                if (s.maxGrade50m > max50mClimb) max50mClimb = s.maxGrade50m;
+                if (s.maxGrade100m > max100mClimb) max100mClimb = s.maxGrade100m;
 
                 // Optimal gear at this sector's speed.
                 let gearLabel = '--';
@@ -5260,8 +5307,10 @@
                 rows.push(
                     '<tr class="' + kindClass + '">' +
                     '<td>' + tag + (i + 1) + '</td>' +
-                    '<td>' + (s.length < 1 ? Math.round(s.length * 1000) + ' m' : s.length.toFixed(2) + ' km') + '</td>' +
+                    '<td>' + formatLength(s.length) + '</td>' +
                     '<td>' + s.avgGrade.toFixed(1) + '%</td>' +
+                    '<td>' + s.maxGrade50m.toFixed(1) + '%</td>' +
+                    '<td>' + s.maxGrade100m.toFixed(1) + '%</td>' +
                     '<td>' + Math.round(s.pacing.power) + ' W</td>' +
                     '<td>' + (s.pacing.speedMs * 3.6).toFixed(1) + ' km/h</td>' +
                     '<td>' + formatSecondsMMSS(s.pacing.timeSec) + '</td>' +
@@ -5274,6 +5323,40 @@
                     '</tr>'
                 );
             }
+
+            // Climb-total row. Power is time-weighted (sum P·dt / sum dt);
+            // grade is distance-weighted by definition (sum elev / sum dist);
+            // Max 50/100 are the max of any sector's max in those windows;
+            // W'bal is start of sector 1 → end of last sector. Any floor
+            // breach colours the total's W'bal cell red so the at-a-glance
+            // verdict matches the per-sector trace.
+            const avgPower = totalSeconds > 0 ? totalEnergyJ / totalSeconds : 0;
+            const avgGrade = totalDistanceKm > 0
+                ? (totalElevation / (totalDistanceKm * 1000)) * 100
+                : 0;
+            const avgSpeedKmh = totalSeconds > 0 ? (totalDistanceKm / (totalSeconds / 3600)) : 0;
+            const totalStartWbal = wbal.trace.length ? wbal.trace[0].startWbal : wbal.W0;
+            const totalEndWbal = wbal.trace.length ? wbal.trace[wbal.trace.length - 1].endWbal : wbal.W0;
+            const totalBreachClass = wbal.floorBreached ? 'sector-wbal-floor-breach' : '';
+
+            rows.push(
+                '<tr class="sector-total">' +
+                '<td><span class="sector-kind-tag total" data-i18n="climbPlanner.results.sectors.totalTag">Total</span></td>' +
+                '<td>' + formatLength(totalDistanceKm) + '</td>' +
+                '<td>' + avgGrade.toFixed(1) + '%</td>' +
+                '<td>' + max50mClimb.toFixed(1) + '%</td>' +
+                '<td>' + max100mClimb.toFixed(1) + '%</td>' +
+                '<td>' + Math.round(avgPower) + ' W</td>' +
+                '<td>' + avgSpeedKmh.toFixed(1) + ' km/h</td>' +
+                '<td>' + formatSecondsMMSS(totalSeconds) + '</td>' +
+                '<td>—</td>' +
+                '<td class="' + totalBreachClass + '">' +
+                    formatKjOneDecimal(totalStartWbal) +
+                    '<span class="sector-wbal-arrow">→</span>' +
+                    formatKjOneDecimal(totalEndWbal) + ' kJ' +
+                '</td>' +
+                '</tr>'
+            );
 
             body.innerHTML = rows.join('');
 
