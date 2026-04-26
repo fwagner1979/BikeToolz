@@ -443,6 +443,35 @@
             opacity: 0.85;
             line-height: 1.45;
         }
+        /* Detail-level slider in the breakdown header. Lays out as
+           [label] [Smooth ←] [slider] [→ Detailed] [current preset name]
+           on one row, wrapping on narrow screens. */
+        .sector-detail-control {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.88rem;
+            margin: 0 0 0.9rem;
+        }
+        .sector-detail-control label {
+            font-weight: 600;
+            opacity: 0.85;
+        }
+        .sector-detail-control input[type="range"] {
+            flex: 1 1 180px;
+            min-width: 140px;
+            max-width: 260px;
+            accent-color: var(--primary-color, #0066CC);
+        }
+        .sector-detail-control .sector-detail-end {
+            opacity: 0.65;
+            font-size: 0.82rem;
+        }
+        .sector-detail-control .sector-detail-current {
+            font-weight: 600;
+            min-width: 7rem;
+        }
         .sector-breakdown-table-wrap { overflow-x: auto; }
         .sector-breakdown-table {
             width: 100%;
@@ -2315,6 +2344,21 @@
                         it's broken out into a separate sector. Each sector's plan respects
                         your CP/W' budget and the reserve you set.
                     </p>
+                    <!-- Detail-level slider — controls how granular the sector
+                         breakdown is. Drives three knobs in identifyHardSectors:
+                         the grade-smoothing window, the min length below which a
+                         sub-Hard run gets absorbed, and the absolute floor below
+                         which even Hard runs are treated as GPX noise. The slider
+                         calls calculateClimb(silent=true) on input, so the table
+                         re-renders live as the user drags. -->
+                    <div class="sector-detail-control">
+                        <label for="sectorDetailSlider" data-i18n="climbPlanner.results.sectors.detail.label">Detail level</label>
+                        <span class="sector-detail-end" data-i18n="climbPlanner.results.sectors.detail.smooth">Smooth</span>
+                        <input type="range" id="sectorDetailSlider" min="1" max="5" step="1" value="3"
+                               oninput="onSectorDetailSliderInput(this.value)">
+                        <span class="sector-detail-end" data-i18n="climbPlanner.results.sectors.detail.detailed">Detailed</span>
+                        <span class="sector-detail-current" id="sectorDetailCurrent">Default</span>
+                    </div>
                 </div>
                 <div class="sector-breakdown-table-wrap">
                     <table class="sector-breakdown-table">
@@ -2600,6 +2644,10 @@
             // Reserve in the tank: fraction 0..0.9. Applies to CP/W' and Power Curve only.
             // Default 0 preserves the original "best possible effort" semantics.
             reserveFraction: 0,
+            // Sector-breakdown detail level (1 = Most smooth, 5 = Most detailed,
+            // 3 = Default). Drives the grade-smoothing window and merge
+            // thresholds in identifyHardSectors.
+            sectorDetailLevel: 3,
             // The planned sustainable power (watts) for the chosen Step 3 method,
             // after reserve is applied. Set in updatePowerCalculations and read by
             // calculateClimb. null when inputs are insufficient.
@@ -2746,6 +2794,32 @@
         function reservePctText() {
             return Math.round(state.reserveFraction * 100);
         }
+
+        // Detail-level slider handler. Updates state, refreshes the visible
+        // preset name, and re-runs calculateClimb on the silent live-refresh
+        // path so the table re-renders as the user drags the slider — same
+        // plumbing the reserve presets ride on.
+        function onSectorDetailSliderInput(value) {
+            const lvl = Math.max(1, Math.min(5, parseInt(value, 10) || 3));
+            state.sectorDetailLevel = lvl;
+            const label = document.getElementById('sectorDetailCurrent');
+            if (label) {
+                const preset = SECTOR_DETAIL_PRESETS[lvl];
+                label.textContent = preset ? preset.label : '';
+            }
+            if (state.resultsVisible) {
+                calculateClimb(true /* silent */);
+            }
+        }
+        // Initialize the current-preset label on first paint.
+        document.addEventListener('DOMContentLoaded', function () {
+            const slider = document.getElementById('sectorDetailSlider');
+            const label = document.getElementById('sectorDetailCurrent');
+            if (slider && label) {
+                const preset = SECTOR_DETAIL_PRESETS[parseInt(slider.value, 10) || DEFAULT_SECTOR_DETAIL_LEVEL];
+                if (preset) label.textContent = preset.label;
+            }
+        });
 
         // Manual climb inputs
         document.getElementById('manualDistance').addEventListener('input', function() {
@@ -4998,69 +5072,113 @@
             return (dM / (dKm * 1000)) * 100;
         }
 
-        // Identify hard / easy sectors within the planning segment.
-        // Walks every GPX point with a state-machine classifier: the rider
-        // enters a "hard" run when the locally-required power (at planned
-        // speed) climbs HARD_ENTER_HYSTERESIS_W above planned, and stays in
-        // that run until required falls back below planned (asymmetric
-        // hysteresis prevents Hard/Easy/Hard whiplash on grade noise).
-        // Tiny sectors (< MIN_SECTOR_SECONDS at planned pace) are merged
-        // into their neighbour so we don't drown the user in micro-sectors.
-        const HARD_ENTER_HYSTERESIS_W = 20;
-        const MIN_SECTOR_SECONDS = 90;
-        const SECTOR_GRADE_SMOOTH_HALFKM = 0.05; // ±50 m → 100 m total window
+        // ---- Tier-based sector classification (Sub-commit 4 / follow-up 5)
+        //
+        // Walks every GPX point in the segment, classifies each by its
+        // *smoothed* local grade into one of six tiers, then groups
+        // consecutive same-tier points into sector runs. Asymmetric
+        // merging keeps short hard sub-bits visible (they're the part
+        // the rider needs to know about) while folding short easy / flat
+        // wobbles into their neighbours. The pacing "isHard" flag is
+        // derived from the tier — tier ≥ Hard means the sector goes into
+        // the W' allocation pool; sub-Hard tiers stay capped at CP with
+        // the easy-sector floor.
+        //
+        // The Detail-Level slider (state.sectorDetailLevel ∈ 1..5) drives
+        // three knobs on this classifier: how aggressively grades are
+        // smoothed, the min length below which a sub-Hard run gets
+        // absorbed into its neighbour, and the absolute floor below which
+        // even Hard-tier runs are treated as GPX noise. Smaller smoothing
+        // window + smaller mins = more detailed (more sectors); the
+        // reverse = smoother (fewer sectors).
+        const SECTOR_DETAIL_PRESETS = [
+            null, // index 0 unused so 1..5 maps directly
+            { smoothHalfKm: 0.150, minSubHardSec: 240, hardMinMeters: 200, label: 'Most smooth' },
+            { smoothHalfKm: 0.100, minSubHardSec: 180, hardMinMeters: 100, label: 'Smooth' },
+            { smoothHalfKm: 0.050, minSubHardSec:  90, hardMinMeters:  50, label: 'Default' },
+            { smoothHalfKm: 0.030, minSubHardSec:  60, hardMinMeters:  30, label: 'Detailed' },
+            { smoothHalfKm: 0.020, minSubHardSec:  30, hardMinMeters:  15, label: 'Most detailed' }
+        ];
+        const DEFAULT_SECTOR_DETAIL_LEVEL = 3;
+        function getSectorDetailPreset() {
+            const lvl = state.sectorDetailLevel || DEFAULT_SECTOR_DETAIL_LEVEL;
+            return SECTOR_DETAIL_PRESETS[Math.max(1, Math.min(5, lvl))];
+        }
+
+        // Map a tier label to a small ordinal so we can compare "is this
+        // run at Hard or above?" cheaply.
+        function tierOrdinal(label) {
+            switch (label) {
+                case 'Descent':    return 0;
+                case 'Easy':       return 1;
+                case 'Manageable': return 2;
+                case 'Hard':       return 3;
+                case 'Steep':      return 4;
+                case 'Brutal':     return 5;
+                default:           return 1;
+            }
+        }
+        function isHardTier(label) { return tierOrdinal(label) >= 3; }
+
         function identifyHardSectors(seg, points, plannedPowerW, plannedSpeedMs, totalMassKg, drivetrainEff) {
-            const flags = [];
-            const enterAt = plannedPowerW + HARD_ENTER_HYSTERESIS_W;
-            const exitAt = plannedPowerW;
-            let inHard = false;
+            const preset = getSectorDetailPreset();
+
+            // 1) Per-point tier from smoothed grade.
+            const tiers = [];
             for (let i = seg.startIdx; i <= seg.endIdx; i++) {
-                const grade = smoothedGradeAtIdx(points, i, SECTOR_GRADE_SMOOTH_HALFKM);
-                const required = riderRequiredAtSpeed(grade, totalMassKg, plannedSpeedMs, drivetrainEff);
-                if (!inHard && required > enterAt) inHard = true;
-                else if (inHard && required < exitAt) inHard = false;
-                flags.push(inHard);
+                const grade = smoothedGradeAtIdx(points, i, preset.smoothHalfKm);
+                tiers.push(tierForGrade(grade).label);
             }
 
-            // Group runs.
-            const sectors = [];
+            // 2) Group consecutive same-tier points into runs.
+            const runs = [];
             let runStart = 0;
-            for (let k = 1; k <= flags.length; k++) {
-                if (k === flags.length || flags[k] !== flags[runStart]) {
+            for (let k = 1; k <= tiers.length; k++) {
+                if (k === tiers.length || tiers[k] !== tiers[runStart]) {
                     const startIdx = seg.startIdx + runStart;
                     const endIdx = seg.startIdx + (k - 1);
-                    sectors.push(buildSectorStats(points, startIdx, endIdx, flags[runStart]));
+                    runs.push(buildSectorStats(points, startIdx, endIdx, tiers[runStart]));
                     runStart = k;
                 }
             }
-            if (sectors.length === 0) return [];
+            if (runs.length === 0) return [];
 
-            // Merge sectors shorter than MIN_SECTOR_SECONDS at the rider's
-            // planned pace into the previous sector. A tiny ramp shouldn't
-            // produce its own row in the table.
-            const minLengthKm = (plannedSpeedMs * MIN_SECTOR_SECONDS) / 1000;
-            const merged = [sectors[0]];
-            for (let k = 1; k < sectors.length; k++) {
+            // 3) Asymmetric merging.
+            //    Hard / Steep / Brutal runs always survive (with only the
+            //    hardMinMeters absolute floor to filter pure GPX noise) —
+            //    a 100 m kicker at 9 % deserves its own row.
+            //    Descent / Easy / Manageable runs shorter than minSubHardSec
+            //    get absorbed into the previous run, smoothing micro-undulations.
+            const minSubHardKm = (plannedSpeedMs * preset.minSubHardSec) / 1000;
+            const hardMinKm = preset.hardMinMeters / 1000;
+            const merged = [runs[0]];
+            for (let k = 1; k < runs.length; k++) {
                 const prev = merged[merged.length - 1];
-                if (sectors[k].length < minLengthKm) {
-                    // Absorb into prev keeping prev's hard/easy classification —
-                    // the tiny sub-bit doesn't dominate the merged label.
+                const cur = runs[k];
+                const curIsHardTier = isHardTier(cur.tier);
+                const tooShort = curIsHardTier
+                    ? (cur.length < hardMinKm)
+                    : (cur.length < minSubHardKm);
+                if (cur.tier === prev.tier) {
+                    // Same tier — always coalesce.
                     merged[merged.length - 1] = buildSectorStats(
-                        points, prev.startIdx, sectors[k].endIdx, prev.isHard);
-                } else if (sectors[k].isHard === prev.isHard) {
+                        points, prev.startIdx, cur.endIdx, prev.tier);
+                } else if (tooShort) {
+                    // Sub-threshold — absorb into prev, keeping prev's tier.
                     merged[merged.length - 1] = buildSectorStats(
-                        points, prev.startIdx, sectors[k].endIdx, prev.isHard);
+                        points, prev.startIdx, cur.endIdx, prev.tier);
                 } else {
-                    merged.push(sectors[k]);
+                    merged.push(cur);
                 }
             }
 
             return merged;
         }
 
-        function buildSectorStats(points, startIdx, endIdx, isHard) {
+        function buildSectorStats(points, startIdx, endIdx, tierLabel) {
             const stats = climbStatsFromIdx(points, startIdx, endIdx);
-            stats.isHard = isHard;
+            stats.tier = tierLabel;
+            stats.isHard = isHardTier(tierLabel);
             return stats;
         }
 
