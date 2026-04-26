@@ -415,6 +415,19 @@
         .result-warning-body strong { display: block; margin-bottom: 0.25rem; }
         .result-warning-body p { margin: 0; font-size: 0.9rem; line-height: 1.45; }
 
+        /* Positive sibling of .result-warning — same layout, success-coloured.
+           Used for the steepest-section "within sustainable range" message. */
+        .result-positive {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            background: var(--success-color);
+            color: white;
+            padding: 1rem 1.25rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+        }
+
         /* Elevation profile + cursor overlay (Phase 3 / Sub-commit 2). */
         .elevation-panel {
             background: var(--card-bg);
@@ -2065,6 +2078,35 @@
                         At this power and gradient, you'd be moving below ~5 km/h —
                         essentially walking pace. You may need to find lower gearing,
                         push more watts, or walk parts of the climb.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Steepest-section warning (Phase 3 / Sub-commit 3). Scans the
+                 cursor-defined planning segment with rolling time-windows
+                 (10 s … 10 min) and compares each window's required power to
+                 the rider's power-duration capability. Reserve-aware: the
+                 same R fraction used for CP/W' / Power Curve gates the
+                 capability so the warning matches the rider's pacing intent.
+                 Two states share the same visual frame: warning (worst sub-
+                 window exceeds capability) and positive (segment is within
+                 sustainable range). Hidden when in manual-input mode or when
+                 inputs are insufficient. -->
+            <div id="steepestSectionWarning" class="result-warning steepest-warning" style="display: none;">
+                <div class="result-warning-icon">📈</div>
+                <div class="result-warning-body">
+                    <strong data-i18n="climbPlanner.results.steepestWarning.title">Steepest sub-section may break your pace</strong>
+                    <p id="steepestSectionWarningText">--</p>
+                </div>
+            </div>
+            <div id="steepestSectionOk" class="result-positive" style="display: none;">
+                <div class="result-warning-icon">✅</div>
+                <div class="result-warning-body">
+                    <strong data-i18n="climbPlanner.results.steepestOk.title">Within your sustainable range</strong>
+                    <p data-i18n="climbPlanner.results.steepestOk.body">
+                        Across the rolling time-windows we scanned (10 s up to 10 min),
+                        no sub-section exceeds your power-duration capability with the
+                        current reserve setting.
                     </p>
                 </div>
             </div>
@@ -4194,6 +4236,13 @@
             };
             state.resultsVisible = true;
 
+            // Steepest-section warning — Phase 3 / Sub-commit 3. Runs on
+            // every recalculation (button click + silent live-refresh) so
+            // sweeping the reserve slider, dragging cursors, or changing
+            // Step 3 inputs all update the warning together with the rest
+            // of the result section.
+            runSteepestSectionWarning(speed, drivetrainEfficiency, totalWeight);
+
             // Show results — only scroll into view on the first reveal so live
             // refreshes from Step 3 don't yank the page around.
             const resultsEl = document.getElementById('resultsSection');
@@ -4304,6 +4353,228 @@
             }
 
             return speed;
+        }
+
+        // ---- Steepest-section warning (Phase 3 / Sub-commit 3) ------------
+        //
+        // Scans the cursor-defined planning segment with rolling time-windows
+        // (10 s … 10 min) at the rider's planned rolling speed. For each
+        // window size we find the sub-section that requires the most power
+        // and compare it to what the rider can sustain for that exact
+        // duration (CP/W' / Power Curve in full mode, single number in
+        // degraded mode). The window with the biggest positive gap is the
+        // worst interval and becomes the warning.
+        //
+        // Reserve coupling: state.reserveFraction reduces the rider's
+        // capability the same way the rest of Step 3 already uses it, so the
+        // warning matches the rider's pacing intent rather than always
+        // assuming an all-out effort.
+
+        // Window sizes scanned, in seconds. The 1-min lower bound for
+        // degraded (Simple Power) mode is enforced inside capabilityAt.
+        const STEEPEST_WINDOW_SECONDS = [10, 30, 60, 180, 300, 600];
+
+        // Rider's max-sustainable rider-side power for a window of the given
+        // duration. Returns null when the active method's inputs aren't
+        // sufficient to produce a reserve-aware capability number.
+        function steepestCapabilityAt(seconds) {
+            const method = state.powerMethod;
+
+            if (method === 'cpw') {
+                const cpw = getCPWInputs();
+                if (!(cpw.cp > 0) || !(cpw.wPrime > 0)) return null;
+                const usableJ = cpw.wPrime * 1000 * (1 - state.reserveFraction);
+                return cpw.cp + usableJ / seconds;
+            }
+
+            if (method === 'curve') {
+                const points = collectCurvePoints();
+                if (points.length < 3) return null;
+                const minutes = seconds / 60;
+                const lookup = minutes / Math.max(1 - state.reserveFraction, 0.1);
+                const p = interpolatePower(points, lookup);
+                return p > 0 ? p : null;
+            }
+
+            // Degraded mode: only one number is available — flag windows of
+            // ≥ 1 min that exceed it. Anything shorter is in anaerobic
+            // territory the simple-power model can't speak to, so we skip.
+            if (method === 'simple' && seconds >= 60) {
+                const p = state.calculatedSustainablePower;
+                return p > 0 ? p : null;
+            }
+
+            return null;
+        }
+
+        // Find the worst sliding sub-window of `windowSeconds` duration in
+        // the planning segment. Returns { power, startKm, endKm, grade } for
+        // the sub-window that needs the highest rider-side power, or null if
+        // the segment is shorter than the window or contains no climbing
+        // sub-window of that size.
+        //
+        // `speedMs` is the rider's planned constant rolling speed; we hold
+        // it fixed across the segment (decision per FWA: speed is iterated
+        // from the planned power on the segment's avg grade — a power change
+        // propagates into speed, which feeds back through here on the next
+        // calculateClimb pass). drivetrainEff converts at-the-wheel demand
+        // back to rider-side watts so it compares apples-to-apples with the
+        // capability returned by steepestCapabilityAt.
+        function steepestWorstWindow(seg, points, totalMassKg, speedMs, drivetrainEff, windowSeconds) {
+            const windowKm = (speedMs * windowSeconds) / 1000;
+            if (windowKm > seg.length) return null;
+
+            let worst = null;
+            let j = seg.startIdx;
+            for (let i = seg.startIdx; i <= seg.endIdx; i++) {
+                while (j <= seg.endIdx && (points[j].distance - points[i].distance) < windowKm) {
+                    j++;
+                }
+                if (j > seg.endIdx) break;
+
+                const dKm = points[j].distance - points[i].distance;
+                if (!(dKm > 0)) continue;
+                const dM = points[j].elevation - points[i].elevation;
+                const gradePct = (dM / (dKm * 1000)) * 100;
+                // Skip flat / descending sub-windows — the warning is only
+                // meaningful for actual climbing ramps.
+                if (gradePct <= 0) continue;
+
+                const gradeRad = Math.atan(gradePct / 100);
+                const grav = totalMassKg * 9.81 * Math.sin(gradeRad) * speedMs;
+                const roll = totalMassKg * 9.81 * Math.cos(gradeRad) * 0.005 * speedMs;
+                const aero = 0.5 * 1.2 * 0.3 * Math.pow(speedMs, 3);
+                const reqAtWheel = grav + roll + aero;
+                const reqRider = reqAtWheel / drivetrainEff;
+
+                if (!worst || reqRider > worst.power) {
+                    worst = {
+                        power: reqRider,
+                        startKm: points[i].distance,
+                        endKm: points[j].distance,
+                        grade: gradePct
+                    };
+                }
+            }
+
+            return worst;
+        }
+
+        // Pretty duration label for the warning text. e.g. 10 → "10 s",
+        // 60 → "1 min", 600 → "10 min".
+        function formatWindowLabel(seconds) {
+            if (seconds < 60) return seconds + ' s';
+            const minutes = seconds / 60;
+            return (minutes % 1 === 0 ? minutes : minutes.toFixed(1)) + ' min';
+        }
+
+        // Distance label for the worst sub-window. Sub-km values render as
+        // metres (e.g. "500 m") to keep the warning concrete; longer ones
+        // fall back to kilometres.
+        function formatWindowLength(km) {
+            if (!(km > 0)) return '--';
+            if (km < 1) return Math.round(km * 1000) + ' m';
+            return km.toFixed(1) + ' km';
+        }
+
+        // Top-level entry point. Called from calculateClimb after speed,
+        // drivetrain efficiency, and total mass are known. Renders into
+        // #steepestSectionWarning / #steepestSectionOk; hides both when the
+        // tool can't produce a meaningful comparison (manual-input mode, no
+        // segment, no power data).
+        function runSteepestSectionWarning(speedMs, drivetrainEff, totalMassKg) {
+            const warnEl = document.getElementById('steepestSectionWarning');
+            const okEl = document.getElementById('steepestSectionOk');
+            if (!warnEl || !okEl) return;
+
+            const hideBoth = function () {
+                warnEl.style.display = 'none';
+                okEl.style.display = 'none';
+            };
+
+            // Manual-entry climbs are a single avg-grade ramp by definition —
+            // there's no per-point profile to scan, so the warning has
+            // nothing to add over the avg-grade headline.
+            if (state.climbInputMode !== 'gpx') { hideBoth(); return; }
+
+            const seg = getPlanningSegment();
+            const points = state.gpxPoints;
+            if (!seg || !points || points.length === 0) { hideBoth(); return; }
+
+            if (!(speedMs > 0) || !(drivetrainEff > 0) || !(totalMassKg > 0)) {
+                hideBoth();
+                return;
+            }
+
+            const segDurationSec = (seg.length * 1000) / speedMs;
+            const isFullMode =
+                (state.powerMethod === 'cpw' && (function () {
+                    const cpw = getCPWInputs();
+                    return cpw.cp > 0 && cpw.wPrime > 0;
+                })()) ||
+                (state.powerMethod === 'curve' && collectCurvePoints().length >= 3);
+
+            let worst = null;     // { gap, size, capability, window }
+            let anyChecked = false;
+
+            for (let k = 0; k < STEEPEST_WINDOW_SECONDS.length; k++) {
+                const size = STEEPEST_WINDOW_SECONDS[k];
+                if (size > segDurationSec) continue;
+
+                const capability = steepestCapabilityAt(size);
+                if (!(capability > 0)) continue;
+
+                const window = steepestWorstWindow(seg, points, totalMassKg, speedMs, drivetrainEff, size);
+                if (!window) continue;
+
+                anyChecked = true;
+                const gap = window.power - capability;
+                if (gap <= 0) continue;
+                if (!worst || gap > worst.gap) {
+                    worst = { gap: gap, size: size, capability: capability, window: window };
+                }
+            }
+
+            // No usable comparison (e.g. simple-mode segment shorter than
+            // 60 s, or no power data at all) — hide both and bail.
+            if (!anyChecked) { hideBoth(); return; }
+
+            if (!worst) {
+                // Everything we scanned came in under capability — show the
+                // positive note instead.
+                warnEl.style.display = 'none';
+                okEl.style.display = 'flex';
+                return;
+            }
+
+            const w = worst.window;
+            const subLength = w.endKm - w.startKm;
+            const sizeLabel = formatWindowLabel(worst.size);
+            const lengthLabel = formatWindowLength(subLength);
+            const gradeLabel = w.grade.toFixed(1) + '%';
+            const reqLabel = Math.round(w.power) + ' W';
+            const capLabel = Math.round(worst.capability) + ' W';
+            const gapLabel = Math.round(worst.gap) + ' W';
+
+            let text;
+            if (isFullMode) {
+                text =
+                    `Steepest ${sizeLabel}: ${lengthLabel} at ${gradeLabel} needs about ${reqLabel} ` +
+                    `at your planned pace, but your ${sizeLabel} capability with the current reserve ` +
+                    `is around ${capLabel} (gap ${gapLabel}). Expect to slow down or burn into your ` +
+                    `reserve here.`;
+            } else {
+                text =
+                    `Steepest ${sizeLabel}: ${lengthLabel} at ${gradeLabel} needs about ${reqLabel} ` +
+                    `at your planned pace, which exceeds your expected average for the climb ` +
+                    `(${capLabel}). Likely to force a slowdown. Enter CP and W' (or a Power Curve) ` +
+                    `in Step 2 / Step 3 for a duration-aware comparison.`;
+            }
+
+            const textEl = document.getElementById('steepestSectionWarningText');
+            if (textEl) textEl.textContent = text;
+            okEl.style.display = 'none';
+            warnEl.style.display = 'flex';
         }
 
         function findOptimalGear(wheelRpm, preferredCadence, chainrings, cassette) {
