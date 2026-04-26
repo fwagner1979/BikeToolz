@@ -4178,93 +4178,94 @@
         // the function bails out quietly on incomplete inputs instead of popping
         // alert dialogs, which would be horrible UX while the user is typing.
         function calculateClimb(silent) {
-            const showAlert = function (msg) { if (!silent) alert(msg); };
             // Wipe stale red borders so the new validation pass starts
             // clean. Silent (auto-refresh) calls don't repaint marks since
             // they don't alert either — they're just a quiet re-run.
             if (!silent) clearFieldMissing();
 
-            // Get climb parameters (always in metric for calculations)
+            // ---- Single-pass validation -----------------------------------
+            // Collect every missing required field across all four checks
+            // before reporting, so the user sees the full picture at once
+            // rather than fixing one category, hitting Calculate again,
+            // discovering another category is also empty, etc.
+            const missing = [];
+            // Set when a check fails in a way no specific input can be
+            // marked (e.g. GPX mode with no segment selected). Used to
+            // pick a more informative alert message in that case.
+            let bailMessage = null;
+
+            // 1) Climb data.
             let distance, elevation, grade;
-
-            if (state.climbInputMode === 'manual' && hasManualClimbData()) {
-                const distanceInput = parseFloat(document.getElementById('manualDistance').value);
-                const elevationInput = parseFloat(document.getElementById('manualElevation').value);
-                // Convert to metric for calculations
-                distance = getDistanceInKm(distanceInput);
-                elevation = getElevationInMeters(elevationInput);
-                grade = parseFloat(document.getElementById('manualGrade').value);
-            } else if (state.climbInputMode === 'gpx' && state.selectedClimb) {
-                distance = state.selectedClimb.length;
-                elevation = state.selectedClimb.elevation;
-                grade = state.selectedClimb.avgGrade;
-            } else {
-                if (!silent) {
-                    if (state.climbInputMode === 'manual') {
-                        // Mark whichever of the two manual-climb inputs is empty.
-                        const missing = [];
-                        if (!(parseFloat(document.getElementById('manualDistance').value) > 0)) {
-                            missing.push('manualDistance');
-                        }
-                        if (!(parseFloat(document.getElementById('manualElevation').value) > 0)) {
-                            missing.push('manualElevation');
-                        }
-                        if (missing.length) markFieldsMissing(missing);
-                    }
+            if (state.climbInputMode === 'manual') {
+                const distInput = parseFloat(document.getElementById('manualDistance').value);
+                const elevInput = parseFloat(document.getElementById('manualElevation').value);
+                if (!(distInput > 0)) missing.push('manualDistance');
+                if (!(elevInput > 0)) missing.push('manualElevation');
+                if (distInput > 0 && elevInput > 0) {
+                    distance = getDistanceInKm(distInput);
+                    elevation = getElevationInMeters(elevInput);
+                    grade = parseFloat(document.getElementById('manualGrade').value);
                 }
-                showAlert('Please define your climb first');
-                return;
+            } else if (state.climbInputMode === 'gpx') {
+                if (state.selectedClimb) {
+                    distance = state.selectedClimb.length;
+                    elevation = state.selectedClimb.elevation;
+                    grade = state.selectedClimb.avgGrade;
+                } else {
+                    // No specific input to redden — the user needs to drag
+                    // cursors / upload a GPX. Surface as a worded alert.
+                    bailMessage = 'Please define your climb first';
+                }
+            } else {
+                bailMessage = 'Please define your climb first';
             }
 
-            // Pull the planned sustainable power from state — populated live by
-            // updatePowerCalculations whichever Step 3 method is active.
+            // 2) Power capability.
             const sustainablePower = state.calculatedSustainablePower;
-            if (!sustainablePower || sustainablePower <= 0) {
-                if (!silent) markFieldsMissing(powerCapabilityInputIds());
-                showAlert('Please enter your power capability');
-                return;
+            if (!(sustainablePower > 0)) {
+                powerCapabilityInputIds().forEach(id => missing.push(id));
             }
 
-            // Get rider & equipment
+            // 3) Rider & equipment.
             const riderWeight = parseFloat(document.getElementById('riderWeight').value);
             const bikeWeight = parseFloat(document.getElementById('bikeWeight').value);
             const preferredCadence = parseFloat(document.getElementById('preferredCadence').value);
             const wheelCircumference = parseFloat(document.getElementById('wheelCircumference').value);
+            if (!(riderWeight > 0)) missing.push('riderWeight');
+            if (!(bikeWeight > 0)) missing.push('bikeWeight');
+            if (!(preferredCadence > 0)) missing.push('preferredCadence');
+            if (!(wheelCircumference > 0)) missing.push('wheelCircumference');
 
-            if (!riderWeight || !bikeWeight || !preferredCadence || !wheelCircumference) {
-                if (!silent) {
-                    const missing = [];
-                    if (!(riderWeight > 0)) missing.push('riderWeight');
-                    if (!(bikeWeight > 0)) missing.push('bikeWeight');
-                    if (!(preferredCadence > 0)) missing.push('preferredCadence');
-                    if (!(wheelCircumference > 0)) missing.push('wheelCircumference');
-                    markFieldsMissing(missing);
+            // 4) Gearing.
+            const chainrings = getCurrentChainrings();
+            const cassette = getCurrentCassette();
+            if (!chainrings || chainrings.length === 0 || !cassette || cassette.length === 0) {
+                if (manualOverrideMode) {
+                    missing.push('chainringsManual', 'cassetteManual');
+                } else {
+                    missing.push('chainringSmall', 'chainringLarge', 'cassetteSmall', 'cassetteLarge');
                 }
-                showAlert('Please fill in all rider & equipment parameters');
+            }
+
+            if (missing.length > 0 || bailMessage) {
+                if (!silent) {
+                    if (missing.length > 0) markFieldsMissing(missing);
+                    let msg;
+                    if (bailMessage && missing.length === 0) {
+                        msg = bailMessage;
+                    } else if (bailMessage) {
+                        msg = bailMessage + ', and fill in the highlighted required fields.';
+                    } else if (missing.length === 1) {
+                        msg = 'Please fill in the highlighted required field to continue.';
+                    } else {
+                        msg = 'Please fill in the highlighted required fields to continue.';
+                    }
+                    alert(msg);
+                }
                 return;
             }
 
             const totalWeight = riderWeight + bikeWeight;
-
-            // Get gearing
-            const chainrings = getCurrentChainrings();
-            const cassette = getCurrentCassette();
-
-            if (!chainrings || chainrings.length === 0 || !cassette || cassette.length === 0) {
-                if (!silent) {
-                    // In manual-override mode the gearing comes from the two
-                    // free-text inputs; otherwise the small/large numeric
-                    // inputs. Mark whichever pair the user is actually using
-                    // so the red lands on a field they can fix.
-                    if (manualOverrideMode) {
-                        markFieldsMissing(['chainringsManual', 'cassetteManual']);
-                    } else {
-                        markFieldsMissing(['chainringSmall', 'chainringLarge', 'cassetteSmall', 'cassetteLarge']);
-                    }
-                }
-                showAlert('Please configure your gearing');
-                return;
-            }
 
             // Calculate drivetrain efficiency
             const maintenanceLevel = document.getElementById('maintenanceLevel').value;
