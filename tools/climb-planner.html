@@ -428,6 +428,104 @@
             margin-bottom: 1.5rem;
         }
 
+        /* Sector-by-sector ride plan (Phase 3 / Sub-commit 4). */
+        .sector-breakdown {
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+        .sector-breakdown-header h3 { margin: 0 0 0.25rem; font-size: 1.05rem; }
+        .sector-breakdown-helper {
+            margin: 0 0 0.9rem;
+            font-size: 0.9rem;
+            opacity: 0.85;
+            line-height: 1.45;
+        }
+        .sector-breakdown-table-wrap { overflow-x: auto; }
+        .sector-breakdown-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.92rem;
+        }
+        .sector-breakdown-table th,
+        .sector-breakdown-table td {
+            padding: 0.55rem 0.6rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+        .sector-breakdown-table th {
+            font-weight: 600;
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            opacity: 0.75;
+            border-bottom-width: 2px;
+        }
+        .sector-breakdown-table tbody tr.sector-hard td {
+            background: rgba(245, 158, 11, 0.10);
+        }
+        .sector-breakdown-table tbody tr.sector-hard td:first-child {
+            border-left: 3px solid var(--warning-color);
+        }
+        .sector-breakdown-table tbody tr.sector-easy td:first-child {
+            border-left: 3px solid var(--success-color);
+        }
+        .sector-breakdown-table tbody tr.sector-infeasible td {
+            background: rgba(239, 68, 68, 0.12);
+        }
+        .sector-breakdown-table tbody tr.sector-infeasible td:first-child {
+            border-left: 3px solid var(--danger-color);
+        }
+        .sector-kind-tag {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            padding: 0.1rem 0.45rem;
+            border-radius: 4px;
+            margin-right: 0.4rem;
+        }
+        .sector-kind-tag.hard {
+            background: var(--warning-color);
+            color: white;
+        }
+        .sector-kind-tag.easy {
+            background: var(--success-color);
+            color: white;
+        }
+        .sector-wbal-arrow {
+            opacity: 0.6;
+            margin: 0 0.25rem;
+        }
+        .sector-wbal-recovering { color: var(--success-color); font-weight: 600; }
+        .sector-wbal-depleting { color: var(--warning-color); font-weight: 600; }
+        .sector-wbal-floor-breach { color: var(--danger-color); font-weight: 700; }
+        .sector-breakdown-footer {
+            margin-top: 0.9rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--border-color);
+            font-size: 0.92rem;
+            line-height: 1.5;
+        }
+        .sector-breakdown-footer .footer-row { display: flex; justify-content: space-between; gap: 1rem; }
+        .sector-breakdown-footer .footer-row + .footer-row { margin-top: 0.25rem; }
+        .sector-breakdown-footer .footer-label { opacity: 0.75; }
+        .sector-breakdown-footer .footer-value { font-weight: 600; }
+        .sector-breakdown-footer .feasibility-ok {
+            margin-top: 0.6rem;
+            color: var(--success-color);
+            font-weight: 600;
+        }
+        .sector-breakdown-footer .feasibility-warn {
+            margin-top: 0.6rem;
+            color: var(--danger-color);
+            font-weight: 600;
+        }
+
         /* Elevation profile + cursor overlay (Phase 3 / Sub-commit 2). */
         .elevation-panel {
             background: var(--card-bg);
@@ -2121,6 +2219,45 @@
                         current reserve setting.
                     </p>
                 </div>
+            </div>
+
+            <!-- Sector-by-sector ride plan (Phase 3 / Sub-commit 4). When the
+                 climb has any sub-section that exceeds the rider's planned
+                 pace, the segment is broken into hard + easy sectors and
+                 each sector gets its own pacing line: power, speed, time,
+                 gear+cadence, and the W'bal at the end of that sector. The
+                 W'bal trace below the table walks Skiba's exponential
+                 recovery model second-by-second so the rider can see where
+                 W' depletes and where it refills. Hidden in Simple Power
+                 mode (no W'bal model possible) — that mode falls back to
+                 the steepest-section warning above. -->
+            <div id="sectorBreakdown" class="sector-breakdown" style="display: none;">
+                <div class="sector-breakdown-header">
+                    <h3 data-i18n="climbPlanner.results.sectors.title">Sector-by-sector ride plan</h3>
+                    <p class="sector-breakdown-helper" data-i18n="climbPlanner.results.sectors.helper">
+                        Where the climb gets hard enough that you can't hold your average pace,
+                        it's broken out into a separate sector. Each sector's plan respects
+                        your CP/W' budget and the reserve you set.
+                    </p>
+                </div>
+                <div class="sector-breakdown-table-wrap">
+                    <table class="sector-breakdown-table">
+                        <thead>
+                            <tr>
+                                <th data-i18n="climbPlanner.results.sectors.col.kind">Sector</th>
+                                <th data-i18n="climbPlanner.results.sectors.col.length">Length</th>
+                                <th data-i18n="climbPlanner.results.sectors.col.grade">Grade</th>
+                                <th data-i18n="climbPlanner.results.sectors.col.power">Power</th>
+                                <th data-i18n="climbPlanner.results.sectors.col.speed">Speed</th>
+                                <th data-i18n="climbPlanner.results.sectors.col.time">Time</th>
+                                <th data-i18n="climbPlanner.results.sectors.col.gear">Gear · cadence</th>
+                                <th data-i18n="climbPlanner.results.sectors.col.wbal">W'bal end</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sectorBreakdownBody"></tbody>
+                    </table>
+                </div>
+                <div id="sectorBreakdownFooter" class="sector-breakdown-footer"></div>
             </div>
 
             <div class="results-grid">
@@ -4355,6 +4492,13 @@
             // of the result section.
             runSteepestSectionWarning(speed, drivetrainEfficiency, totalWeight);
 
+            // Sector-by-sector ride plan — Phase 3 / Sub-commit 4. When
+            // CP/W' (or a fittable Power Curve) is available, this replaces
+            // the steepest-section warning with a per-sector breakdown plus
+            // a forward W'bal simulation. In Simple Power mode it self-
+            // hides and the warning above stays as the fallback surface.
+            runSectorBreakdown(speed, drivetrainEfficiency, totalWeight, sustainablePower);
+
             // Show results — only scroll into view on the first reveal so live
             // refreshes from Step 3 don't yank the page around.
             const resultsEl = document.getElementById('resultsSection');
@@ -4687,6 +4831,447 @@
             if (textEl) textEl.textContent = text;
             okEl.style.display = 'none';
             warnEl.style.display = 'flex';
+        }
+
+        // ====================================================================
+        // Sector-by-sector ride plan (Phase 3 / Sub-commit 4)
+        //
+        // Where the climb has any sub-section that requires more power than
+        // the rider's planned average, we break the segment into hard + easy
+        // sectors and pace each one separately. The rider's W'bal (Skiba's
+        // model) is simulated forward second-by-second across the whole
+        // segment so the user sees where W' depletes on hard sectors and
+        // where it recovers on easy ones.
+        //
+        // Skiba's W'bal recovery time constant:
+        //   τ(DCP) = 546 · exp(-0.01 · DCP) + 316,  where DCP = CP − P_now
+        // While P > CP: W'bal depletes at rate (P − CP) joules/sec.
+        // While P < CP: W'bal recovers exponentially:
+        //   dW'/dt = (W' − W'bal) / τ(DCP)
+        //
+        // Mode coverage:
+        //   - Step 3 = CP/W'      → physiology straight from inputs.
+        //   - Step 3 = Power Curve → fit (CP, W') hyperbolically from points.
+        //   - Step 3 = Simple     → W'bal model can't run. Breakdown hidden;
+        //                           steepest-section warning stays visible.
+        // ====================================================================
+
+        // Fit a 2-parameter (CP, W') model to a set of {time, power} points
+        // by least-squares on the linearised form  P = CP + W'/t.
+        // Returns { cp, wPrime } or null when insufficient/degenerate.
+        function fitCPWFromCurve(curvePoints) {
+            if (!curvePoints || curvePoints.length < 2) return null;
+            // Convert time minutes → seconds, build (x = 1/t, y = P).
+            let n = 0, sx = 0, sy = 0, sxx = 0, sxy = 0;
+            for (let i = 0; i < curvePoints.length; i++) {
+                const t = curvePoints[i].time * 60;
+                const p = curvePoints[i].power;
+                if (!(t > 0) || !(p > 0)) continue;
+                const x = 1 / t;
+                n++;
+                sx += x; sy += p;
+                sxx += x * x; sxy += x * p;
+            }
+            if (n < 2) return null;
+            const denom = (n * sxx - sx * sx);
+            if (Math.abs(denom) < 1e-9) return null;
+            const wPrimeJ = (n * sxy - sx * sy) / denom;
+            const cp = (sy - wPrimeJ * sx) / n;
+            // Sanity: physiologically W' is positive (anaerobic capacity) and
+            // CP must be positive too. Reject obviously-bad fits.
+            if (!(cp > 30) || !(wPrimeJ > 1000)) return null;
+            return { cp: cp, wPrime: wPrimeJ / 1000 /* kJ */ };
+        }
+
+        // Resolve the rider's CP and W' from whichever Step 2/3 inputs are
+        // populated. Returns null when only Simple Power is available — that's
+        // the degraded mode and the breakdown is suppressed in that case.
+        function getRiderPhysiology() {
+            // Step 3 = CP/W' — use entered values directly.
+            if (state.powerMethod === 'cpw') {
+                const cpw = getCPWInputs();
+                if (cpw.cp > 0 && cpw.wPrime > 0) {
+                    return { cp: cpw.cp, wPrime: cpw.wPrime, mode: 'cpw', source: cpw.source };
+                }
+                return null;
+            }
+            // Step 3 = Power Curve — fit CP/W' from points (≥2 needed; we
+            // already require ≥3 to start the calculation).
+            if (state.powerMethod === 'curve') {
+                const pts = collectCurvePoints();
+                const fit = fitCPWFromCurve(pts);
+                if (fit) return { cp: fit.cp, wPrime: fit.wPrime, mode: 'curveFit' };
+                return null;
+            }
+            return null;
+        }
+
+        // Power required at the rider (rider-side, not at-the-wheel) to hold
+        // a given speed on a given grade. Mirror of the physics in
+        // calculateClimb / findOptimalSpeed but factored out so per-sector
+        // helpers can reuse it.
+        function riderRequiredAtSpeed(gradePct, totalMassKg, speedMs, drivetrainEff) {
+            const gradeRad = Math.atan(gradePct / 100);
+            const grav = totalMassKg * 9.81 * Math.sin(gradeRad) * speedMs;
+            const roll = totalMassKg * 9.81 * Math.cos(gradeRad) * 0.005 * speedMs;
+            const aero = 0.5 * 1.2 * 0.3 * Math.pow(speedMs, 3);
+            return (grav + roll + aero) / drivetrainEff;
+        }
+
+        // Solve for the speed (m/s) the rider holds at the given rider-side
+        // power on a given grade. Reuses findOptimalSpeed by converting to
+        // at-wheel power.
+        function speedForRiderPower(riderPowerW, totalMassKg, gradePct, drivetrainEff) {
+            const gradeRad = Math.atan(gradePct / 100);
+            return findOptimalSpeed(riderPowerW * drivetrainEff, totalMassKg, gradeRad);
+        }
+
+        // Fast grade lookup over a small forward window centred at index i,
+        // ±halfMetres of distance. Used to smooth GPX noise when classifying
+        // points as "hard".
+        function smoothedGradeAtIdx(points, i, halfKm) {
+            let lo = i, hi = i;
+            const here = points[i].distance;
+            while (lo > 0 && (here - points[lo].distance) < halfKm) lo--;
+            while (hi < points.length - 1 && (points[hi].distance - here) < halfKm) hi++;
+            const dKm = points[hi].distance - points[lo].distance;
+            if (!(dKm > 0)) return 0;
+            const dM = points[hi].elevation - points[lo].elevation;
+            return (dM / (dKm * 1000)) * 100;
+        }
+
+        // Identify hard / easy sectors within the planning segment.
+        // Walks every GPX point, classifies it as "hard" if the local-grade
+        // power demand at the rider's planned speed exceeds the planned power
+        // (with a small hysteresis), then groups consecutive same-class
+        // points into sectors. Tiny sectors (< MIN_SECTOR_SECONDS) are merged
+        // into their neighbour so we don't drown the user in micro-sectors.
+        const SECTOR_BOUNDARY_HYSTERESIS_W = 5;
+        const MIN_SECTOR_SECONDS = 30;
+        function identifyHardSectors(seg, points, plannedPowerW, plannedSpeedMs, totalMassKg, drivetrainEff) {
+            const flags = [];
+            for (let i = seg.startIdx; i <= seg.endIdx; i++) {
+                const grade = smoothedGradeAtIdx(points, i, 0.025); // ±25 m
+                const required = riderRequiredAtSpeed(grade, totalMassKg, plannedSpeedMs, drivetrainEff);
+                flags.push(required > (plannedPowerW + SECTOR_BOUNDARY_HYSTERESIS_W));
+            }
+
+            // Group runs.
+            const sectors = [];
+            let runStart = 0;
+            for (let k = 1; k <= flags.length; k++) {
+                if (k === flags.length || flags[k] !== flags[runStart]) {
+                    const startIdx = seg.startIdx + runStart;
+                    const endIdx = seg.startIdx + (k - 1);
+                    sectors.push(buildSectorStats(points, startIdx, endIdx, flags[runStart]));
+                    runStart = k;
+                }
+            }
+            if (sectors.length === 0) return [];
+
+            // Merge sectors shorter than MIN_SECTOR_SECONDS at the rider's
+            // planned pace into the previous sector. A tiny ramp shouldn't
+            // produce its own row in the table.
+            const minLengthKm = (plannedSpeedMs * MIN_SECTOR_SECONDS) / 1000;
+            const merged = [sectors[0]];
+            for (let k = 1; k < sectors.length; k++) {
+                const prev = merged[merged.length - 1];
+                if (sectors[k].length < minLengthKm) {
+                    // Absorb into prev keeping prev's hard/easy classification —
+                    // the tiny sub-bit doesn't dominate the merged label.
+                    merged[merged.length - 1] = buildSectorStats(
+                        points, prev.startIdx, sectors[k].endIdx, prev.isHard);
+                } else if (sectors[k].isHard === prev.isHard) {
+                    merged[merged.length - 1] = buildSectorStats(
+                        points, prev.startIdx, sectors[k].endIdx, prev.isHard);
+                } else {
+                    merged.push(sectors[k]);
+                }
+            }
+
+            return merged;
+        }
+
+        function buildSectorStats(points, startIdx, endIdx, isHard) {
+            const stats = climbStatsFromIdx(points, startIdx, endIdx);
+            stats.isHard = isHard;
+            return stats;
+        }
+
+        // For a hard sector: iterate "power → speed → duration → capability(duration)
+        // → power" to a fixed point. Capability comes from CP + W'(1−R)/t with the
+        // sector's own duration as t — so the rider gets to spend their W'(1−R) over
+        // the natural length of that sector. (This is per-sector; the W'bal sim
+        // below is what catches double-counting across multiple hard sectors.)
+        function paceHardSector(sector, physiology, reserveR, totalMassKg, drivetrainEff) {
+            // Initial guess: power required to hold planned speed on the sector's
+            // grade. Then iterate the cap.
+            const usableJ = physiology.wPrime * 1000 * (1 - reserveR);
+            // Seed with cap at a 3-min reference duration just to start the loop.
+            let durationSec = 180;
+            let power = physiology.cp + usableJ / durationSec;
+            for (let it = 0; it < 8; it++) {
+                const cap = physiology.cp + usableJ / Math.max(durationSec, 5);
+                const newPower = cap;
+                const speedMs = speedForRiderPower(newPower, totalMassKg, sector.avgGrade, drivetrainEff);
+                const newDuration = (sector.length * 1000) / Math.max(speedMs, 0.5);
+                if (Math.abs(newDuration - durationSec) < 0.5 && Math.abs(newPower - power) < 0.5) {
+                    durationSec = newDuration;
+                    power = newPower;
+                    break;
+                }
+                durationSec = newDuration;
+                power = newPower;
+            }
+            const speedMs = speedForRiderPower(power, totalMassKg, sector.avgGrade, drivetrainEff);
+            const timeSec = (sector.length * 1000) / Math.max(speedMs, 0.5);
+            return { power: power, speedMs: speedMs, timeSec: timeSec };
+        }
+
+        // For an easy sector: rider runs at min(planned, CP). If planned ≤ CP
+        // they're already in steady state; if planned > CP (because the climb's
+        // average forces it) they back off to CP on easy bits to recover W'.
+        function paceEasySector(sector, plannedPowerW, physiology, totalMassKg, drivetrainEff) {
+            const power = Math.min(plannedPowerW, physiology.cp);
+            const speedMs = speedForRiderPower(power, totalMassKg, sector.avgGrade, drivetrainEff);
+            const timeSec = (sector.length * 1000) / Math.max(speedMs, 0.5);
+            return { power: power, speedMs: speedMs, timeSec: timeSec };
+        }
+
+        // Skiba's W'bal recovery time constant in seconds.
+        function skibaTau(cp, currentPowerW) {
+            const dcp = Math.max(cp - currentPowerW, 0);
+            return 546 * Math.exp(-0.01 * dcp) + 316;
+        }
+
+        // Forward-simulate W'bal across the paced sectors at 1-second steps.
+        // Returns:
+        //   wbalStart, wbalEnd at each sector
+        //   minWbal across the segment
+        //   floorBreached (boolean) — minWbal < W' × R
+        //   breachSectorIdx (int|null) — first sector where floor is breached
+        function simulateWBal(sectors, physiology, reserveR) {
+            const W0 = physiology.wPrime * 1000; // joules
+            const floor = W0 * reserveR;
+            let wbal = W0;
+            let minWbal = W0;
+            let breachSectorIdx = null;
+
+            const out = [];
+            for (let s = 0; s < sectors.length; s++) {
+                const sec = sectors[s];
+                const startWbal = wbal;
+                const power = sec.pacing.power;
+                const dt = 1; // 1 s steps
+                const steps = Math.max(1, Math.round(sec.pacing.timeSec / dt));
+                for (let k = 0; k < steps; k++) {
+                    if (power > physiology.cp) {
+                        wbal -= (power - physiology.cp) * dt;
+                    } else {
+                        const tau = skibaTau(physiology.cp, power);
+                        wbal += (W0 - wbal) * (dt / tau);
+                    }
+                    if (wbal < 0) wbal = 0;
+                    if (wbal > W0) wbal = W0;
+                    if (wbal < minWbal) minWbal = wbal;
+                    if (wbal < floor && breachSectorIdx === null) breachSectorIdx = s;
+                }
+                out.push({
+                    startWbal: startWbal,
+                    endWbal: wbal,
+                    breached: (wbal < floor) || (startWbal > floor && breachSectorIdx === s)
+                });
+            }
+
+            return {
+                trace: out,
+                minWbal: minWbal,
+                floor: floor,
+                W0: W0,
+                floorBreached: minWbal < floor - 1e-6,
+                breachSectorIdx: breachSectorIdx
+            };
+        }
+
+        // Top-level entry. Mirrors runSteepestSectionWarning's signature so it
+        // can sit on the same calculateClimb tail and use the same
+        // already-computed numbers.
+        function runSectorBreakdown(speedMs, drivetrainEff, totalMassKg, plannedPowerW) {
+            const panel = document.getElementById('sectorBreakdown');
+            const warnEl = document.getElementById('steepestSectionWarning');
+            const okEl = document.getElementById('steepestSectionOk');
+            if (!panel) return;
+
+            const hide = function () { panel.style.display = 'none'; };
+
+            // Manual mode: no per-point profile to scan, no breakdown possible.
+            if (state.climbInputMode !== 'gpx') { hide(); return; }
+            const seg = getPlanningSegment();
+            const points = state.gpxPoints;
+            if (!seg || !points || points.length === 0) { hide(); return; }
+            if (!(speedMs > 0) || !(drivetrainEff > 0) || !(plannedPowerW > 0)) {
+                hide(); return;
+            }
+
+            const physiology = getRiderPhysiology();
+            // Simple Power mode → no W'bal model. Breakdown stays hidden;
+            // the steepest-section warning above is the right surface there.
+            if (!physiology) { hide(); return; }
+
+            const sectors = identifyHardSectors(
+                seg, points, plannedPowerW, speedMs, totalMassKg, drivetrainEff);
+
+            // Climb is uniformly easy (no hard sectors at all) — the average
+            // plan already represents what the rider will do, and the
+            // steepest-section "within range" positive note covers it. Hide
+            // the breakdown to avoid noise.
+            const anyHard = sectors.some(s => s.isHard);
+            if (!anyHard) { hide(); return; }
+
+            // Pace each sector.
+            for (let i = 0; i < sectors.length; i++) {
+                const s = sectors[i];
+                if (s.isHard) {
+                    s.pacing = paceHardSector(s, physiology, state.reserveFraction, totalMassKg, drivetrainEff);
+                } else {
+                    s.pacing = paceEasySector(s, plannedPowerW, physiology, totalMassKg, drivetrainEff);
+                }
+            }
+
+            const wbal = simulateWBal(sectors, physiology, state.reserveFraction);
+
+            // Hide the steepest-section warning (it was the MVP-light proxy for
+            // exactly this analysis). Keep both the breakdown and warning code
+            // paths around so Simple Power mode still shows the warning.
+            if (warnEl) warnEl.style.display = 'none';
+            if (okEl) okEl.style.display = 'none';
+
+            renderSectorBreakdown(sectors, wbal, physiology, plannedPowerW, totalMassKg, drivetrainEff);
+            panel.style.display = 'block';
+        }
+
+        // ----- Rendering ----------------------------------------------------
+
+        function formatSecondsMMSS(seconds) {
+            if (!(seconds > 0)) return '--:--';
+            const total = Math.round(seconds);
+            const m = Math.floor(total / 60);
+            const s = total % 60;
+            return m + ':' + (s < 10 ? '0' : '') + s;
+        }
+
+        function formatKjOneDecimal(joules) {
+            if (!(joules >= 0)) return '--';
+            return (joules / 1000).toFixed(1);
+        }
+
+        function renderSectorBreakdown(sectors, wbal, physiology, plannedPowerW, totalMassKg, drivetrainEff) {
+            const body = document.getElementById('sectorBreakdownBody');
+            const footer = document.getElementById('sectorBreakdownFooter');
+            if (!body || !footer) return;
+
+            // Pick a sensible gear set + maintenance for cadence. Reuse the
+            // same drivetrain configuration the user already set up — same
+            // helpers calculateClimb uses.
+            const chainrings = getCurrentChainrings() || [];
+            const cassette = getCurrentCassette() || [];
+            const wheelCircumference = parseFloat(document.getElementById('wheelCircumference').value) || 2.096;
+            const preferredCadence = parseFloat(document.getElementById('preferredCadence').value) || 85;
+
+            let totalDistanceKm = 0;
+            let totalSeconds = 0;
+            const rows = [];
+            for (let i = 0; i < sectors.length; i++) {
+                const s = sectors[i];
+                const trace = wbal.trace[i];
+                totalDistanceKm += s.length;
+                totalSeconds += s.pacing.timeSec;
+
+                // Optimal gear at this sector's speed.
+                let gearLabel = '--';
+                let cadenceLabel = '--';
+                if (chainrings.length && cassette.length) {
+                    const wheelRpm = (s.pacing.speedMs * 60) / wheelCircumference;
+                    const optimal = findOptimalGear(wheelRpm, preferredCadence, chainrings, cassette);
+                    if (optimal && optimal.chainring && optimal.cog) {
+                        gearLabel = optimal.chainring + '×' + optimal.cog;
+                        const ratio = optimal.chainring / optimal.cog;
+                        const cadence = wheelRpm / ratio;
+                        cadenceLabel = Math.round(cadence) + ' RPM';
+                    }
+                }
+
+                const kindClass = trace.breached
+                    ? 'sector-infeasible'
+                    : (s.isHard ? 'sector-hard' : 'sector-easy');
+                const tag = s.isHard
+                    ? '<span class="sector-kind-tag hard">Hard</span>'
+                    : '<span class="sector-kind-tag easy">Easy</span>';
+                const recoverClass = (trace.endWbal > trace.startWbal + 100)
+                    ? 'sector-wbal-recovering'
+                    : (trace.endWbal < trace.startWbal - 100 ? 'sector-wbal-depleting' : '');
+                const breachClass = trace.breached ? 'sector-wbal-floor-breach' : '';
+
+                rows.push(
+                    '<tr class="' + kindClass + '">' +
+                    '<td>' + tag + (i + 1) + '</td>' +
+                    '<td>' + (s.length < 1 ? Math.round(s.length * 1000) + ' m' : s.length.toFixed(2) + ' km') + '</td>' +
+                    '<td>' + s.avgGrade.toFixed(1) + '%</td>' +
+                    '<td>' + Math.round(s.pacing.power) + ' W</td>' +
+                    '<td>' + (s.pacing.speedMs * 3.6).toFixed(1) + ' km/h</td>' +
+                    '<td>' + formatSecondsMMSS(s.pacing.timeSec) + '</td>' +
+                    '<td>' + gearLabel + ' · ' + cadenceLabel + '</td>' +
+                    '<td class="' + (breachClass || recoverClass) + '">' +
+                        formatKjOneDecimal(trace.startWbal) +
+                        '<span class="sector-wbal-arrow">→</span>' +
+                        formatKjOneDecimal(trace.endWbal) + ' kJ' +
+                    '</td>' +
+                    '</tr>'
+                );
+            }
+
+            body.innerHTML = rows.join('');
+
+            // Footer: totals + feasibility note.
+            const totalTime = formatSecondsMMSS(totalSeconds);
+            const totalDist = totalDistanceKm < 10
+                ? totalDistanceKm.toFixed(2) + ' km'
+                : totalDistanceKm.toFixed(1) + ' km';
+            const minWbalKj = formatKjOneDecimal(wbal.minWbal);
+            const floorKj = formatKjOneDecimal(wbal.floor);
+            const wPrimeKj = formatKjOneDecimal(wbal.W0);
+            const reservePct = Math.round(state.reserveFraction * 100);
+            const physTag = physiology.mode === 'curveFit'
+                ? ' (CP/W\' fitted from your power curve)'
+                : '';
+
+            let feasibility;
+            if (wbal.floorBreached) {
+                feasibility =
+                    '<div class="feasibility-warn">' +
+                    '⚠️ W\'bal drops to ' + minWbalKj + ' kJ — below your ' + reservePct +
+                    '% reserve floor (' + floorKj + ' kJ). The plan above is the most you can ' +
+                    'sustain on the hard sectors; expect to either lower your reserve target, ' +
+                    'dial pace back further, or accept finishing the climb closer to empty.' +
+                    '</div>';
+            } else {
+                feasibility =
+                    '<div class="feasibility-ok">' +
+                    '✅ Plan stays above your ' + reservePct + '% reserve floor throughout ' +
+                    '(low point: ' + minWbalKj + ' kJ vs floor ' + floorKj + ' kJ).' +
+                    '</div>';
+            }
+
+            footer.innerHTML =
+                '<div class="footer-row">' +
+                    '<span class="footer-label">Total: ' + totalDist + ' across ' + sectors.length + ' sectors' + physTag + '</span>' +
+                    '<span class="footer-value">' + totalTime + '</span>' +
+                '</div>' +
+                '<div class="footer-row">' +
+                    '<span class="footer-label">W\' total: ' + wPrimeKj + ' kJ · reserve floor at ' + reservePct + '%: ' + floorKj + ' kJ</span>' +
+                    '<span class="footer-value">low: ' + minWbalKj + ' kJ</span>' +
+                '</div>' +
+                feasibility;
         }
 
         function findOptimalGear(wheelRpm, preferredCadence, chainrings, cassette) {
