@@ -497,6 +497,33 @@
             background: var(--success-color);
             color: white;
         }
+        /* Five-tier sector labels (Sub-commit 4 / follow-up 4). Replace the
+           binary Easy/Hard chip — tiers are by max-100m grade and read more
+           informatively at a glance. Math is still continuous via M(g). */
+        .sector-kind-tag.tier-descent {
+            background: #3b82f6;     /* blue — coasting */
+            color: white;
+        }
+        .sector-kind-tag.tier-easy {
+            background: #10b981;     /* green — easy */
+            color: white;
+        }
+        .sector-kind-tag.tier-manageable {
+            background: #84cc16;     /* lime — manageable */
+            color: white;
+        }
+        .sector-kind-tag.tier-hard {
+            background: #f59e0b;     /* amber — uncomfortable */
+            color: white;
+        }
+        .sector-kind-tag.tier-steep {
+            background: #f97316;     /* orange — painful */
+            color: white;
+        }
+        .sector-kind-tag.tier-brutal {
+            background: #ef4444;     /* red — hellish */
+            color: white;
+        }
         .sector-kind-tag.total {
             background: var(--text-secondary, #6b7280);
             color: white;
@@ -5037,27 +5064,87 @@
             return stats;
         }
 
-        // Hard sector: ride at the globally-allocated above-CP power (the
-        // same number for every hard sector — the rider holds a roughly
-        // constant effort, not a per-sector all-out). Speed solves from
-        // power on the sector's grade.
-        function paceHardSector(sector, hardPowerW, totalMassKg, drivetrainEff) {
-            const speedMs = speedForRiderPower(hardPowerW, totalMassKg, sector.avgGrade, drivetrainEff);
-            const timeSec = (sector.length * 1000) / Math.max(speedMs, 0.5);
-            return { power: hardPowerW, speedMs: speedMs, timeSec: timeSec };
+        // Tier label for a representative grade (max-100m). The math stays
+        // continuous via M(g); these are display labels that map a sector
+        // to one of six categories so the rider reads the table at a glance.
+        // Boundaries are strict-< on the upper edge: 9.99% → Hard, 10.0% →
+        // Steep. Sources: theclimbingcyclist.com + tickettoridegroup.com.
+        function tierForGrade(gradePct) {
+            if (gradePct < 0)   return { label: 'Descent',     className: 'tier-descent' };
+            if (gradePct < 3)   return { label: 'Easy',        className: 'tier-easy' };
+            if (gradePct < 7)   return { label: 'Manageable',  className: 'tier-manageable' };
+            if (gradePct < 10)  return { label: 'Hard',        className: 'tier-hard' };
+            if (gradePct < 16)  return { label: 'Steep',       className: 'tier-steep' };
+            return                     { label: 'Brutal',      className: 'tier-brutal' };
         }
 
-        // Easy sector: ride at planned speed. Power = the watts required to
-        // hold planned speed on this grade, capped at CP so easy sections
-        // never sneak above CP. On gentler grades the rider naturally falls
-        // below CP, allowing W' recovery.
-        function paceEasySector(sector, plannedSpeedMs, physiology, totalMassKg, drivetrainEff) {
+        // Minimum watts a non-hard-classified sector should put through the
+        // pedals. A climb of any grade should keep some pressure on the
+        // pedals — riding at 30 % of CP through what's nominally an "easy"
+        // sub-section is unrealistic. Floors per tier (% of CP):
+        //   Descent   →  0   (coast)
+        //   Easy      → 60 %  (≤ 3 % grade — flat-ish)
+        //   Manageable+ → 67 %  (3 % grade and up — actually climbing)
+        // For Hard / Steep / Brutal sectors the natural required power is
+        // already ≥ ~70 % of CP, so the floor is informational only.
+        function easySectorFloorWatts(repGradePct, cp) {
+            if (repGradePct < 0) return 0;
+            if (repGradePct < 3) return 0.60 * cp;
+            return 0.67 * cp;
+        }
+
+        // Walk every GPX point inside [sector.startIdx, sector.endIdx],
+        // solving speed for the chosen constant rider power on each
+        // segment's *local* grade, and accumulate time. Returns the
+        // sector's total time and the time-weighted average speed
+        // (= length / total_time). This is the honest replacement for
+        // pacing-by-uniform-avg-grade — sectors with grade swings get
+        // realistic numbers (slow on the steep sub-bits, fast on the
+        // gentler bits).
+        function integrateSectorAtPower(sector, points, powerW, totalMassKg, drivetrainEff) {
+            let totalSec = 0;
+            for (let i = sector.startIdx; i < sector.endIdx; i++) {
+                const dKm = points[i + 1].distance - points[i].distance;
+                if (!(dKm > 0)) continue;
+                const dM = points[i + 1].elevation - points[i].elevation;
+                const grade = (dM / (dKm * 1000)) * 100;
+                const v = speedForRiderPower(powerW, totalMassKg, grade, drivetrainEff);
+                totalSec += (dKm * 1000) / Math.max(v, 0.5);
+            }
+            // Fallback: if the segment only spans one point, fall back to
+            // the avg-grade approximation so we don't divide by zero.
+            if (!(totalSec > 0)) {
+                const v = speedForRiderPower(powerW, totalMassKg, sector.avgGrade, drivetrainEff);
+                totalSec = (sector.length * 1000) / Math.max(v, 0.5);
+            }
+            const avgSpeedMs = (sector.length * 1000) / Math.max(totalSec, 1);
+            return { timeSec: totalSec, avgSpeedMs: avgSpeedMs };
+        }
+
+        // Hard sector: ride at the per-sector excess power that
+        // allocateHardExcess decided. Time + avg speed come from the
+        // point-by-point integrator so the displayed numbers reflect the
+        // actual ride through the sector's grade profile, not a uniform-
+        // avg-grade approximation.
+        function paceHardSector(sector, hardPowerW, points, totalMassKg, drivetrainEff) {
+            const ride = integrateSectorAtPower(sector, points, hardPowerW, totalMassKg, drivetrainEff);
+            return { power: hardPowerW, speedMs: ride.avgSpeedMs, timeSec: ride.timeSec };
+        }
+
+        // Easy sector: pace = the watts required to hold planned speed on
+        // the sector's *max-100 m* grade (so the steep sub-bits aren't
+        // ignored), bounded below by the tier floor (sustained climbing
+        // shouldn't drop to 30 % of CP) and above by CP (an "easy" sector
+        // never goes above threshold). Time + avg speed are then computed
+        // point-by-point at that constant power.
+        function paceEasySector(sector, plannedSpeedMs, physiology, points, totalMassKg, drivetrainEff) {
+            const repGrade = sector.maxGrade100m;
             const requiredAtPlanned = riderRequiredAtSpeed(
-                sector.avgGrade, totalMassKg, plannedSpeedMs, drivetrainEff);
-            const power = Math.min(requiredAtPlanned, physiology.cp);
-            const speedMs = speedForRiderPower(power, totalMassKg, sector.avgGrade, drivetrainEff);
-            const timeSec = (sector.length * 1000) / Math.max(speedMs, 0.5);
-            return { power: power, speedMs: speedMs, timeSec: timeSec };
+                repGrade, totalMassKg, plannedSpeedMs, drivetrainEff);
+            const floor = easySectorFloorWatts(repGrade, physiology.cp);
+            const power = Math.min(Math.max(requiredAtPlanned, floor), physiology.cp);
+            const ride = integrateSectorAtPower(sector, points, power, totalMassKg, drivetrainEff);
+            return { power: power, speedMs: ride.avgSpeedMs, timeSec: ride.timeSec };
         }
 
         // Steepness multiplier — biases the W' allocation toward steeper
@@ -5090,7 +5177,11 @@
         // Converges in at most n+1 inner passes (one per cap event).
         function allocateHardExcess(hardSectors, usableJ) {
             const n = hardSectors.length;
-            const weights = hardSectors.map(s => steepnessMultiplier(s.avgGrade));
+            // M(g) keys off the sector's max-100 m grade so a sector with
+            // avg 10.2 % but a 13.8 % peak gets the bigger multiplier the
+            // peak deserves — the rider pushes harder on the actual hard
+            // sub-bit, not the smoothed average.
+            const weights = hardSectors.map(s => steepnessMultiplier(s.maxGrade100m));
             const ceilings = hardSectors.map(s => usableJ / Math.max(s.pacing.timeSec, 1));
             const excess = new Array(n).fill(0);
             const capped = new Array(n).fill(false);
@@ -5127,10 +5218,10 @@
         // W' recovery. Outer loop iterates because each hard sector's
         // duration depends on its allocated excess, which in turn depends
         // on the durations.
-        function paceAllSectors(sectors, physiology, reserveR, plannedSpeedMs, totalMassKg, drivetrainEff) {
+        function paceAllSectors(sectors, physiology, reserveR, plannedSpeedMs, points, totalMassKg, drivetrainEff) {
             sectors.forEach(s => {
                 if (!s.isHard) {
-                    s.pacing = paceEasySector(s, plannedSpeedMs, physiology, totalMassKg, drivetrainEff);
+                    s.pacing = paceEasySector(s, plannedSpeedMs, physiology, points, totalMassKg, drivetrainEff);
                 }
             });
 
@@ -5141,7 +5232,7 @@
             // Reserve ≥ 100% — no W' to spend, cap every hard sector at CP.
             if (!(usableJ > 0)) {
                 hardSectors.forEach(s => {
-                    s.pacing = paceHardSector(s, physiology.cp, totalMassKg, drivetrainEff);
+                    s.pacing = paceHardSector(s, physiology.cp, points, totalMassKg, drivetrainEff);
                 });
                 return;
             }
@@ -5164,7 +5255,7 @@
                     const s = hardSectors[k];
                     const P = physiology.cp + excesses[k];
                     const oldDur = s.pacing.timeSec;
-                    s.pacing = paceHardSector(s, P, totalMassKg, drivetrainEff);
+                    s.pacing = paceHardSector(s, P, points, totalMassKg, drivetrainEff);
                     totalChange += Math.abs(s.pacing.timeSec - oldDur);
                 }
                 // Convergence: total duration change across all hard
@@ -5275,7 +5366,7 @@
 
             // Pace all sectors with a single global excess shared across
             // hard sectors (W'(1−R) allocated once, not once per sector).
-            paceAllSectors(sectors, physiology, state.reserveFraction, speedMs, totalMassKg, drivetrainEff);
+            paceAllSectors(sectors, physiology, state.reserveFraction, speedMs, points, totalMassKg, drivetrainEff);
 
             const wbal = simulateWBal(sectors, physiology, state.reserveFraction);
 
@@ -5359,9 +5450,12 @@
                 const kindClass = trace.breached
                     ? 'sector-infeasible'
                     : (s.isHard ? 'sector-hard' : 'sector-easy');
-                const tag = s.isHard
-                    ? '<span class="sector-kind-tag hard">Hard</span>'
-                    : '<span class="sector-kind-tag easy">Easy</span>';
+                // Tier label is by max-100 m grade, not by Hard/Easy. A
+                // sector classified Easy on its avg can still tag as Hard
+                // or Steep when its peak demands it — and that's the cue
+                // the rider needs.
+                const tier = tierForGrade(s.maxGrade100m);
+                const tag = '<span class="sector-kind-tag ' + tier.className + '">' + tier.label + '</span>';
                 const recoverClass = (trace.endWbal > trace.startWbal + 100)
                     ? 'sector-wbal-recovering'
                     : (trace.endWbal < trace.startWbal - 100 ? 'sector-wbal-depleting' : '');
