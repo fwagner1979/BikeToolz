@@ -4941,19 +4941,27 @@
         }
 
         // Identify hard / easy sectors within the planning segment.
-        // Walks every GPX point, classifies it as "hard" if the local-grade
-        // power demand at the rider's planned speed exceeds the planned power
-        // (with a small hysteresis), then groups consecutive same-class
-        // points into sectors. Tiny sectors (< MIN_SECTOR_SECONDS) are merged
+        // Walks every GPX point with a state-machine classifier: the rider
+        // enters a "hard" run when the locally-required power (at planned
+        // speed) climbs HARD_ENTER_HYSTERESIS_W above planned, and stays in
+        // that run until required falls back below planned (asymmetric
+        // hysteresis prevents Hard/Easy/Hard whiplash on grade noise).
+        // Tiny sectors (< MIN_SECTOR_SECONDS at planned pace) are merged
         // into their neighbour so we don't drown the user in micro-sectors.
-        const SECTOR_BOUNDARY_HYSTERESIS_W = 5;
-        const MIN_SECTOR_SECONDS = 30;
+        const HARD_ENTER_HYSTERESIS_W = 20;
+        const MIN_SECTOR_SECONDS = 90;
+        const SECTOR_GRADE_SMOOTH_HALFKM = 0.05; // ±50 m → 100 m total window
         function identifyHardSectors(seg, points, plannedPowerW, plannedSpeedMs, totalMassKg, drivetrainEff) {
             const flags = [];
+            const enterAt = plannedPowerW + HARD_ENTER_HYSTERESIS_W;
+            const exitAt = plannedPowerW;
+            let inHard = false;
             for (let i = seg.startIdx; i <= seg.endIdx; i++) {
-                const grade = smoothedGradeAtIdx(points, i, 0.025); // ±25 m
+                const grade = smoothedGradeAtIdx(points, i, SECTOR_GRADE_SMOOTH_HALFKM);
                 const required = riderRequiredAtSpeed(grade, totalMassKg, plannedSpeedMs, drivetrainEff);
-                flags.push(required > (plannedPowerW + SECTOR_BOUNDARY_HYSTERESIS_W));
+                if (!inHard && required > enterAt) inHard = true;
+                else if (inHard && required < exitAt) inHard = false;
+                flags.push(inHard);
             }
 
             // Group runs.
@@ -4998,44 +5006,78 @@
             return stats;
         }
 
-        // For a hard sector: iterate "power → speed → duration → capability(duration)
-        // → power" to a fixed point. Capability comes from CP + W'(1−R)/t with the
-        // sector's own duration as t — so the rider gets to spend their W'(1−R) over
-        // the natural length of that sector. (This is per-sector; the W'bal sim
-        // below is what catches double-counting across multiple hard sectors.)
-        function paceHardSector(sector, physiology, reserveR, totalMassKg, drivetrainEff) {
-            // Initial guess: power required to hold planned speed on the sector's
-            // grade. Then iterate the cap.
-            const usableJ = physiology.wPrime * 1000 * (1 - reserveR);
-            // Seed with cap at a 3-min reference duration just to start the loop.
-            let durationSec = 180;
-            let power = physiology.cp + usableJ / durationSec;
-            for (let it = 0; it < 8; it++) {
-                const cap = physiology.cp + usableJ / Math.max(durationSec, 5);
-                const newPower = cap;
-                const speedMs = speedForRiderPower(newPower, totalMassKg, sector.avgGrade, drivetrainEff);
-                const newDuration = (sector.length * 1000) / Math.max(speedMs, 0.5);
-                if (Math.abs(newDuration - durationSec) < 0.5 && Math.abs(newPower - power) < 0.5) {
-                    durationSec = newDuration;
-                    power = newPower;
-                    break;
-                }
-                durationSec = newDuration;
-                power = newPower;
-            }
+        // Hard sector: ride at the globally-allocated above-CP power (the
+        // same number for every hard sector — the rider holds a roughly
+        // constant effort, not a per-sector all-out). Speed solves from
+        // power on the sector's grade.
+        function paceHardSector(sector, hardPowerW, totalMassKg, drivetrainEff) {
+            const speedMs = speedForRiderPower(hardPowerW, totalMassKg, sector.avgGrade, drivetrainEff);
+            const timeSec = (sector.length * 1000) / Math.max(speedMs, 0.5);
+            return { power: hardPowerW, speedMs: speedMs, timeSec: timeSec };
+        }
+
+        // Easy sector: ride at planned speed. Power = the watts required to
+        // hold planned speed on this grade, capped at CP so easy sections
+        // never sneak above CP. On gentler grades the rider naturally falls
+        // below CP, allowing W' recovery.
+        function paceEasySector(sector, plannedSpeedMs, physiology, totalMassKg, drivetrainEff) {
+            const requiredAtPlanned = riderRequiredAtSpeed(
+                sector.avgGrade, totalMassKg, plannedSpeedMs, drivetrainEff);
+            const power = Math.min(requiredAtPlanned, physiology.cp);
             const speedMs = speedForRiderPower(power, totalMassKg, sector.avgGrade, drivetrainEff);
             const timeSec = (sector.length * 1000) / Math.max(speedMs, 0.5);
             return { power: power, speedMs: speedMs, timeSec: timeSec };
         }
 
-        // For an easy sector: rider runs at min(planned, CP). If planned ≤ CP
-        // they're already in steady state; if planned > CP (because the climb's
-        // average forces it) they back off to CP on easy bits to recover W'.
-        function paceEasySector(sector, plannedPowerW, physiology, totalMassKg, drivetrainEff) {
-            const power = Math.min(plannedPowerW, physiology.cp);
-            const speedMs = speedForRiderPower(power, totalMassKg, sector.avgGrade, drivetrainEff);
-            const timeSec = (sector.length * 1000) / Math.max(speedMs, 0.5);
-            return { power: power, speedMs: speedMs, timeSec: timeSec };
+        // Pace all sectors. Hard sectors share a single global "excess" power
+        //   excess = W'(1−R) / total_hard_seconds
+        // so the W'(1−R) budget is allocated *once* across the whole climb
+        // rather than handed to every hard sector independently (that bug
+        // produced the 1845 W / 3057 W cells in the first run). Iterates 2–3
+        // times because total_hard_seconds depends on hard speed which
+        // depends on excess. excess is capped at W'(1−R) / 180 s — the most
+        // a rider can sustain above CP for ~3 min — to bound short-T_h
+        // edge cases.
+        function paceAllSectors(sectors, physiology, reserveR, plannedSpeedMs, totalMassKg, drivetrainEff) {
+            sectors.forEach(s => {
+                if (!s.isHard) {
+                    s.pacing = paceEasySector(s, plannedSpeedMs, physiology, totalMassKg, drivetrainEff);
+                }
+            });
+
+            const hardSectors = sectors.filter(s => s.isHard);
+            if (hardSectors.length === 0) return;
+
+            const usableJ = physiology.wPrime * 1000 * (1 - reserveR);
+            // Reserve ≥ 100% (no W' to spend): hard sectors capped at CP.
+            if (!(usableJ > 0)) {
+                hardSectors.forEach(s => {
+                    s.pacing = paceHardSector(s, physiology.cp, totalMassKg, drivetrainEff);
+                });
+                return;
+            }
+
+            const excessCapW = usableJ / 180; // 3-min sustainable above-CP
+            // Initial T_h estimate using planned speed across the hard sectors.
+            let T_h = hardSectors.reduce(
+                (sum, s) => sum + (s.length * 1000 / Math.max(plannedSpeedMs, 0.5)), 0);
+            let excess = Math.min(usableJ / Math.max(T_h, 1), excessCapW);
+
+            for (let iter = 0; iter < 8; iter++) {
+                const P_hard = physiology.cp + excess;
+                let new_T_h = 0;
+                hardSectors.forEach(s => {
+                    s.pacing = paceHardSector(s, P_hard, totalMassKg, drivetrainEff);
+                    new_T_h += s.pacing.timeSec;
+                });
+                const new_excess = Math.min(usableJ / Math.max(new_T_h, 1), excessCapW);
+                if (Math.abs(new_excess - excess) < 0.5) {
+                    excess = new_excess;
+                    break;
+                }
+                excess = new_excess;
+                T_h = new_T_h;
+            }
         }
 
         // Skiba's W'bal recovery time constant in seconds.
@@ -5065,11 +5107,20 @@
                 const dt = 1; // 1 s steps
                 const steps = Math.max(1, Math.round(sec.pacing.timeSec / dt));
                 for (let k = 0; k < steps; k++) {
-                    if (power > physiology.cp) {
-                        wbal -= (power - physiology.cp) * dt;
+                    const dcp = physiology.cp - power;
+                    if (dcp <= 0) {
+                        // At or above CP: deplete (rate is zero at exactly CP).
+                        wbal -= (-dcp) * dt;
                     } else {
+                        // Below CP: Skiba's exponential recovery, gated by
+                        // how-far-below-CP. The gate ramps from 0 at DCP=0 to
+                        // 1 at DCP=30 W, so steady-state at CP gives no
+                        // recovery (matching the "W' is constant at CP"
+                        // physiology) and recovery only kicks in once the
+                        // rider drops meaningfully below CP.
+                        const recoveryGate = Math.min(dcp / 30, 1);
                         const tau = skibaTau(physiology.cp, power);
-                        wbal += (W0 - wbal) * (dt / tau);
+                        wbal += (W0 - wbal) * (dt / tau) * recoveryGate;
                     }
                     if (wbal < 0) wbal = 0;
                     if (wbal > W0) wbal = W0;
@@ -5128,15 +5179,9 @@
             const anyHard = sectors.some(s => s.isHard);
             if (!anyHard) { hide(); return; }
 
-            // Pace each sector.
-            for (let i = 0; i < sectors.length; i++) {
-                const s = sectors[i];
-                if (s.isHard) {
-                    s.pacing = paceHardSector(s, physiology, state.reserveFraction, totalMassKg, drivetrainEff);
-                } else {
-                    s.pacing = paceEasySector(s, plannedPowerW, physiology, totalMassKg, drivetrainEff);
-                }
-            }
+            // Pace all sectors with a single global excess shared across
+            // hard sectors (W'(1−R) allocated once, not once per sector).
+            paceAllSectors(sectors, physiology, state.reserveFraction, speedMs, totalMassKg, drivetrainEff);
 
             const wbal = simulateWBal(sectors, physiology, state.reserveFraction);
 
