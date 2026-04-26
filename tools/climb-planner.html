@@ -5111,6 +5111,21 @@
             return SECTOR_DETAIL_PRESETS[Math.max(1, Math.min(5, lvl))];
         }
 
+        // Fixed preset used to build the *ground-truth* sector decomposition
+        // that pacing + W'bal sim run on, regardless of the slider position.
+        // Smoothing stays at the established default ±50 m sweet spot;
+        // merge thresholds are zero so adjacent same-tier runs still coalesce
+        // naturally but no short hard kicker or short easy bit gets absorbed
+        // into a neighbour. The slider's job is to bundle these for display
+        // — the underlying plan (and therefore total time, avg power, W'bal
+        // trace) is invariant across slider levels by construction.
+        const GROUND_TRUTH_PRESET = {
+            smoothHalfKm: 0.050,
+            minSubHardSec: 0,
+            hardMinMeters: 0,
+            label: 'Ground truth'
+        };
+
         // Map a tier label to a small ordinal so we can compare "is this
         // run at Hard or above?" cheaply.
         function tierOrdinal(label) {
@@ -5126,8 +5141,8 @@
         }
         function isHardTier(label) { return tierOrdinal(label) >= 3; }
 
-        function identifyHardSectors(seg, points, plannedPowerW, plannedSpeedMs, totalMassKg, drivetrainEff) {
-            const preset = getSectorDetailPreset();
+        function identifyHardSectors(seg, points, plannedPowerW, plannedSpeedMs, totalMassKg, drivetrainEff, preset) {
+            preset = preset || getSectorDetailPreset();
 
             // 1) Per-point tier from smoothed grade.
             const tiers = [];
@@ -5186,6 +5201,93 @@
             stats.tier = tierLabel;
             stats.isHard = isHardTier(tierLabel);
             return stats;
+        }
+
+        // Aggregate ground-truth sectors into display rows according to the
+        // user's slider preset. The underlying plan (per-sector pacing +
+        // W'bal trace) is *unchanged* — bundles are a viewing lens. A bundle
+        // covering N ground-truth components shows time-weighted aggregates:
+        //   length, time, elevation : sums
+        //   avg grade               : elevation / length
+        //   max-50m / max-100m      : max of components (so a hidden kicker
+        //                             still flashes its true peak)
+        //   power                   : Σ(P·t) / Σ(t) — experienced average
+        //   speed                   : length / total_time
+        //   W'bal start / end       : first / last component's trace values
+        //   tier                    : derived from the bundle's max-100m
+        //   isAggregate             : true when components.length > 1, so
+        //                             the renderer knows to blank Gear ·
+        //                             cadence (not meaningful across
+        //                             different per-sector powers)
+        //
+        // Bundling rule per displayPreset:
+        //   - Same tier as previous bundle → always coalesce.
+        //   - Sub-Hard tier and shorter than displayPreset.minSubHardSec at
+        //     planned pace → absorb.
+        //   - Hard+ tier and shorter than displayPreset.hardMinMeters →
+        //     absorb (only the absolute floor filters pure noise; the
+        //     smoothing already lives in ground truth).
+        //   - Otherwise start a new bundle.
+        function bundleSectorsForLevel(groundTruth, wbalTrace, displayPreset, plannedSpeedMs) {
+            if (!groundTruth || groundTruth.length === 0) return [];
+
+            // Walk and assign each ground-truth sector to a bundle index.
+            const groups = [[0]];
+            const minSubHardKm = (plannedSpeedMs * displayPreset.minSubHardSec) / 1000;
+            const hardMinKm = displayPreset.hardMinMeters / 1000;
+            for (let i = 1; i < groundTruth.length; i++) {
+                const cur = groundTruth[i];
+                const lastGroup = groups[groups.length - 1];
+                const prev = groundTruth[lastGroup[lastGroup.length - 1]];
+                const tooShort = isHardTier(cur.tier)
+                    ? (cur.length < hardMinKm)
+                    : (cur.length < minSubHardKm);
+                if (cur.tier === prev.tier || tooShort) {
+                    lastGroup.push(i);
+                } else {
+                    groups.push([i]);
+                }
+            }
+
+            return groups.map(idxList => {
+                const components = idxList.map(i => groundTruth[i]);
+                const traces = idxList.map(i => wbalTrace[i]);
+                const length = components.reduce((s, c) => s + c.length, 0);
+                const elevation = components.reduce((s, c) => s + c.elevation, 0);
+                const totalTime = components.reduce((s, c) => s + c.pacing.timeSec, 0);
+                const totalEnergy = components.reduce(
+                    (s, c) => s + c.pacing.power * c.pacing.timeSec, 0);
+                const avgGrade = length > 0 ? (elevation / (length * 1000)) * 100 : 0;
+                const maxGrade50m = components.reduce((m, c) => Math.max(m, c.maxGrade50m), 0);
+                const maxGrade100m = components.reduce((m, c) => Math.max(m, c.maxGrade100m), 0);
+                const avgPower = totalTime > 0 ? totalEnergy / totalTime : 0;
+                const avgSpeedMs = totalTime > 0 ? (length * 1000) / totalTime : 0;
+                const bundleTier = tierForGrade(maxGrade100m).label;
+                return {
+                    startIdx: components[0].startIdx,
+                    endIdx: components[components.length - 1].endIdx,
+                    startKm: components[0].startKm,
+                    endKm: components[components.length - 1].endKm,
+                    length: length,
+                    elevation: elevation,
+                    avgGrade: avgGrade,
+                    maxGrade: maxGrade100m,
+                    maxGrade50m: maxGrade50m,
+                    maxGrade100m: maxGrade100m,
+                    tier: bundleTier,
+                    isHard: isHardTier(bundleTier),
+                    pacing: {
+                        power: avgPower,
+                        speedMs: avgSpeedMs,
+                        timeSec: totalTime
+                    },
+                    isAggregate: components.length > 1,
+                    componentCount: components.length,
+                    bundleStartWbal: traces[0].startWbal,
+                    bundleEndWbal: traces[traces.length - 1].endWbal,
+                    bundleBreached: traces.some(t => t.breached)
+                };
+            });
         }
 
         // Tier label for a representative grade (max-100m). The math stays
@@ -5497,21 +5599,48 @@
             // the steepest-section warning above is the right surface there.
             if (!physiology) { hide(); return; }
 
-            const sectors = identifyHardSectors(
-                seg, points, plannedPowerW, speedMs, totalMassKg, drivetrainEff);
+            // Ground truth: classify, pace, and W'bal-sim at the fixed fine
+            // preset. This is the *real* plan; the slider has no effect on
+            // any of these numbers.
+            const groundTruth = identifyHardSectors(
+                seg, points, plannedPowerW, speedMs, totalMassKg, drivetrainEff,
+                GROUND_TRUTH_PRESET);
 
             // Climb is uniformly easy (no hard sectors at all) — the average
             // plan already represents what the rider will do, and the
             // steepest-section "within range" positive note covers it. Hide
             // the breakdown to avoid noise.
-            const anyHard = sectors.some(s => s.isHard);
+            const anyHard = groundTruth.some(s => s.isHard);
             if (!anyHard) { hide(); return; }
 
-            // Pace all sectors with a single global excess shared across
-            // hard sectors (W'(1−R) allocated once, not once per sector).
-            paceAllSectors(sectors, physiology, state.reserveFraction, speedMs, points, totalMassKg, drivetrainEff);
+            // Pace all ground-truth sectors with a single global excess
+            // shared across hard sectors (W'(1−R) allocated once, not once
+            // per sector).
+            paceAllSectors(groundTruth, physiology, state.reserveFraction, speedMs, points, totalMassKg, drivetrainEff);
 
-            const wbal = simulateWBal(sectors, physiology, state.reserveFraction);
+            const wbal = simulateWBal(groundTruth, physiology, state.reserveFraction);
+
+            // Display step: bundle ground-truth sectors per the user's
+            // slider level into rows the table will render. Same plan
+            // underneath; bundles are a viewing lens, totals invariant.
+            const displayPreset = getSectorDetailPreset();
+            const bundles = bundleSectorsForLevel(groundTruth, wbal.trace, displayPreset, speedMs);
+
+            // Build a wbal-trace shaped to the bundles so the existing
+            // renderer can read trace[i] per displayed row without knowing
+            // bundling happened.
+            const bundleWbal = {
+                trace: bundles.map(b => ({
+                    startWbal: b.bundleStartWbal,
+                    endWbal: b.bundleEndWbal,
+                    breached: b.bundleBreached
+                })),
+                minWbal: wbal.minWbal,
+                floor: wbal.floor,
+                W0: wbal.W0,
+                floorBreached: wbal.floorBreached,
+                breachSectorIdx: null
+            };
 
             // Hide the steepest-section warning (it was the MVP-light proxy for
             // exactly this analysis). Keep both the breakdown and warning code
@@ -5519,7 +5648,7 @@
             if (warnEl) warnEl.style.display = 'none';
             if (okEl) okEl.style.display = 'none';
 
-            renderSectorBreakdown(sectors, wbal, physiology, plannedPowerW, totalMassKg, drivetrainEff);
+            renderSectorBreakdown(bundles, bundleWbal, physiology, plannedPowerW, totalMassKg, drivetrainEff);
             panel.style.display = 'block';
             setLegacyResultCardsVisible(false);
         }
@@ -5577,10 +5706,17 @@
                 if (s.maxGrade50m > max50mClimb) max50mClimb = s.maxGrade50m;
                 if (s.maxGrade100m > max100mClimb) max100mClimb = s.maxGrade100m;
 
-                // Optimal gear at this sector's speed.
+                // Gear · cadence is per-constant-power sub-sector. For a
+                // bundle aggregating multiple ground-truth sectors with
+                // different powers, neither value is a single number — show
+                // "—" instead of pretending. Single-component bundles still
+                // show the real gear / cadence at that sector's speed.
                 let gearLabel = '--';
                 let cadenceLabel = '--';
-                if (chainrings.length && cassette.length) {
+                if (s.isAggregate) {
+                    gearLabel = '—';
+                    cadenceLabel = '';
+                } else if (chainrings.length && cassette.length) {
                     const wheelRpm = (s.pacing.speedMs * 60) / wheelCircumference;
                     const optimal = findOptimalGear(wheelRpm, preferredCadence, chainrings, cassette);
                     if (optimal && optimal.chainring && optimal.cog) {
@@ -5615,7 +5751,7 @@
                     '<td>' + Math.round(s.pacing.power) + ' W</td>' +
                     '<td>' + (s.pacing.speedMs * 3.6).toFixed(1) + ' km/h</td>' +
                     '<td>' + formatSecondsMMSS(s.pacing.timeSec) + '</td>' +
-                    '<td>' + gearLabel + ' · ' + cadenceLabel + '</td>' +
+                    '<td>' + (cadenceLabel ? (gearLabel + ' · ' + cadenceLabel) : gearLabel) + '</td>' +
                     '<td class="' + (breachClass || recoverClass) + '">' +
                         formatKjOneDecimal(trace.startWbal) +
                         '<span class="sector-wbal-arrow">→</span>' +
