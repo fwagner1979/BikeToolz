@@ -870,6 +870,18 @@
             border-color: var(--danger-color);
         }
 
+        /* Required-field highlight — applied by calculateClimb when a
+           validation check fails and cleared the moment the user edits the
+           field. Works on bare inputs/selects regardless of container so it
+           covers Step 2/3 fields, manual climb fields, and rider/equipment
+           fields uniformly. The box-shadow gives it a soft red halo that
+           reads at a glance even in the dark theme. */
+        input.field-missing,
+        select.field-missing {
+            border-color: var(--danger-color) !important;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18);
+        }
+
         .error-message {
             color: var(--danger-color);
             font-size: 0.875rem;
@@ -4100,11 +4112,77 @@
             });
         })();
 
+        // Required-field marking. clearFieldMissing wipes the red highlight
+        // on every non-silent calculateClimb run so stale marks don't linger
+        // after the user has fixed something; markFieldsMissing flags the
+        // offending inputs and scrolls the first one into view so the user
+        // doesn't have to hunt for it. The auto-clear listener (attached
+        // once, document-level) removes the class as soon as the user edits
+        // the field, so the red disappears in real time.
+        function clearFieldMissing() {
+            document.querySelectorAll('.field-missing').forEach(el => {
+                el.classList.remove('field-missing');
+            });
+        }
+        function markFieldsMissing(ids) {
+            let firstEl = null;
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.classList.add('field-missing');
+                if (!firstEl) firstEl = el;
+            });
+            if (firstEl) {
+                firstEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // focus() after the smooth-scroll lands so the user can type
+                // straight into the offending field.
+                setTimeout(() => { try { firstEl.focus(); } catch (e) {} }, 350);
+            }
+        }
+        document.addEventListener('input', function (e) {
+            const t = e.target;
+            if (t && t.classList && t.classList.contains('field-missing')) {
+                t.classList.remove('field-missing');
+            }
+        });
+        document.addEventListener('change', function (e) {
+            const t = e.target;
+            if (t && t.classList && t.classList.contains('field-missing')) {
+                t.classList.remove('field-missing');
+            }
+        });
+
+        // Returns the list of input IDs that contribute to the rider's
+        // power capability, given the active Step 3 method. Used by
+        // calculateClimb to mark exactly the fields that matter when the
+        // power-capability check fails.
+        function powerCapabilityInputIds() {
+            const method = state.powerMethod;
+            if (method === 'simple') return ['simplePower'];
+            if (method === 'cpw') {
+                // If Step 2 supplied CP+W' the Step 3 fields are hidden, so
+                // mark the Step 2 inputs instead.
+                const cpw = getCPWInputs();
+                if (cpw.source === 'step2') return ['step2CP', 'step2WPrime'];
+                return ['cpValue', 'wPrimeValue'];
+            }
+            if (method === 'curve') {
+                // Curve needs ≥3 points — flag the four input slots so the
+                // user can see at a glance which to fill.
+                return ['power5min', 'power20min', 'power60min', 'power120min'];
+            }
+            return [];
+        }
+
         // Main calculation. When `silent` is true (auto-refresh from Step 3 edits)
         // the function bails out quietly on incomplete inputs instead of popping
         // alert dialogs, which would be horrible UX while the user is typing.
         function calculateClimb(silent) {
             const showAlert = function (msg) { if (!silent) alert(msg); };
+            // Wipe stale red borders so the new validation pass starts
+            // clean. Silent (auto-refresh) calls don't repaint marks since
+            // they don't alert either — they're just a quiet re-run.
+            if (!silent) clearFieldMissing();
 
             // Get climb parameters (always in metric for calculations)
             let distance, elevation, grade;
@@ -4121,6 +4199,19 @@
                 elevation = state.selectedClimb.elevation;
                 grade = state.selectedClimb.avgGrade;
             } else {
+                if (!silent) {
+                    if (state.climbInputMode === 'manual') {
+                        // Mark whichever of the two manual-climb inputs is empty.
+                        const missing = [];
+                        if (!(parseFloat(document.getElementById('manualDistance').value) > 0)) {
+                            missing.push('manualDistance');
+                        }
+                        if (!(parseFloat(document.getElementById('manualElevation').value) > 0)) {
+                            missing.push('manualElevation');
+                        }
+                        if (missing.length) markFieldsMissing(missing);
+                    }
+                }
                 showAlert('Please define your climb first');
                 return;
             }
@@ -4129,6 +4220,7 @@
             // updatePowerCalculations whichever Step 3 method is active.
             const sustainablePower = state.calculatedSustainablePower;
             if (!sustainablePower || sustainablePower <= 0) {
+                if (!silent) markFieldsMissing(powerCapabilityInputIds());
                 showAlert('Please enter your power capability');
                 return;
             }
@@ -4140,6 +4232,14 @@
             const wheelCircumference = parseFloat(document.getElementById('wheelCircumference').value);
 
             if (!riderWeight || !bikeWeight || !preferredCadence || !wheelCircumference) {
+                if (!silent) {
+                    const missing = [];
+                    if (!(riderWeight > 0)) missing.push('riderWeight');
+                    if (!(bikeWeight > 0)) missing.push('bikeWeight');
+                    if (!(preferredCadence > 0)) missing.push('preferredCadence');
+                    if (!(wheelCircumference > 0)) missing.push('wheelCircumference');
+                    markFieldsMissing(missing);
+                }
                 showAlert('Please fill in all rider & equipment parameters');
                 return;
             }
@@ -4151,6 +4251,17 @@
             const cassette = getCurrentCassette();
 
             if (!chainrings || chainrings.length === 0 || !cassette || cassette.length === 0) {
+                if (!silent) {
+                    // In manual-override mode the gearing comes from the two
+                    // free-text inputs; otherwise the small/large numeric
+                    // inputs. Mark whichever pair the user is actually using
+                    // so the red lands on a field they can fix.
+                    if (manualOverrideMode) {
+                        markFieldsMissing(['chainringsManual', 'cassetteManual']);
+                    } else {
+                        markFieldsMissing(['chainringSmall', 'chainringLarge', 'cassetteSmall', 'cassetteLarge']);
+                    }
+                }
                 showAlert('Please configure your gearing');
                 return;
             }
