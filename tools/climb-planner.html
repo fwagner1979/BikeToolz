@@ -5060,15 +5060,73 @@
             return { power: power, speedMs: speedMs, timeSec: timeSec };
         }
 
-        // Pace all sectors. Hard sectors share a single global "excess" power
-        //   excess = W'(1−R) / total_hard_seconds
-        // so the W'(1−R) budget is allocated *once* across the whole climb
-        // rather than handed to every hard sector independently (that bug
-        // produced the 1845 W / 3057 W cells in the first run). Iterates 2–3
-        // times because total_hard_seconds depends on hard speed which
-        // depends on excess. excess is capped at W'(1−R) / 180 s — the most
-        // a rider can sustain above CP for ~3 min — to bound short-T_h
-        // edge cases.
+        // Steepness multiplier — biases the W' allocation toward steeper
+        // hard sectors so the rider pushes a bit harder where the grade
+        // really hurts. Doubles every MG_DOUBLING_GRADE_PCT percentage
+        // points beyond MG_GRADE_REFERENCE_PCT — smooth, no band cliffs.
+        //
+        // M(7%)  = 1.00   ← reference: "this is starting to be a real climb"
+        // M(10%) = 1.68
+        // M(13%) = 2.83
+        // M(15%) = 4.00
+        // M(18%) = 6.73
+        //
+        // Function choice and parameters live as constants so retuning
+        // doesn't need to hunt through the algorithm.
+        const MG_GRADE_REFERENCE_PCT = 7;
+        const MG_DOUBLING_GRADE_PCT = 4;
+        function steepnessMultiplier(gradePct) {
+            return Math.pow(2, (gradePct - MG_GRADE_REFERENCE_PCT) / MG_DOUBLING_GRADE_PCT);
+        }
+
+        // Allocate above-CP excess across hard sectors using grade-based
+        // weights and per-sector physiological ceilings. Each hard sector i
+        // wants `M(grade_i) × base` watts above CP, where base normalises
+        // the total above-CP energy to the rider's W'(1−R) budget. If a
+        // sector's wanted excess exceeds its physiological ceiling
+        // (W'(1−R) / sector_duration — the most W' a single sector can
+        // possibly spend over its own time), we cap it and redistribute the
+        // residual budget among uncapped sectors at the same M(g) ratios.
+        // Converges in at most n+1 inner passes (one per cap event).
+        function allocateHardExcess(hardSectors, usableJ) {
+            const n = hardSectors.length;
+            const weights = hardSectors.map(s => steepnessMultiplier(s.avgGrade));
+            const ceilings = hardSectors.map(s => usableJ / Math.max(s.pacing.timeSec, 1));
+            const excess = new Array(n).fill(0);
+            const capped = new Array(n).fill(false);
+            let remainingJ = usableJ;
+
+            for (let pass = 0; pass < n + 1; pass++) {
+                let denom = 0;
+                for (let k = 0; k < n; k++) {
+                    if (!capped[k]) denom += weights[k] * hardSectors[k].pacing.timeSec;
+                }
+                if (denom <= 0) break;
+                const base = remainingJ / denom;
+                let cappedThisPass = false;
+                for (let k = 0; k < n; k++) {
+                    if (capped[k]) continue;
+                    const want = weights[k] * base;
+                    if (want > ceilings[k]) {
+                        excess[k] = ceilings[k];
+                        remainingJ -= ceilings[k] * hardSectors[k].pacing.timeSec;
+                        capped[k] = true;
+                        cappedThisPass = true;
+                    } else {
+                        excess[k] = want;
+                    }
+                }
+                if (!cappedThisPass) break;
+            }
+            return excess;
+        }
+
+        // Pace all sectors. Hard sectors get per-sector excess via the
+        // smooth M(g) weighting above (steeper sections push harder); easy
+        // sectors track planned speed at sub-CP power and naturally allow
+        // W' recovery. Outer loop iterates because each hard sector's
+        // duration depends on its allocated excess, which in turn depends
+        // on the durations.
         function paceAllSectors(sectors, physiology, reserveR, plannedSpeedMs, totalMassKg, drivetrainEff) {
             sectors.forEach(s => {
                 if (!s.isHard) {
@@ -5080,7 +5138,7 @@
             if (hardSectors.length === 0) return;
 
             const usableJ = physiology.wPrime * 1000 * (1 - reserveR);
-            // Reserve ≥ 100% (no W' to spend): hard sectors capped at CP.
+            // Reserve ≥ 100% — no W' to spend, cap every hard sector at CP.
             if (!(usableJ > 0)) {
                 hardSectors.forEach(s => {
                     s.pacing = paceHardSector(s, physiology.cp, totalMassKg, drivetrainEff);
@@ -5088,26 +5146,31 @@
                 return;
             }
 
-            const excessCapW = usableJ / 180; // 3-min sustainable above-CP
-            // Initial T_h estimate using planned speed across the hard sectors.
-            let T_h = hardSectors.reduce(
-                (sum, s) => sum + (s.length * 1000 / Math.max(plannedSpeedMs, 0.5)), 0);
-            let excess = Math.min(usableJ / Math.max(T_h, 1), excessCapW);
+            // Seed each hard sector's pacing with planned speed so the
+            // first allocation pass has a duration to read.
+            const seedSpeed = Math.max(plannedSpeedMs, 0.5);
+            hardSectors.forEach(s => {
+                s.pacing = {
+                    power: physiology.cp,
+                    speedMs: seedSpeed,
+                    timeSec: (s.length * 1000) / seedSpeed
+                };
+            });
 
-            for (let iter = 0; iter < 8; iter++) {
-                const P_hard = physiology.cp + excess;
-                let new_T_h = 0;
-                hardSectors.forEach(s => {
-                    s.pacing = paceHardSector(s, P_hard, totalMassKg, drivetrainEff);
-                    new_T_h += s.pacing.timeSec;
-                });
-                const new_excess = Math.min(usableJ / Math.max(new_T_h, 1), excessCapW);
-                if (Math.abs(new_excess - excess) < 0.5) {
-                    excess = new_excess;
-                    break;
+            for (let outer = 0; outer < 6; outer++) {
+                const excesses = allocateHardExcess(hardSectors, usableJ);
+                let totalChange = 0;
+                for (let k = 0; k < hardSectors.length; k++) {
+                    const s = hardSectors[k];
+                    const P = physiology.cp + excesses[k];
+                    const oldDur = s.pacing.timeSec;
+                    s.pacing = paceHardSector(s, P, totalMassKg, drivetrainEff);
+                    totalChange += Math.abs(s.pacing.timeSec - oldDur);
                 }
-                excess = new_excess;
-                T_h = new_T_h;
+                // Convergence: total duration change across all hard
+                // sectors < 1 s per pass means further iterations won't
+                // visibly move the table.
+                if (totalChange < 1.0) break;
             }
         }
 
