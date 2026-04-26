@@ -2367,16 +2367,16 @@
                                 <th data-i18n="climbPlanner.results.sectors.col.kind">Sector</th>
                                 <th data-i18n="climbPlanner.results.sectors.col.length">Length</th>
                                 <th data-i18n="climbPlanner.results.sectors.col.avgGrade">Avg. Grade</th>
-                                <!-- Two debug columns showing the steepest local grade
-                                     across a 50 m and 100 m sliding window inside the
-                                     sector. Temporary — once we've eyeballed real
-                                     values across a few climbs, the loser drops out. -->
-                                <th data-i18n="climbPlanner.results.sectors.col.max50m">Max 50 m</th>
                                 <th data-i18n="climbPlanner.results.sectors.col.max100m">Max 100 m</th>
                                 <th data-i18n="climbPlanner.results.sectors.col.power">Power</th>
+                                <!-- Normalized Power (Coggan): captures the physiological
+                                     cost of variable power. NP > Avg signals a spiky
+                                     sector where the rider's body experiences a higher
+                                     load than the time-weighted avg suggests. -->
+                                <th data-i18n="climbPlanner.results.sectors.col.np">NP</th>
                                 <th data-i18n="climbPlanner.results.sectors.col.speed">Speed</th>
                                 <th data-i18n="climbPlanner.results.sectors.col.time">Time</th>
-                                <th data-i18n="climbPlanner.results.sectors.col.gear">Gear · cadence</th>
+                                <th data-i18n="climbPlanner.results.sectors.col.gear">Gear · low RPM</th>
                                 <th data-i18n="climbPlanner.results.sectors.col.wbal">W'bal end</th>
                             </tr>
                         </thead>
@@ -4721,32 +4721,46 @@
             if (badge) badge.hidden = !isOptimal;
         }
 
+        // Solve for the speed (m/s) at which the at-wheel power demand
+        // equals the available at-wheel power, on a given grade. Uses
+        // bisection — robust on descents where the demand curve P(v) is
+        // non-monotonic at low v (gravity helps faster than rolling+aero
+        // hurt up to v≈3 m/s on steep descents). The previous Newton-
+        // Raphson version got trapped at the v=0.5 floor on negative
+        // grades because the derivative dP/dv changes sign in that
+        // region, so a positive power-deficit produced a *negative*
+        // adjustment and the algorithm clamped at the floor and stayed
+        // there. Bisection in [0.5, hi] is monotonic by construction
+        // above the demand minimum and covers descents up to ~110 km/h.
         function findOptimalSpeed(availablePower, totalWeightKg, gradeRadians) {
-            let speed = 3.0; // Start with 3 m/s
+            const reqAt = function (v) {
+                const grav = totalWeightKg * 9.81 * Math.sin(gradeRadians) * v;
+                const roll = totalWeightKg * 9.81 * Math.cos(gradeRadians) * 0.005 * v;
+                const aero = 0.5 * 1.2 * 0.3 * Math.pow(v, 3);
+                return grav + roll + aero;
+            };
 
-            for (let iteration = 0; iteration < 50; iteration++) {
-                const gravitationalPower = totalWeightKg * 9.81 * Math.sin(gradeRadians) * speed;
-                const rollingPower = totalWeightKg * 9.81 * Math.cos(gradeRadians) * 0.005 * speed;
-                const aeroPower = 0.5 * 1.2 * 0.3 * Math.pow(speed, 3);
-                const requiredPower = gravitationalPower + rollingPower + aeroPower;
+            const minV = 0.5;
+            // Pull hi up far enough that reqAt(hi) brackets the target.
+            // 30 m/s ≈ 108 km/h is plenty for any realistic cycling case;
+            // 50 is the absolute backstop.
+            let lo = minV;
+            let hi = 30;
+            while (reqAt(hi) < availablePower && hi < 50) hi += 5;
 
-                const powerDifference = availablePower - requiredPower;
+            // If even at the floor v=0.5 the demand already exceeds the
+            // available power, the rider must coast (no positive solution
+            // above the floor exists for this target). Return the floor.
+            if (reqAt(lo) >= availablePower) return minV;
 
-                if (Math.abs(powerDifference) < 0.1) {
-                    break;
-                }
-
-                // Adjust speed
-                const adjustment = powerDifference / (totalWeightKg * 9.81 * Math.sin(gradeRadians) +
-                                                     totalWeightKg * 9.81 * Math.cos(gradeRadians) * 0.005 +
-                                                     3 * 0.5 * 1.2 * 0.3 * Math.pow(speed, 2));
-                speed += adjustment * 0.5; // Dampen adjustment
-
-                if (speed < 0.5) speed = 0.5;
-                if (speed > 15) speed = 15;
+            for (let i = 0; i < 60; i++) {
+                const mid = (lo + hi) / 2;
+                const p = reqAt(mid);
+                if (Math.abs(p - availablePower) < 0.05) return mid;
+                if (p < availablePower) lo = mid;
+                else hi = mid;
             }
-
-            return speed;
+            return (lo + hi) / 2;
         }
 
         // ---- Steepest-section warning (Phase 3 / Sub-commit 3) ------------
@@ -5263,6 +5277,10 @@
                 const avgPower = totalTime > 0 ? totalEnergy / totalTime : 0;
                 const avgSpeedMs = totalTime > 0 ? (length * 1000) / totalTime : 0;
                 const bundleTier = tierForGrade(maxGrade100m).label;
+                // Min speed across all sub-segments inside the bundle.
+                const minSpeedMs = components.reduce(
+                    (m, c) => Math.min(m, c.pacing.minSpeedMs || c.pacing.speedMs),
+                    Infinity);
                 return {
                     startIdx: components[0].startIdx,
                     endIdx: components[components.length - 1].endIdx,
@@ -5279,8 +5297,10 @@
                     pacing: {
                         power: avgPower,
                         speedMs: avgSpeedMs,
+                        minSpeedMs: isFinite(minSpeedMs) ? minSpeedMs : avgSpeedMs,
                         timeSec: totalTime
                     },
+                    components: components,
                     isAggregate: components.length > 1,
                     componentCount: components.length,
                     bundleStartWbal: traces[0].startWbal,
@@ -5329,6 +5349,7 @@
         // gentler bits).
         function integrateSectorAtPower(sector, points, powerW, totalMassKg, drivetrainEff) {
             let totalSec = 0;
+            let minSpeedMs = Infinity;
             for (let i = sector.startIdx; i < sector.endIdx; i++) {
                 const dKm = points[i + 1].distance - points[i].distance;
                 if (!(dKm > 0)) continue;
@@ -5336,33 +5357,42 @@
                 const grade = (dM / (dKm * 1000)) * 100;
                 const v = speedForRiderPower(powerW, totalMassKg, grade, drivetrainEff);
                 totalSec += (dKm * 1000) / Math.max(v, 0.5);
+                if (v < minSpeedMs) minSpeedMs = v;
             }
             // Fallback: if the segment only spans one point, fall back to
             // the avg-grade approximation so we don't divide by zero.
             if (!(totalSec > 0)) {
                 const v = speedForRiderPower(powerW, totalMassKg, sector.avgGrade, drivetrainEff);
                 totalSec = (sector.length * 1000) / Math.max(v, 0.5);
+                minSpeedMs = v;
+            }
+            if (!isFinite(minSpeedMs)) {
+                minSpeedMs = (sector.length * 1000) / Math.max(totalSec, 1);
             }
             const avgSpeedMs = (sector.length * 1000) / Math.max(totalSec, 1);
-            return { timeSec: totalSec, avgSpeedMs: avgSpeedMs };
+            return { timeSec: totalSec, avgSpeedMs: avgSpeedMs, minSpeedMs: minSpeedMs };
         }
 
         // Hard sector: ride at the per-sector excess power that
-        // allocateHardExcess decided. Time + avg speed come from the
-        // point-by-point integrator so the displayed numbers reflect the
-        // actual ride through the sector's grade profile, not a uniform-
-        // avg-grade approximation.
+        // allocateHardExcess decided. Time, avg speed, min speed come from
+        // the point-by-point integrator so the displayed numbers reflect
+        // the actual ride through the sector's grade profile.
         function paceHardSector(sector, hardPowerW, points, totalMassKg, drivetrainEff) {
             const ride = integrateSectorAtPower(sector, points, hardPowerW, totalMassKg, drivetrainEff);
-            return { power: hardPowerW, speedMs: ride.avgSpeedMs, timeSec: ride.timeSec };
+            return {
+                power: hardPowerW,
+                speedMs: ride.avgSpeedMs,
+                minSpeedMs: ride.minSpeedMs,
+                timeSec: ride.timeSec
+            };
         }
 
         // Easy sector: pace = the watts required to hold planned speed on
         // the sector's *max-100 m* grade (so the steep sub-bits aren't
         // ignored), bounded below by the tier floor (sustained climbing
         // shouldn't drop to 30 % of CP) and above by CP (an "easy" sector
-        // never goes above threshold). Time + avg speed are then computed
-        // point-by-point at that constant power.
+        // never goes above threshold). Time, avg speed, min speed are then
+        // computed point-by-point at that constant power.
         function paceEasySector(sector, plannedSpeedMs, physiology, points, totalMassKg, drivetrainEff) {
             const repGrade = sector.maxGrade100m;
             const requiredAtPlanned = riderRequiredAtSpeed(
@@ -5370,7 +5400,12 @@
             const floor = easySectorFloorWatts(repGrade, physiology.cp);
             const power = Math.min(Math.max(requiredAtPlanned, floor), physiology.cp);
             const ride = integrateSectorAtPower(sector, points, power, totalMassKg, drivetrainEff);
-            return { power: power, speedMs: ride.avgSpeedMs, timeSec: ride.timeSec };
+            return {
+                power: power,
+                speedMs: ride.avgSpeedMs,
+                minSpeedMs: ride.minSpeedMs,
+                timeSec: ride.timeSec
+            };
         }
 
         // Steepness multiplier — biases the W' allocation toward steeper
@@ -5648,12 +5683,44 @@
             if (warnEl) warnEl.style.display = 'none';
             if (okEl) okEl.style.display = 'none';
 
-            renderSectorBreakdown(bundles, bundleWbal, physiology, plannedPowerW, totalMassKg, drivetrainEff);
+            renderSectorBreakdown(bundles, bundleWbal, physiology, plannedPowerW, totalMassKg, drivetrainEff, groundTruth);
             panel.style.display = 'block';
             setLegacyResultCardsVisible(false);
         }
 
         // ----- Rendering ----------------------------------------------------
+
+        // Coggan Normalized Power: build a per-second power timeline from
+        // the given (power, timeSec) entries, take the 30-second rolling
+        // average, raise each value to the 4th power, take the mean, and
+        // take the 4th root. NP > avg whenever there are spikes — captures
+        // the physiological cost of variable power vs. a steady ride at the
+        // same average. For a single constant-power span NP equals avg.
+        // Each entry should be { power, timeSec }; works on bundle.components
+        // and on the full ground-truth array alike.
+        function computeNormalizedPower(entries) {
+            if (!entries || entries.length === 0) return 0;
+            const seconds = [];
+            for (let i = 0; i < entries.length; i++) {
+                const p = entries[i].pacing ? entries[i].pacing.power : entries[i].power;
+                const t = entries[i].pacing ? entries[i].pacing.timeSec : entries[i].timeSec;
+                const steps = Math.max(1, Math.round(t));
+                for (let k = 0; k < steps; k++) seconds.push(p);
+            }
+            if (seconds.length === 0) return 0;
+            const W = 30;
+            let sum = 0;
+            let p4sum = 0;
+            const rollLen = seconds.length;
+            for (let i = 0; i < rollLen; i++) {
+                sum += seconds[i];
+                if (i >= W) sum -= seconds[i - W];
+                const denom = Math.min(i + 1, W);
+                const avg = sum / denom;
+                p4sum += Math.pow(avg, 4);
+            }
+            return Math.pow(p4sum / rollLen, 0.25);
+        }
 
         function formatSecondsMMSS(seconds) {
             if (!(seconds > 0)) return '--:--';
@@ -5668,7 +5735,7 @@
             return (joules / 1000).toFixed(1);
         }
 
-        function renderSectorBreakdown(sectors, wbal, physiology, plannedPowerW, totalMassKg, drivetrainEff) {
+        function renderSectorBreakdown(sectors, wbal, physiology, plannedPowerW, totalMassKg, drivetrainEff, groundTruth) {
             const body = document.getElementById('sectorBreakdownBody');
             const footer = document.getElementById('sectorBreakdownFooter');
             if (!body || !footer) return;
@@ -5693,7 +5760,6 @@
             let totalSeconds = 0;
             let totalElevation = 0;
             let totalEnergyJ = 0;
-            let max50mClimb = 0;
             let max100mClimb = 0;
             const rows = [];
             for (let i = 0; i < sectors.length; i++) {
@@ -5703,27 +5769,34 @@
                 totalSeconds += s.pacing.timeSec;
                 totalElevation += s.elevation;
                 totalEnergyJ += s.pacing.power * s.pacing.timeSec;
-                if (s.maxGrade50m > max50mClimb) max50mClimb = s.maxGrade50m;
                 if (s.maxGrade100m > max100mClimb) max100mClimb = s.maxGrade100m;
 
-                // Gear · cadence is per-constant-power sub-sector. For a
-                // bundle aggregating multiple ground-truth sectors with
-                // different powers, neither value is a single number — show
-                // "—" instead of pretending. Single-component bundles still
-                // show the real gear / cadence at that sector's speed.
+                // Gear · low RPM = the lowest cadence the rider will see in
+                // this sector, in the cadence-optimal gear at the sector's
+                // avg speed. If the sector is multi-grade, speed varies and
+                // cadence dips on the steepest sub-bit — that dip is what
+                // the rider needs to plan for. For aggregated bundles the
+                // gear isn't a single number (different per-component powers
+                // → different gears), so we show "—".
                 let gearLabel = '--';
                 let cadenceLabel = '--';
                 if (s.isAggregate) {
                     gearLabel = '—';
                     cadenceLabel = '';
                 } else if (chainrings.length && cassette.length) {
-                    const wheelRpm = (s.pacing.speedMs * 60) / wheelCircumference;
-                    const optimal = findOptimalGear(wheelRpm, preferredCadence, chainrings, cassette);
+                    // Pick gear at the sector's avg speed (current behaviour
+                    // — keeps gear stable across the sector).
+                    const wheelRpmAvg = (s.pacing.speedMs * 60) / wheelCircumference;
+                    const optimal = findOptimalGear(wheelRpmAvg, preferredCadence, chainrings, cassette);
                     if (optimal && optimal.chainring && optimal.cog) {
                         gearLabel = optimal.chainring + '×' + optimal.cog;
                         const ratio = optimal.chainring / optimal.cog;
-                        const cadence = wheelRpm / ratio;
-                        cadenceLabel = Math.round(cadence) + ' RPM';
+                        // ...then report the cadence at min speed in that gear.
+                        const minSpeedMs = (s.pacing.minSpeedMs > 0)
+                            ? s.pacing.minSpeedMs : s.pacing.speedMs;
+                        const wheelRpmMin = (minSpeedMs * 60) / wheelCircumference;
+                        const minCadence = wheelRpmMin / ratio;
+                        cadenceLabel = Math.round(minCadence) + ' RPM';
                     }
                 }
 
@@ -5741,14 +5814,22 @@
                     : (trace.endWbal < trace.startWbal - 100 ? 'sector-wbal-depleting' : '');
                 const breachClass = trace.breached ? 'sector-wbal-floor-breach' : '';
 
+                // Normalized Power for the bundle: from its components if
+                // it's an aggregate (so internal power variation is
+                // captured); otherwise just the bundle itself, which is
+                // constant power and gives NP == avg.
+                const npSource = s.components && s.components.length > 0 ? s.components : [s];
+                const np = computeNormalizedPower(npSource);
+                const npLabel = Math.round(np) + ' W';
+
                 rows.push(
                     '<tr class="' + kindClass + '">' +
                     '<td>' + tag + (i + 1) + '</td>' +
                     '<td>' + formatLength(s.length) + '</td>' +
                     '<td>' + s.avgGrade.toFixed(1) + '%</td>' +
-                    '<td>' + s.maxGrade50m.toFixed(1) + '%</td>' +
                     '<td>' + s.maxGrade100m.toFixed(1) + '%</td>' +
                     '<td>' + Math.round(s.pacing.power) + ' W</td>' +
+                    '<td>' + npLabel + '</td>' +
                     '<td>' + (s.pacing.speedMs * 3.6).toFixed(1) + ' km/h</td>' +
                     '<td>' + formatSecondsMMSS(s.pacing.timeSec) + '</td>' +
                     '<td>' + (cadenceLabel ? (gearLabel + ' · ' + cadenceLabel) : gearLabel) + '</td>' +
@@ -5763,10 +5844,11 @@
 
             // Climb-total row. Power is time-weighted (sum P·dt / sum dt);
             // grade is distance-weighted by definition (sum elev / sum dist);
-            // Max 50/100 are the max of any sector's max in those windows;
-            // W'bal is start of sector 1 → end of last sector. Any floor
-            // breach colours the total's W'bal cell red so the at-a-glance
-            // verdict matches the per-sector trace.
+            // NP is computed from the *ground-truth* sectors so the spike
+            // capture is honest regardless of slider level. W'bal is start
+            // of sector 1 → end of last sector. Any floor breach colours
+            // the total's W'bal cell red so the at-a-glance verdict matches
+            // the per-sector trace.
             const avgPower = totalSeconds > 0 ? totalEnergyJ / totalSeconds : 0;
             const avgGrade = totalDistanceKm > 0
                 ? (totalElevation / (totalDistanceKm * 1000)) * 100
@@ -5775,15 +5857,17 @@
             const totalStartWbal = wbal.trace.length ? wbal.trace[0].startWbal : wbal.W0;
             const totalEndWbal = wbal.trace.length ? wbal.trace[wbal.trace.length - 1].endWbal : wbal.W0;
             const totalBreachClass = wbal.floorBreached ? 'sector-wbal-floor-breach' : '';
+            const totalNp = computeNormalizedPower(
+                groundTruth && groundTruth.length > 0 ? groundTruth : sectors);
 
             rows.push(
                 '<tr class="sector-total">' +
                 '<td><span class="sector-kind-tag total" data-i18n="climbPlanner.results.sectors.totalTag">Total</span></td>' +
                 '<td>' + formatLength(totalDistanceKm) + '</td>' +
                 '<td>' + avgGrade.toFixed(1) + '%</td>' +
-                '<td>' + max50mClimb.toFixed(1) + '%</td>' +
                 '<td>' + max100mClimb.toFixed(1) + '%</td>' +
                 '<td>' + Math.round(avgPower) + ' W</td>' +
+                '<td>' + Math.round(totalNp) + ' W</td>' +
                 '<td>' + avgSpeedKmh.toFixed(1) + ' km/h</td>' +
                 '<td>' + formatSecondsMMSS(totalSeconds) + '</td>' +
                 '<td>—</td>' +
